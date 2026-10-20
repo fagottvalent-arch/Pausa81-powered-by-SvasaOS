@@ -45,74 +45,101 @@ export function SvasaLogo() {
   );
 }
 
-/** Fiore di loto a geometria sacra, con colori a contrasto della sfera. */
+/** Fiore di loto blu che galleggia sull'acqua, in stile zen. */
 function SacredLotus() {
-  const outerPetals = Array.from({ length: 8 }, (_, i) => i * 45);
-  const innerPetals = Array.from({ length: 8 }, (_, i) => i * 45 + 22.5);
-  const seedDots = Array.from({ length: 8 }, (_, i) => {
+  const backPetals = Array.from({ length: 8 }, (_, i) => i * 45);
+  const frontPetals = Array.from({ length: 8 }, (_, i) => i * 45 + 22.5);
+  const sparkles = [
+    { x: 40, y: 42, s: 1 },
+    { x: 160, y: 36, s: 0.85 },
+    { x: 156, y: 120, s: 0.7 },
+    { x: 44, y: 126, s: 0.65 },
+    { x: 102, y: 24, s: 0.9 },
+  ];
+  const seeds = Array.from({ length: 8 }, (_, i) => {
     const a = (i * 45 * Math.PI) / 180;
-    return { x: 100 + Math.cos(a) * 8, y: 100 + Math.sin(a) * 8 };
-  });
-  const lifeCircles = Array.from({ length: 6 }, (_, i) => {
-    const a = (i * 60 * Math.PI) / 180;
-    return { x: 100 + Math.cos(a) * 44, y: 100 + Math.sin(a) * 44 };
+    return { x: 100 + Math.cos(a) * 6, y: 90 + Math.sin(a) * 6 };
   });
 
   return (
     <svg className="sacred-lotus" viewBox="0 0 200 200" aria-hidden="true">
       <defs>
-        <radialGradient id="lotus-petal" gradientUnits="userSpaceOnUse" cx="100" cy="100" r="70">
-          <stop offset="0%" stopColor="#f7c948" />
-          <stop offset="55%" stopColor="#e249b3" />
-          <stop offset="100%" stopColor="#4c1d95" />
+        <radialGradient id="lotus-petal" gradientUnits="userSpaceOnUse" cx="100" cy="90" r="74">
+          <stop offset="0%" stopColor="#f0f9ff" />
+          <stop offset="40%" stopColor="#7dd3fc" />
+          <stop offset="100%" stopColor="#1d4ed8" />
         </radialGradient>
-        <radialGradient id="lotus-glow" gradientUnits="userSpaceOnUse" cx="100" cy="100" r="46">
-          <stop offset="0%" stopColor="#fde68a" stopOpacity="0.9" />
-          <stop offset="100%" stopColor="#fde68a" stopOpacity="0" />
+        <radialGradient id="lotus-back" gradientUnits="userSpaceOnUse" cx="100" cy="90" r="88">
+          <stop offset="0%" stopColor="#93c5fd" />
+          <stop offset="100%" stopColor="#1e40af" />
         </radialGradient>
+        <radialGradient id="lotus-glow" gradientUnits="userSpaceOnUse" cx="100" cy="88" r="52">
+          <stop offset="0%" stopColor="#bae6fd" stopOpacity="0.85" />
+          <stop offset="100%" stopColor="#bae6fd" stopOpacity="0" />
+        </radialGradient>
+        <linearGradient id="water-fill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.55" />
+          <stop offset="100%" stopColor="#0ea5e9" stopOpacity="0.12" />
+        </linearGradient>
       </defs>
 
-      <circle cx="100" cy="100" r="46" fill="url(#lotus-glow)" />
+      {/* alone di luce */}
+      <circle cx="100" cy="88" r="52" fill="url(#lotus-glow)" />
 
-      {/* Fiore della vita: geometria sacra di base */}
-      <g fill="none" stroke="#f59e0b" strokeOpacity="0.26" strokeWidth="1">
-        <circle cx="100" cy="100" r="44" />
-        {lifeCircles.map((c, i) => (
-          <circle key={`life-${i}`} cx={c.x} cy={c.y} r="44" />
-        ))}
+      {/* stelle */}
+      {sparkles.map((p, i) => (
+        <g key={`spark-${i}`} transform={`translate(${p.x} ${p.y}) scale(${p.s})`}>
+          <path
+            d="M 0 -6 L 1.6 -1.6 L 6 0 L 1.6 1.6 L 0 6 L -1.6 1.6 L -6 0 L -1.6 -1.6 Z"
+            fill="#e0f2fe"
+          />
+        </g>
+      ))}
+
+      {/* acqua */}
+      <g fill="url(#water-fill)">
+        <ellipse cx="100" cy="164" rx="80" ry="15" />
+        <ellipse cx="100" cy="174" rx="62" ry="11" opacity="0.7" />
+        <ellipse cx="100" cy="183" rx="44" ry="8" opacity="0.55" />
+      </g>
+      <g fill="none" stroke="#7dd3fc" strokeOpacity="0.5" strokeWidth="1">
+        <ellipse cx="100" cy="162" rx="72" ry="13" />
+        <ellipse cx="100" cy="172" rx="54" ry="9" />
       </g>
 
-      <circle cx="100" cy="100" r="88" fill="none" stroke="#f59e0b" strokeOpacity="0.6" strokeWidth="1.5" />
-      <circle cx="100" cy="100" r="70" fill="none" stroke="#e249b3" strokeOpacity="0.4" strokeWidth="1" strokeDasharray="3 5" />
-
-      {outerPetals.map((a) => (
+      {/* petali posteriori */}
+      {backPetals.map((a) => (
         <path
-          key={`outer-${a}`}
-          d="M 0 8 C -16 4 -19 -26 -8 -54 C -3 -62 3 -62 8 -54 C 19 -26 16 4 0 8 Z"
-          fill="url(#lotus-petal)"
-          stroke="#f7c948"
+          key={`back-${a}`}
+          d="M 0 12 C -18 6 -26 -32 -10 -66 C -4 -76 4 -76 10 -66 C 26 -32 18 6 0 12 Z"
+          fill="url(#lotus-back)"
+          stroke="#bfdbfe"
           strokeOpacity="0.35"
           strokeWidth="0.8"
-          transform={`translate(100 100) rotate(${a})`}
+          transform={`translate(100 92) rotate(${a})`}
         />
       ))}
 
-      {innerPetals.map((a) => (
+      {/* petali frontali */}
+      {frontPetals.map((a) => (
         <path
-          key={`inner-${a}`}
-          d="M 0 6 C -11 3 -13 -18 -6 -40 C -2 -46 2 -46 6 -40 C 13 -18 11 3 0 6 Z"
+          key={`front-${a}`}
+          d="M 0 10 C -14 5 -18 -24 -8 -50 C -3 -57 3 -57 8 -50 C 18 -24 14 5 0 10 Z"
           fill="url(#lotus-petal)"
-          opacity="0.95"
-          transform={`translate(100 100) rotate(${a})`}
+          stroke="#e0f2fe"
+          strokeOpacity="0.4"
+          strokeWidth="0.7"
+          transform={`translate(100 94) rotate(${a})`}
         />
       ))}
 
-      <circle cx="100" cy="100" r="15" fill="#4c1d95" />
-      <circle cx="100" cy="100" r="15" fill="none" stroke="#f7c948" strokeOpacity="0.7" strokeWidth="1" />
-      {seedDots.map((d, i) => (
-        <circle key={`seed-${i}`} cx={d.x} cy={d.y} r="2.2" fill="#f7c948" />
+      {/* cuore luminoso del fiore */}
+      <circle cx="100" cy="90" r="13" fill="#e0f2fe" opacity="0.9" />
+      <circle cx="100" cy="90" r="13" fill="none" stroke="#38bdf8" strokeOpacity="0.8" strokeWidth="1" />
+      {seeds.map((d, i) => (
+        <circle key={`seed-${i}`} cx={d.x} cy={d.y} r="1.8" fill="#facc15" />
       ))}
-      <circle cx="100" cy="100" r="3" fill="#fde68a" />
+      <circle cx="100" cy="90" r="3" fill="#ffffff" />
     </svg>
   );
 }
@@ -185,7 +212,7 @@ export function Sphere(props: SphereProps) {
 
       {available === true ? <RiveSphere {...props} /> : <FallbackSphere {...props} />}
 
-      {/* Fiore di loto a geometria sacra, in sincrono col respiro */}
+      {/* Fiore di loto blu sull'acqua, in sincrono col respiro */}
       <motion.div
         className="lotus-rig"
         initial={false}

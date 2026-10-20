@@ -237,13 +237,17 @@ body {
 .sacred-lotus {
   width: 78%;
   height: 78%;
-  filter: drop-shadow(0 0 10px rgba(244, 114, 182, 0.55));
-  animation: lotusSpin 70s linear infinite;
+  filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.5));
+  animation: lotusFloat 6s ease-in-out infinite;
 }
 
-@keyframes lotusSpin {
-  to {
-    transform: rotate(360deg);
+@keyframes lotusFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
   }
 }
 
