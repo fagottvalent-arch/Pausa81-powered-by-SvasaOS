@@ -45,101 +45,120 @@ export function SvasaLogo() {
   );
 }
 
-/** Fiore di loto blu che galleggia sull'acqua, in stile zen. */
+/** Fiore di loto azzurro di profilo, con stelle che sprizzano dal centro. */
 function SacredLotus() {
-  const backPetals = Array.from({ length: 8 }, (_, i) => i * 45);
-  const frontPetals = Array.from({ length: 8 }, (_, i) => i * 45 + 22.5);
-  const sparkles = [
-    { x: 40, y: 42, s: 1 },
-    { x: 160, y: 36, s: 0.85 },
-    { x: 156, y: 120, s: 0.7 },
-    { x: 44, y: 126, s: 0.65 },
-    { x: 102, y: 24, s: 0.9 },
-  ];
-  const seeds = Array.from({ length: 8 }, (_, i) => {
-    const a = (i * 45 * Math.PI) / 180;
-    return { x: 100 + Math.cos(a) * 6, y: 90 + Math.sin(a) * 6 };
+  const backAngles = [-60, 60];
+  const sideAngles = [-30, 30];
+  const rays = Array.from({ length: 9 }, (_, i) => {
+    const a = ((-160 + i * 17.5) * Math.PI) / 180;
+    return {
+      x1: 100 + Math.cos(a) * 14,
+      y1: 142 + Math.sin(a) * 14,
+      x2: 100 + Math.cos(a) * 50,
+      y2: 142 + Math.sin(a) * 50,
+    };
+  });
+  const sparkles = Array.from({ length: 9 }, (_, i) => {
+    const a = ((-160 + i * 17.5) * Math.PI) / 180;
+    const r = 44 + (i % 3) * 15;
+    return {
+      x: 100 + Math.cos(a) * r,
+      y: 142 + Math.sin(a) * r,
+      s: 1.15 - (i % 3) * 0.3,
+    };
   });
 
   return (
     <svg className="sacred-lotus" viewBox="0 0 200 200" aria-hidden="true">
       <defs>
-        <radialGradient id="lotus-petal" gradientUnits="userSpaceOnUse" cx="100" cy="90" r="74">
+        <radialGradient id="lotus-petal" gradientUnits="userSpaceOnUse" cx="100" cy="130" r="88">
           <stop offset="0%" stopColor="#f0f9ff" />
-          <stop offset="40%" stopColor="#7dd3fc" />
-          <stop offset="100%" stopColor="#1d4ed8" />
+          <stop offset="45%" stopColor="#bae6fd" />
+          <stop offset="100%" stopColor="#7dd3fc" />
         </radialGradient>
-        <radialGradient id="lotus-back" gradientUnits="userSpaceOnUse" cx="100" cy="90" r="88">
-          <stop offset="0%" stopColor="#93c5fd" />
-          <stop offset="100%" stopColor="#1e40af" />
+        <radialGradient id="lotus-back" gradientUnits="userSpaceOnUse" cx="100" cy="130" r="96">
+          <stop offset="0%" stopColor="#e0f2fe" />
+          <stop offset="60%" stopColor="#7dd3fc" />
+          <stop offset="100%" stopColor="#38bdf8" />
         </radialGradient>
-        <radialGradient id="lotus-glow" gradientUnits="userSpaceOnUse" cx="100" cy="88" r="52">
-          <stop offset="0%" stopColor="#bae6fd" stopOpacity="0.85" />
-          <stop offset="100%" stopColor="#bae6fd" stopOpacity="0" />
+        <radialGradient id="lotus-glow" gradientUnits="userSpaceOnUse" cx="100" cy="140" r="58">
+          <stop offset="0%" stopColor="#e0f2fe" stopOpacity="0.9" />
+          <stop offset="100%" stopColor="#e0f2fe" stopOpacity="0" />
         </radialGradient>
         <linearGradient id="water-fill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.55" />
-          <stop offset="100%" stopColor="#0ea5e9" stopOpacity="0.12" />
+          <stop offset="0%" stopColor="#7dd3fc" stopOpacity="0.5" />
+          <stop offset="100%" stopColor="#bae6fd" stopOpacity="0.1" />
         </linearGradient>
       </defs>
 
       {/* alone di luce */}
-      <circle cx="100" cy="88" r="52" fill="url(#lotus-glow)" />
+      <circle cx="100" cy="140" r="58" fill="url(#lotus-glow)" />
 
-      {/* stelle */}
+      {/* acqua */}
+      <g fill="url(#water-fill)">
+        <ellipse cx="100" cy="160" rx="84" ry="14" />
+        <ellipse cx="100" cy="172" rx="66" ry="10" opacity="0.7" />
+        <ellipse cx="100" cy="182" rx="46" ry="7" opacity="0.55" />
+      </g>
+      <g fill="none" stroke="#7dd3fc" strokeOpacity="0.5" strokeWidth="1">
+        <ellipse cx="100" cy="158" rx="76" ry="12" />
+        <ellipse cx="100" cy="170" rx="58" ry="9" />
+      </g>
+
+      {/* petali posteriori (profilo) */}
+      {backAngles.map((a) => (
+        <path
+          key={`back-${a}`}
+          d="M 0 0 C -24 -3 -30 -48 -3 -76 C -1 -80 1 -80 3 -76 C 30 -48 24 -3 0 0 Z"
+          fill="url(#lotus-back)"
+          transform={`translate(100 150) rotate(${a})`}
+        />
+      ))}
+
+      {/* petali laterali (profilo) */}
+      {sideAngles.map((a) => (
+        <path
+          key={`side-${a}`}
+          d="M 0 0 C -20 -3 -26 -44 -2 -72 C -1 -75 1 -75 2 -72 C 26 -44 20 -3 0 0 Z"
+          fill="url(#lotus-petal)"
+          stroke="#ffffff"
+          strokeOpacity="0.45"
+          strokeWidth="0.7"
+          transform={`translate(100 150) rotate(${a})`}
+        />
+      ))}
+
+      {/* petalo centrale (profilo) */}
+      <path
+        d="M 0 0 C -18 -2 -24 -42 -2 -70 C -1 -73 1 -73 2 -70 C 24 -42 18 -2 0 0 Z"
+        fill="url(#lotus-petal)"
+        stroke="#ffffff"
+        strokeOpacity="0.5"
+        strokeWidth="0.7"
+        transform="translate(100 150)"
+      />
+
+      {/* raggi di luce dal centro */}
+      <g stroke="#bae6fd" strokeOpacity="0.7" strokeWidth="1" strokeLinecap="round">
+        {rays.map((r, i) => (
+          <line key={`ray-${i}`} x1={r.x1} y1={r.y1} x2={r.x2} y2={r.y2} />
+        ))}
+      </g>
+
+      {/* stelle che sprizzano dal centro */}
       {sparkles.map((p, i) => (
         <g key={`spark-${i}`} transform={`translate(${p.x} ${p.y}) scale(${p.s})`}>
           <path
             d="M 0 -6 L 1.6 -1.6 L 6 0 L 1.6 1.6 L 0 6 L -1.6 1.6 L -6 0 L -1.6 -1.6 Z"
-            fill="#e0f2fe"
+            fill="#ffffff"
           />
         </g>
       ))}
 
-      {/* acqua */}
-      <g fill="url(#water-fill)">
-        <ellipse cx="100" cy="164" rx="80" ry="15" />
-        <ellipse cx="100" cy="174" rx="62" ry="11" opacity="0.7" />
-        <ellipse cx="100" cy="183" rx="44" ry="8" opacity="0.55" />
-      </g>
-      <g fill="none" stroke="#7dd3fc" strokeOpacity="0.5" strokeWidth="1">
-        <ellipse cx="100" cy="162" rx="72" ry="13" />
-        <ellipse cx="100" cy="172" rx="54" ry="9" />
-      </g>
-
-      {/* petali posteriori */}
-      {backPetals.map((a) => (
-        <path
-          key={`back-${a}`}
-          d="M 0 12 C -18 6 -26 -32 -10 -66 C -4 -76 4 -76 10 -66 C 26 -32 18 6 0 12 Z"
-          fill="url(#lotus-back)"
-          stroke="#bfdbfe"
-          strokeOpacity="0.35"
-          strokeWidth="0.8"
-          transform={`translate(100 92) rotate(${a})`}
-        />
-      ))}
-
-      {/* petali frontali */}
-      {frontPetals.map((a) => (
-        <path
-          key={`front-${a}`}
-          d="M 0 10 C -14 5 -18 -24 -8 -50 C -3 -57 3 -57 8 -50 C 18 -24 14 5 0 10 Z"
-          fill="url(#lotus-petal)"
-          stroke="#e0f2fe"
-          strokeOpacity="0.4"
-          strokeWidth="0.7"
-          transform={`translate(100 94) rotate(${a})`}
-        />
-      ))}
-
       {/* cuore luminoso del fiore */}
-      <circle cx="100" cy="90" r="13" fill="#e0f2fe" opacity="0.9" />
-      <circle cx="100" cy="90" r="13" fill="none" stroke="#38bdf8" strokeOpacity="0.8" strokeWidth="1" />
-      {seeds.map((d, i) => (
-        <circle key={`seed-${i}`} cx={d.x} cy={d.y} r="1.8" fill="#facc15" />
-      ))}
-      <circle cx="100" cy="90" r="3" fill="#ffffff" />
+      <circle cx="100" cy="142" r="8" fill="#ffffff" opacity="0.95" />
+      <circle cx="100" cy="142" r="8" fill="none" stroke="#38bdf8" strokeOpacity="0.7" strokeWidth="1" />
+      <circle cx="100" cy="142" r="2.5" fill="#facc15" />
     </svg>
   );
 }
@@ -212,7 +231,7 @@ export function Sphere(props: SphereProps) {
 
       {available === true ? <RiveSphere {...props} /> : <FallbackSphere {...props} />}
 
-      {/* Fiore di loto blu sull'acqua, in sincrono col respiro */}
+      {/* Fiore di loto azzurro di profilo, in sincrono col respiro */}
       <motion.div
         className="lotus-rig"
         initial={false}
