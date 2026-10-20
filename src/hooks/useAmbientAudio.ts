@@ -32,6 +32,10 @@ export function useAmbientAudio() {
 
   const [enabled, setEnabled] = useState(true);
   const enabledRef = useRef(enabled);
+  const playingRef = useRef(false);
+  const hiddenRef = useRef(false);
+  const lastPhaseRef = useRef<Phase>('idle');
+  const lastDurationRef = useRef(0);
 
   const setEnabledSafe = useCallback((next: boolean) => {
     enabledRef.current = next;
@@ -105,19 +109,24 @@ export function useAmbientAudio() {
 
   const play = useCallback(() => {
     const ctx = ensureSource();
-    if (ctx && ctx.state === 'suspended') {
+    if (ctx && ctx.state === 'suspended' && !hiddenRef.current) {
       void ctx.resume();
     }
+    playingRef.current = true;
     fadeTo(BASE_VOLUME);
   }, [ensureSource, fadeTo]);
 
   const pause = useCallback(() => {
+    playingRef.current = false;
     fadeTo(0);
   }, [fadeTo]);
 
   /** Chiamato a ogni cambio fase: modella il rumore come un respiro. */
   const breathe = useCallback(
     (phase: Phase, duration: number) => {
+      lastPhaseRef.current = phase;
+      lastDurationRef.current = duration;
+
       if (!enabledRef.current) return;
 
       const gainNode = gainRef.current;
@@ -133,6 +142,53 @@ export function useAmbientAudio() {
   const toggle = useCallback(() => {
     setEnabledSafe(!enabledRef.current);
   }, [setEnabledSafe]);
+
+  // Ferma l'audio quando l'app va in background o viene chiusa (PWA).
+  useEffect(() => {
+    const suspend = () => {
+      hiddenRef.current = true;
+      const ctx = ctxRef.current;
+      if (ctx && ctx.state === 'running') {
+        void ctx.suspend();
+      }
+    };
+
+    const resume = () => {
+      hiddenRef.current = false;
+      if (!playingRef.current) return;
+      const ctx = ctxRef.current;
+      if (ctx && ctx.state === 'suspended') {
+        void ctx.resume();
+      }
+      const gainNode = gainRef.current;
+      const filter = filterRef.current;
+      if (!gainNode || !filter) return;
+      const phase = lastPhaseRef.current;
+      const duration = lastDurationRef.current;
+      rampParam(gainNode.gain, PHASE_GAIN[phase] ?? 0, duration);
+      rampParam(filter.frequency, PHASE_FILTER[phase] ?? 800, duration);
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        suspend();
+      } else {
+        resume();
+      }
+    };
+
+    document.addEventListener('visibilitychange', onVisibility);
+    document.addEventListener('freeze', suspend);
+    document.addEventListener('resume', resume);
+    window.addEventListener('pagehide', suspend);
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      document.removeEventListener('freeze', suspend);
+      document.removeEventListener('resume', resume);
+      window.removeEventListener('pagehide', suspend);
+    };
+  }, [rampParam]);
 
   useEffect(() => {
     return () => {
