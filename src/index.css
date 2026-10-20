@@ -8,7 +8,420 @@ body,
 
 body {
   margin: 0;
-  background: #ffffff;
-  -webkit-tap-highlight-color: transparent;
+  overflow: hidden;
+  color: #334155;
+  background: linear-gradient(180deg, #e7f0f8 0%, #f3f8fb 55%, #ffffff 100%);
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.app {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.app-main {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.75rem;
+}
+
+/* Sfondo nuvole */
+.cloud-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.cloud-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  will-change: transform;
+}
+
+.cloud-svg--back {
+  animation: cloudDriftBack 46s ease-in-out infinite;
+}
+
+.cloud-svg--front {
+  animation: cloudDriftFront 30s ease-in-out infinite;
+}
+
+@keyframes cloudDriftBack {
+  0%,
+  100% {
+    transform: scale(1.6) translate3d(0, 0, 0);
+  }
+  50% {
+    transform: scale(1.6) translate3d(-3.5%, 2.5%, 0);
+  }
+}
+
+@keyframes cloudDriftFront {
+  0%,
+  100% {
+    transform: scale(1.6) translate3d(0, 0, 0);
+  }
+  50% {
+    transform: scale(1.6) translate3d(3.5%, -2.5%, 0);
+  }
+}
+
+.cloud-blob {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0) 70%);
+  filter: blur(14px);
+  animation: float 30s ease-in-out infinite;
+  will-change: transform;
+}
+
+.cloud-blob--1 {
+  width: 60vmax;
+  height: 60vmax;
+  top: -22vmax;
+  left: -18vmax;
+}
+
+.cloud-blob--2 {
+  width: 50vmax;
+  height: 50vmax;
+  bottom: -18vmax;
+  right: -14vmax;
+  animation-delay: -15s;
+}
+
+.cloud-blob--3 {
+  width: 44vmax;
+  height: 44vmax;
+  top: 42%;
+  left: 58%;
+  animation-delay: -7s;
+  animation-duration: 38s;
+}
+
+@keyframes float {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(48px, -36px, 0) scale(1.08);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+/* Sfera */
+.sphere-wrap {
+  position: relative;
+  width: min(300px, 72vw);
+  height: min(300px, 72vw);
+}
+
+.sphere-halo {
+  position: absolute;
+  inset: -22%;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    #ff5f6d,
+    #ffc371,
+    #ffd86f,
+    #6ee7b7,
+    #4cc9f0,
+    #a06cd5,
+    #ff5f6d
+  );
+  filter: blur(44px);
+  opacity: 0.6;
+  animation: haloShift 16s linear infinite;
+  z-index: 0;
+}
+
+.sphere {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+  will-change: transform;
+  background: radial-gradient(
+    circle at 50% 40%,
+    rgba(255, 255, 255, 0.92) 0%,
+    rgba(255, 255, 255, 0.55) 70%,
+    rgba(255, 255, 255, 0.4) 100%
+  );
+  box-shadow:
+    0 0 60px rgba(255, 120, 160, 0.5),
+    0 0 130px rgba(140, 190, 255, 0.4),
+    inset -28px -28px 70px rgba(40, 20, 90, 0.35),
+    inset 26px 26px 70px rgba(255, 255, 255, 0.35);
+}
+
+/* Gradiente arcobaleno che cambia tonalità ("morphing") */
+.sphere-gradient {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  opacity: 0.35;
+  background: conic-gradient(
+    from 0deg,
+    #ff5f6d,
+    #ffc371,
+    #ffd86f,
+    #6ee7b7,
+    #4cc9f0,
+    #a06cd5,
+    #ff5f6d
+  );
+  animation: hueShift 12s linear infinite;
+}
+
+/* Riflesso in movimento per l'effetto sfera */
+.sphere-sheen {
+  position: absolute;
+  inset: -45%;
+  background: conic-gradient(
+    from 0deg,
+    rgba(255, 255, 255, 0.55),
+    rgba(255, 255, 255, 0) 24%,
+    rgba(255, 255, 255, 0) 48%,
+    rgba(20, 20, 60, 0.35) 72%,
+    rgba(255, 255, 255, 0.55)
+  );
+  animation: spin 9s linear infinite;
+}
+
+/* Luce speculare 3D (resta bianca) */
+.sphere::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 30% 26%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0) 40%),
+    radial-gradient(circle at 78% 82%, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0) 55%);
+}
+
+.sphere-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+/* Logo SvasaOS (8 ellissi arcobaleno) dentro la sfera */
+.svasa-logo-rig {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.svasa-wordmark {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: clamp(1.7rem, 6.5vw, 2.3rem);
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  line-height: 1;
+  white-space: nowrap;
+  background: linear-gradient(
+    90deg,
+    #ff5f6d,
+    #ffc371,
+    #ffd86f,
+    #6ee7b7,
+    #4cc9f0,
+    #a06cd5,
+    #ff5f6d
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation:
+    wordmarkFlow 8s linear infinite,
+    logoFloat 6s ease-in-out infinite;
+  will-change: transform, background-position;
+}
+
+@keyframes wordmarkFlow {
+  to {
+    background-position: 200% center;
+  }
+}
+
+@keyframes logoFloat {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -7px, 0);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes hueShift {
+  from {
+    filter: hue-rotate(0deg);
+  }
+  to {
+    filter: hue-rotate(360deg);
+  }
+}
+
+@keyframes haloShift {
+  from {
+    filter: blur(44px) hue-rotate(0deg);
+  }
+  to {
+    filter: blur(44px) hue-rotate(360deg);
+  }
+}
+
+/* Stato */
+.status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 120px;
+}
+
+.phase-text {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+
+.countdown {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.countdown-number {
+  font-size: 3rem;
+  font-weight: 200;
+  line-height: 1;
+  color: #64748b;
+}
+
+.countdown-label {
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+}
+
+/* Controlli */
+.controls {
+  display: flex;
+  gap: 1rem;
+}
+
+.btn {
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  padding: 0.8rem 1.9rem;
+  border-radius: 999px;
+  transition: background 0.25s ease, box-shadow 0.25s ease;
+  will-change: transform;
+}
+
+.btn-primary {
+  color: #fff;
+  background: #4f46e5;
+  box-shadow: 0 10px 26px rgba(79, 70, 229, 0.35);
+}
+
+.btn-primary:hover {
+  background: #4338ca;
+}
+
+.btn-secondary {
+  color: #334155;
+  background: #e2e8f0;
+}
+
+.btn-secondary:hover {
+  background: #cbd5e1;
+}
+
+.btn-ghost {
+  color: #64748b;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px #cbd5e1;
+}
+
+.btn-ghost:hover {
+  background: #f1f5f9;
+}
+
+/* Speaker */
+.sound-toggle {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  z-index: 2;
+  width: 48px;
+  height: 48px;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #475569;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 16px rgba(100, 116, 139, 0.18);
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.sound-toggle.active {
+  color: #4f46e5;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+/* Stato PWA */
+.pwa-status {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.pwa-status button {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: #64748b;
+  text-decoration: underline;
+  padding: 0;
 }

@@ -1,188 +1,146 @@
-import { useState, useEffect } from 'react'
-import { useRegisterSW } from 'virtual:pwa-register/react'
+import { useEffect } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { CloudBackground } from './components/CloudBackground';
+import { Sphere } from './components/Sphere';
+import { useBreathing, type Phase } from './hooks/useBreathing';
+import { useAmbientAudio } from './hooks/useAmbientAudio';
 
-const RAINBOW = [
-  '#FF0000',
-  '#FF7F00',
-  '#FFFF00',
-  '#00FF00',
-  '#0000FF',
-  '#4B0082',
-  '#8B00FF',
-  '#FF1493',
-]
+const PHASE_LABELS: Record<Phase, string> = {
+  idle: 'Pronto a respirare?',
+  inspire: 'Inspira',
+  hold: 'Trattieni',
+  expire: 'Espira',
+};
 
-type Phase = {
-  name: string
-  anim: 'breatheIn' | 'breatheOut' | null
-  baseScale: number
+function SpeakerIcon({ muted }: { muted: boolean }) {
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M11 5 6.5 9H3v6h3.5L11 19V5z" fill="currentColor" stroke="none" />
+      {muted ? (
+        <>
+          <line x1="16" y1="9" x2="22" y2="15" />
+          <line x1="22" y1="9" x2="16" y2="15" />
+        </>
+      ) : (
+        <>
+          <path d="M15.5 8.5a5 5 0 0 1 0 7" />
+          <path d="M18.5 5.5a9 9 0 0 1 0 13" />
+        </>
+      )}
+    </svg>
+  );
 }
 
-const PHASES: Phase[] = [
-  { name: 'Inspira', anim: 'breatheIn', baseScale: 0.6 },
-  { name: 'Trattieni', anim: null, baseScale: 1.0 },
-  { name: 'Espira', anim: 'breatheOut', baseScale: 1.0 },
-  { name: 'Trattieni', anim: null, baseScale: 0.6 },
-]
-
-const CYCLE = 20 // 4 fasi × 5s
-const TOTAL = 60 // 3 cicli
-
 export default function App() {
-  const { offlineReady, needRefresh, updateServiceWorker } = useRegisterSW()
-  const [elapsed, setElapsed] = useState(0)
-  const [running, setRunning] = useState(false)
-  const [resetKey, setResetKey] = useState(0)
+  const { status, phase, breath, secondsLeft, duration, start, reset } = useBreathing();
+  const { enabled, toggle, play, pause, breathe } = useAmbientAudio();
 
-  // Countdown: dipende solo da `running` (niente re-creazione ogni secondo).
-  useEffect(() => {
-    if (!running) return
-    const t = setInterval(() => setElapsed((e) => Math.min(e + 1, TOTAL)), 1000)
-    return () => clearInterval(t)
-  }, [running])
-
-  // Ferma il timer a fine sessione.
-  useEffect(() => {
-    if (elapsed >= TOTAL) setRunning(false)
-  }, [elapsed])
-
-  const cycleTime = elapsed % CYCLE
-  const phaseIdx = Math.floor(cycleTime / 5)
-  const phase = PHASES[phaseIdx]
-  const phaseRemaining = 5 - (cycleTime % 5)
-  const cycleNum = Math.min(Math.floor(elapsed / CYCLE) + 1, 3)
-  const isDone = elapsed >= TOTAL
+  const handleStart = () => {
+    play();
+    start();
+  };
 
   const handleReset = () => {
-    setRunning(false)
-    setElapsed(0)
-    setResetKey((k) => k + 1) // riavvia rotazione + respiro da capo
-  }
+    pause();
+    reset();
+  };
+
+  // Sincronizza l'audio (respiro) con le fasi e l'interruttore.
+  useEffect(() => {
+    if (status === 'running' && enabled) {
+      play();
+      breathe(phase, duration);
+    } else {
+      pause();
+    }
+  }, [status, enabled, phase, duration, play, pause, breathe]);
 
   return (
-    <div className="flex h-screen flex-col items-center justify-center gap-8 overflow-hidden bg-white">
-      {/* Rotazione continua (smooth) sul wrapper esterno; respiro (scala) sull'elemento interno.
-          Entrambe pausabili tramite animation-play-state. */}
-      <div
-        key={resetKey}
-        className="relative"
-        style={{
-          width: '280px',
-          height: '280px',
-          animation: 'spin 60s linear infinite',
-          animationPlayState: running ? 'running' : 'paused',
-        }}
+    <div className="app">
+      <CloudBackground />
+
+      <button
+        type="button"
+        className={`sound-toggle${enabled ? ' active' : ''}`}
+        onClick={toggle}
+        aria-label={enabled ? 'Disattiva audio' : 'Attiva audio'}
+        aria-pressed={enabled}
       >
-        <div
-          className="h-full w-full"
-          style={{
-            transform: `scale(${phase.baseScale})`,
-            animation: phase.anim ? `${phase.anim} 5s ease-in-out forwards` : 'none',
-            animationPlayState: running ? 'running' : 'paused',
-          }}
-        >
-          <svg viewBox="0 0 200 200" className="h-full w-full" aria-hidden="true">
-            {RAINBOW.map((color, i) => (
-              <ellipse
-                key={i}
-                cx="100"
-                cy="100"
-                rx="80"
-                ry="35"
-                fill="none"
-                stroke={color}
-                strokeWidth="3.5"
-                strokeLinecap="round"
-                opacity="0.85"
-                transform={`rotate(${i * 22.5} 100 100)`}
-                style={{ filter: `drop-shadow(0 0 6px ${color}55)` }}
-              />
-            ))}
-          </svg>
-        </div>
-      </div>
+        <SpeakerIcon muted={!enabled} />
+      </button>
 
-      <div className="text-center">
-        {isDone ? (
-          <p className="animate-pulse text-4xl font-light text-gray-700">Namaste 🙏</p>
-        ) : (
-          <>
-            <p
-              key={phaseIdx}
-              className="mb-2 text-3xl font-semibold text-gray-800"
-              style={{ animation: 'fadeIn 0.8s ease-in-out' }}
+      <main className="app-main">
+        <Sphere phase={phase} breath={breath} />
+
+        <div className="status">
+          <AnimatePresence mode="wait">
+            <motion.p
+              key={phase}
+              className="phase-text"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.35, ease: 'easeOut' }}
             >
-              {phase.name}
-            </p>
-            <p className="text-5xl font-light text-gray-600">{phaseRemaining}</p>
-            <p className="mt-2 text-sm text-gray-400">Ciclo {cycleNum} di 3</p>
-          </>
-        )}
-      </div>
+              {PHASE_LABELS[phase]}
+            </motion.p>
+          </AnimatePresence>
 
-      <div className="flex gap-4">
-        {isDone ? (
-          <button
-            onClick={handleReset}
-            className="rounded-full bg-gray-800 px-6 py-3 text-white transition hover:bg-gray-700"
-          >
-            Ricomincia
-          </button>
-        ) : !running ? (
-          <button
-            onClick={() => setRunning(true)}
-            className="rounded-full bg-gray-800 px-6 py-3 text-white transition hover:bg-gray-700"
-          >
-            {elapsed === 0 ? 'Inizia' : 'Riprendi'}
-          </button>
-        ) : (
-          <button
-            onClick={() => setRunning(false)}
-            className="rounded-full bg-gray-300 px-6 py-3 text-gray-700 transition hover:bg-gray-400"
-          >
-            Pausa
-          </button>
-        )}
-        {!isDone && (
-          <button
-            onClick={handleReset}
-            className="rounded-full bg-gray-200 px-6 py-3 text-gray-600 transition hover:bg-gray-300"
-          >
-            Reset
-          </button>
-        )}
-      </div>
-
-      {(offlineReady || needRefresh) && (
-        <div className="text-xs text-gray-400">
-          {needRefresh ? (
-            <button onClick={() => updateServiceWorker(true)} className="underline hover:text-gray-600">
-              Nuova versione disponibile — aggiorna
-            </button>
-          ) : (
-            <span>Disponibile offline ✓</span>
+          {status === 'running' && (
+            <motion.div
+              className="countdown"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: 'easeOut' }}
+            >
+              <motion.span
+                key={secondsLeft}
+                className="countdown-number"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25, ease: 'easeOut' }}
+              >
+                {secondsLeft}
+              </motion.span>
+              <span className="countdown-label">secondi</span>
+            </motion.div>
           )}
         </div>
-      )}
 
-      <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to   { transform: rotate(360deg); }
-        }
-        @keyframes breatheIn {
-          from { transform: scale(0.6); }
-          to   { transform: scale(1); }
-        }
-        @keyframes breatheOut {
-          from { transform: scale(1); }
-          to   { transform: scale(0.6); }
-        }
-      `}</style>
+        <div className="controls">
+          {status === 'idle' ? (
+            <motion.button
+              type="button"
+              className="btn btn-primary"
+              whileTap={{ scale: 0.95 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+              onClick={handleStart}
+            >
+              Inizia
+            </motion.button>
+          ) : (
+            <motion.button
+              type="button"
+              className="btn btn-secondary"
+              whileTap={{ scale: 0.95 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+              onClick={handleReset}
+            >
+              Reset
+            </motion.button>
+          )}
+        </div>
+      </main>
     </div>
-  )
+  );
 }

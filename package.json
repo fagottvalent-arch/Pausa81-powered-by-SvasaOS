@@ -10,6 +10,8 @@
     "icons": "node scripts/generate-icons.mjs"
   },
   "dependencies": {
+    "@rive-app/react-canvas": "^4.37.0",
+    "framer-motion": "^14.4.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
