@@ -10,6 +10,7 @@ const PHASE_GAIN: Record<Phase, number> = {
   inspire: 0.16,
   hold: 0.03,
   expire: 0.13,
+  pause: 0.01,
 };
 
 // Frequenza del filtro low-pass: inspiro "luminoso", espiro "cupo".
@@ -18,6 +19,7 @@ const PHASE_FILTER: Record<Phase, number> = {
   inspire: 1600,
   hold: 700,
   expire: 600,
+  pause: 700,
 };
 
 /**

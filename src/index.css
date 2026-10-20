@@ -222,8 +222,8 @@ body {
   height: 100%;
 }
 
-/* Logo SvasaOS (8 ellissi arcobaleno) dentro la sfera */
-.svasa-logo-rig {
+/* Fiore di loto a geometria sacra dentro la sfera */
+.lotus-rig {
   position: absolute;
   inset: 0;
   z-index: 2;
@@ -234,9 +234,22 @@ body {
   will-change: transform;
 }
 
+.sacred-lotus {
+  width: 78%;
+  height: 78%;
+  filter: drop-shadow(0 0 10px rgba(244, 114, 182, 0.55));
+  animation: lotusSpin 70s linear infinite;
+}
+
+@keyframes lotusSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .svasa-wordmark {
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  font-size: clamp(1.7rem, 6.5vw, 2.3rem);
+  font-size: clamp(1.15rem, 4.5vw, 1.6rem);
   font-weight: 800;
   letter-spacing: 0.03em;
   line-height: 1;
@@ -327,16 +340,32 @@ body {
 }
 
 .countdown-number {
-  font-size: 3rem;
-  font-weight: 200;
+  font-size: 4rem;
+  font-weight: 500;
   line-height: 1;
-  color: #64748b;
+  color: #4f46e5;
 }
 
 .countdown-label {
   font-size: 0.8rem;
   letter-spacing: 0.05em;
   color: #94a3b8;
+}
+
+.tick-bar {
+  width: 72px;
+  height: 3px;
+  margin-top: 0.4rem;
+  border-radius: 999px;
+  background: rgba(100, 116, 139, 0.18);
+  overflow: hidden;
+}
+
+.tick-bar-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #4f46e5, #c026d3);
+  transition: width 0.1s linear;
 }
 
 /* Controlli */
@@ -383,6 +412,12 @@ body {
 
 .btn-ghost:hover {
   background: #f1f5f9;
+}
+
+/* Brand sotto i controlli */
+.brand {
+  margin-top: -1rem;
+  opacity: 0.9;
 }
 
 /* Speaker */

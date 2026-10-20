@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CloudBackground } from './components/CloudBackground';
-import { Sphere } from './components/Sphere';
+import { Sphere, SvasaLogo } from './components/Sphere';
 import { useBreathing, type Phase } from './hooks/useBreathing';
 import { useAmbientAudio } from './hooks/useAmbientAudio';
 
@@ -10,6 +10,7 @@ const PHASE_LABELS: Record<Phase, string> = {
   inspire: 'Inspira',
   hold: 'Trattieni',
   expire: 'Espira',
+  pause: 'Pausa',
 };
 
 function SpeakerIcon({ muted }: { muted: boolean }) {
@@ -42,7 +43,7 @@ function SpeakerIcon({ muted }: { muted: boolean }) {
 }
 
 export default function App() {
-  const { status, phase, breath, secondsLeft, duration, start, reset } = useBreathing();
+  const { status, phase, breath, secondsLeft, secondProgress, duration, start, reset } = useBreathing();
   const { enabled, toggle, play, pause, breathe } = useAmbientAudio();
 
   const handleStart = () => {
@@ -106,13 +107,16 @@ export default function App() {
               <motion.span
                 key={secondsLeft}
                 className="countdown-number"
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.25, ease: 'easeOut' }}
+                initial={{ opacity: 0, y: 10, scale: 1.2 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.3, ease: 'easeOut' }}
               >
                 {secondsLeft}
               </motion.span>
               <span className="countdown-label">secondi</span>
+              <div className="tick-bar" aria-hidden="true">
+                <div className="tick-bar-fill" style={{ width: `${secondProgress * 100}%` }} />
+              </div>
             </motion.div>
           )}
         </div>
@@ -139,6 +143,10 @@ export default function App() {
               Reset
             </motion.button>
           )}
+        </div>
+
+        <div className="brand">
+          <SvasaLogo />
         </div>
       </main>
     </div>

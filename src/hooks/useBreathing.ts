@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-export type Phase = 'idle' | 'inspire' | 'hold' | 'expire';
+export type Phase = 'idle' | 'inspire' | 'hold' | 'expire' | 'pause';
 export type Status = 'idle' | 'running';
 
 interface Step {
@@ -11,12 +11,16 @@ interface Step {
   breath: number;
 }
 
-// Ciclo Sama Vritti (box breathing): 5 - 5 - 5 - 5.
+// Ciclo Sama Vritti (box breathing): 5 - 5 - 5 - 5, con 1 s di pausa tra le fasi.
 const CYCLE: Step[] = [
   { phase: 'inspire', duration: 5, breath: 1 },
+  { phase: 'pause', duration: 1, breath: 1 },
   { phase: 'hold', duration: 5, breath: 1 },
+  { phase: 'pause', duration: 1, breath: 1 },
   { phase: 'expire', duration: 5, breath: 0 },
+  { phase: 'pause', duration: 1, breath: 0 },
   { phase: 'hold', duration: 5, breath: 0 },
+  { phase: 'pause', duration: 1, breath: 0 },
 ];
 
 const CYCLE_TOTAL_MS = CYCLE.reduce((sum, step) => sum + step.duration * 1000, 0);
@@ -27,6 +31,8 @@ export interface BreathingSnapshot {
   phase: Phase;
   breath: number;
   secondsLeft: number;
+  /** Progresso del secondo corrente (0..1): serve a "scandire" il cronometro. */
+  secondProgress: number;
   /** Durata della fase corrente in secondi (0 quando in idle). */
   duration: number;
 }
@@ -36,6 +42,7 @@ const IDLE_SNAPSHOT: BreathingSnapshot = {
   phase: 'idle',
   breath: 0,
   secondsLeft: 0,
+  secondProgress: 0,
   duration: 0,
 };
 
@@ -46,11 +53,13 @@ function snapshotAt(totalElapsedMs: number): BreathingSnapshot {
     const stepMs = step.duration * 1000;
     if (cycleTime < acc + stepMs) {
       const elapsed = cycleTime - acc;
+      const remainingMs = stepMs - elapsed;
       return {
         status: 'running',
         phase: step.phase,
         breath: step.breath,
-        secondsLeft: Math.max(1, Math.ceil((stepMs - elapsed) / 1000)),
+        secondsLeft: Math.max(1, Math.ceil(remainingMs / 1000)),
+        secondProgress: 1 - ((remainingMs % 1000) / 1000),
         duration: step.duration,
       };
     }
@@ -63,6 +72,7 @@ function snapshotAt(totalElapsedMs: number): BreathingSnapshot {
     phase: last.phase,
     breath: last.breath,
     secondsLeft: 1,
+    secondProgress: 0,
     duration: last.duration,
   };
 }
