@@ -854,12 +854,9 @@ export default function App() {
                     Esente da accordi sindacali ex Art. 4 L. 300/1970 · Misura integrativa INAIL).
                   </p>
                   <div className="plaque-partner-signature">
-                    <span>Presidio fornito in partnership con: <strong>{partnerStudioName}</strong></span>
-                    <span>Tecnologia: <strong>SvasaOS Enterprise</strong></span>
-                  </div>
-                </div>
-              </div>
-
+  <span>Presidio fornito in partnership con: <strong>{partnerStudioName}</strong></span>
+  <span>Sistema: <strong>Pausa81</strong> <em>powered by SvasaOS</em></span>
+</div>
               <div className="executive-footer no-print" style={{ marginTop: '1rem' }}>
                 <button
                   type="button"
