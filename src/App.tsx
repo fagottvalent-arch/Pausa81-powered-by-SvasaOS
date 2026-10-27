@@ -167,12 +167,16 @@ function useBreathScale(phase: Phase, breath: number, phaseDuration: number) {
 
 function SvasaLogo({ partnerName }: { partnerName: string }) {
   return (
-    <span className="svasa-wordmark" aria-hidden="true">
-      SvasaOS <small className="svasa-badge-b2b">{partnerName || 'Enterprise'}</small>
-    </span>
+    <div style={{ textAlign: 'center', lineHeight: 1.2 }} aria-hidden="true">
+      <span className="svasa-wordmark">
+        Pausa81 <small className="svasa-badge-b2b">{partnerName || 'D.Lgs. 81/08'}</small>
+      </span>
+      <div style={{ fontSize: '0.68rem', color: '#64748b', marginTop: '3px', letterSpacing: '0.04em' }}>
+        powered by <strong>SvasaOS Engine</strong>
+      </div>
+    </div>
   );
 }
-
 function SacredLotus({ phase }: { phase: Phase }) {
   const openFactor =
     phase === 'inspire' || phase === 'hold'
