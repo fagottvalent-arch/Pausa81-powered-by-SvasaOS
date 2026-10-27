@@ -654,3 +654,230 @@ body {
   color: #475569;
   line-height: 1.45;
 }
+.topbar-left {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.qr-pill-btn {
+  padding: 0.48rem 0.95rem;
+  border-radius: 999px;
+  border: 1px solid #0d9488;
+  background: #f0fdfa;
+  color: #0f766e;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.qr-pill-btn:hover {
+  background: #ccfbf1;
+}
+
+.protocol-level-tag {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #0f766e;
+  text-transform: uppercase;
+  margin-bottom: 0.1rem;
+}
+
+.when-to-use-pill {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #0f766e;
+  background: rgba(204, 251, 241, 0.75);
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+}
+
+/* Modal & Targa QR Code Stampabile */
+.qr-modal {
+  background: #ffffff;
+  border-radius: 22px;
+  padding: 1.4rem;
+  max-width: 780px;
+  width: 100%;
+  max-height: 92vh;
+  overflow-y: auto;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
+}
+
+.qr-config-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  background: #f8fafc;
+  padding: 0.85rem;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.qr-config-grid label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 0.25rem;
+}
+
+.qr-config-grid input {
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  font-size: 0.82rem;
+  color: #0f172a;
+  box-sizing: border-box;
+}
+
+.printable-plaque {
+  border: 2px solid #0f172a;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #ffffff;
+  color: #0f172a;
+}
+
+.plaque-header {
+  background: #0f172a;
+  color: #ffffff;
+  padding: 0.75rem 1rem;
+  text-align: center;
+}
+
+.plaque-header span {
+  display: block;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  color: #5eead4;
+  font-weight: 700;
+}
+
+.plaque-header strong {
+  font-size: 0.88rem;
+}
+
+.plaque-company-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f0fdfa;
+  border-bottom: 1px solid #cbd5e1;
+  padding: 0.65rem 1.1rem;
+}
+
+.plaque-company-bar small {
+  font-size: 0.65rem;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.plaque-company-bar h3,
+.plaque-company-bar h4 {
+  margin: 0;
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+.plaque-body {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 1.2rem;
+  padding: 1.1rem;
+  align-items: center;
+}
+
+.plaque-qr-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  border: 2px dashed #0d9488;
+  border-radius: 12px;
+  padding: 0.65rem;
+  background: #f8fafc;
+}
+
+.qr-svg {
+  width: 140px;
+  height: 140px;
+}
+
+.plaque-qr-box span {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #0f766e;
+  margin-top: 0.35rem;
+}
+
+.plaque-qr-box small {
+  font-size: 0.65rem;
+  color: #64748b;
+}
+
+.plaque-levels h4 {
+  margin: 0 0 0.55rem;
+  font-size: 0.85rem;
+  color: #0f766e;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 0.3rem;
+}
+
+.plaque-level-item {
+  margin-bottom: 0.55rem;
+}
+
+.plaque-level-item strong {
+  font-size: 0.78rem;
+  color: #0f172a;
+}
+
+.plaque-level-item p {
+  margin: 0.1rem 0 0;
+  font-size: 0.74rem;
+  color: #475569;
+}
+
+.plaque-footer {
+  background: #f8fafc;
+  border-top: 1px solid #cbd5e1;
+  padding: 0.65rem 1.1rem;
+  font-size: 0.68rem;
+  color: #475569;
+}
+
+.plaque-footer p {
+  margin: 0 0 0.4rem;
+}
+
+.plaque-partner-signature {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: #0f172a;
+}
+
+@media print {
+  body {
+    background: #ffffff !important;
+    overflow: visible !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .modal-backdrop {
+    position: static !important;
+    background: none !important;
+    padding: 0 !important;
+  }
+  .qr-modal {
+    box-shadow: none !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+}
