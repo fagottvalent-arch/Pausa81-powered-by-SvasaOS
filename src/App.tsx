@@ -33,17 +33,17 @@ const LEVELS: LevelProtocol[] = [
     expire: 5,
     pause: 0,
     benefit:
-      'Riduce l’affaticamento della corteccia visiva (Titolo VII D.Lgs. 81/08) e riequilibra il sistema nervoso in 60 secondi.',
+      'Riduce l’affaticamento della corteccia visiva (Titolo VII D.Lgs. 81/08) e riequilibra il sistema nervoso in 6 cicli da 10 secondi.',
     prompts: {
       idle: 'Livello 1: Riposo Visivo e Coerenza (60s)',
-      inspire: 'Inspira dal naso · Distogli il fuoco dai pixel e segui il Loto',
+      inspire: 'Inspira dolcemente dal naso e rilassa lo sguardo',
       hold: 'Mantieni il respiro calmo',
-      expire: 'Espira lentamente · Rilascia mandibola, occhi e spalle',
+      expire: 'Espira lentamente, lascia scendere le spalle',
       pause: 'Pausa naturale',
     },
     voicePrompts: {
       idle: '',
-      inspire: 'Inspira dolcemente dal naso, rilassa lo sguardo',
+      inspire: 'Inspira dolcemente dal naso e rilassa lo sguardo',
       hold: 'Trattieni',
       expire: 'Espira lentamente, lascia scendere le spalle',
       pause: 'Riposa',
@@ -54,25 +54,25 @@ const LEVELS: LevelProtocol[] = [
     shortTab: 'Liv. 2 · Gambe 1h',
     levelTag: 'LIVELLO 2 · DOPO 60 MIN DI SCHERMO',
     name: 'Pompa Ematica & Gambe',
-    subtitle: 'Soleus & Sit-to-Stand 4·2·4',
+    subtitle: 'Soleus & Sit-to-Stand 4·3·5',
     whenToUse: 'Seduto/Sedia · Riattivazione circolatoria (Zero-Sudore)',
     inspire: 4,
-    hold: 2,
-    expire: 4,
+    hold: 3,
+    expire: 5,
     pause: 0,
     benefit:
-      'Riattiva il ritorno venoso dagli arti inferiori al cervello (muscolo soleo e glutei) senza sovraccaricare le ginocchia.',
+      'Riattiva il ritorno venoso dagli arti inferiori al cervello (muscolo soleo e glutei) in 5 cicli completi da 12 secondi.',
     prompts: {
       idle: 'Livello 2: Riattivazione Circolatoria Post-1h (60s)',
-      inspire: 'Inspira (4s) · Solleva i talloni da terra attivando i polpacci',
-      hold: 'Trattieni (2s) · Contrai polpacci e glutei (o sali in piedi)',
-      expire: 'Espira (4s) · Riappoggia i talloni (o siediti lentamente)',
+      inspire: 'Inspira, solleva i talloni e attiva le gambe',
+      hold: 'Trattieni, mantieni la postura',
+      expire: 'Espira, riappoggia con controllo',
       pause: 'Riposa',
     },
     voicePrompts: {
       idle: '',
       inspire: 'Inspira, solleva i talloni e attiva le gambe',
-      hold: 'Mantieni la spinta',
+      hold: 'Trattieni, mantieni la postura',
       expire: 'Espira, riappoggia con controllo',
       pause: 'Pausa',
     },
@@ -82,25 +82,25 @@ const LEVELS: LevelProtocol[] = [
     shortTab: 'Liv. 3 · Postura',
     levelTag: 'LIVELLO 3 · RIPRESA FISICA & POSTURALE',
     name: 'Sblocco Collo, Spalle & Polsi',
-    subtitle: 'Decompressione DMS 4·2·6',
+    subtitle: 'Decompressione DMS 4·3·5',
     whenToUse: 'In piedi · Pausa VDT (2h) o Fine Turno',
     inspire: 4,
-    hold: 2,
-    expire: 6,
+    hold: 3,
+    expire: 5,
     pause: 0,
     benefit:
       'Previene i Disturbi Muscolo-Scheletrici (DMS): scarica tunnel carpale, rachide cervicale (Tech-Neck) e tratto lombare.',
     prompts: {
       idle: 'Livello 3: Decompressione Fisica in Piedi (60s)',
-      inspire: 'Inspira (4s) · In piedi, ruota i palmi in fuori, apri dita e torace',
-      hold: 'Trattieni (2s) · Allunga la nuca verso l’alto e attiva i glutei',
-      expire: 'Espira (6s) · Rilascia braccia, trapezio e tensione lombare',
+      inspire: 'Inspira, apri il petto e ruota i palmi in fuori',
+      hold: 'Trattieni, mantieni la postura',
+      expire: 'Espira a lungo, sciogli collo e spalle',
       pause: 'Riposa',
     },
     voicePrompts: {
       idle: '',
-      inspire: 'Inspira, apri il petto e ruota i palmi verso l’esterno',
-      hold: 'Allunga bene la schiena',
+      inspire: 'Inspira, apri il petto e ruota i palmi in fuori',
+      hold: 'Trattieni, mantieni la postura',
       expire: 'Espira a lungo, sciogli collo e spalle',
       pause: 'Riposa',
     },
@@ -108,9 +108,7 @@ const LEVELS: LevelProtocol[] = [
 ];
 
 const SESSION_DURATION = 60;
-const VOICE_STORAGE_KEY = 'pausa81_custom_voice_v1';
 
-/** Sintetizzatore campana armonica */
 function playSoftChime(phase: Phase, enabled: boolean) {
   if (!enabled || typeof window === 'undefined') return;
   const AudioCtx =
@@ -135,7 +133,7 @@ function playSoftChime(phase: Phase, enabled: boolean) {
     osc.frequency.setValueAtTime(freqMap[phase] || 432, ctx.currentTime);
 
     gain.gain.setValueAtTime(0.001, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.05, ctx.currentTime + 0.08);
+    gain.gain.exponentialRampToValueAtTime(0.035, ctx.currentTime + 0.08);
     gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 2.0);
 
     osc.connect(gain);
@@ -144,73 +142,60 @@ function playSoftChime(phase: Phase, enabled: boolean) {
     osc.start();
     osc.stop(ctx.currentTime + 2.1);
   } catch {
-    // Ignora se audio bloccato
+    // Audio non ancora sbloccato
   }
 }
 
 /**
- * Riproduce LA TUA VOCE REALE:
- * 1) Cerca prima se hai registrato la tua voce nello Studio Integrato (salvata sul dispositivo)
- * 2) Altrimenti cerca il tuo file audio in `/audio/{levelId}_{phase}.mp3` o `/audio/{phase}.mp3` nella cartella public di GitHub
- * 3) Se non trova file registrati, usa la sintesi vocale italiana di backup.
+ * Riproduce la tua voce masterizzata:
+ * 1) Legge prima dal pacchetto unico `/pausa81_voice.json` (Base64 precaricato in memoria)
+ * 2) Altrimenti cerca `/{levelId}_{phase}.wav` in `public/`
+ * 3) Fallback su sintesi vocale se i file non sono ancora presenti
  */
-function playCoachVoice(
+function playFounderMasteredVoice(
   levelId: string,
   phase: Phase,
   fallbackText: string,
   enabled: boolean,
-  customRecordings: Record<string, string>,
+  voicePack: Record<string, string>,
   activeAudioRef: React.MutableRefObject<HTMLAudioElement | null>
 ) {
-  if (!enabled || typeof window === 'undefined') return;
+  if (!enabled || phase === 'idle' || typeof window === 'undefined') return;
 
-  // Ferma eventuale audio precedente
   if (activeAudioRef.current) {
     activeAudioRef.current.pause();
     activeAudioRef.current.currentTime = 0;
   }
 
-  const specificKey = `${levelId}_${phase}`;
-  const genericKey = phase;
+  const fileKey = `${levelId}_${phase}`;
 
-  // 1. Controlla registrazione vocale personalizzata salvata
-  const recordedDataUrl = customRecordings[specificKey] || customRecordings[genericKey];
-  if (recordedDataUrl) {
-    try {
-      const audio = new Audio(recordedDataUrl);
-      activeAudioRef.current = audio;
-      audio.play().catch(() => {});
-      return;
-    } catch {
-      // Continua sul fallback
-    }
+  // 1. Se `pausa81_voice.json` è stato caricato, riproduce istantaneamente da memoria
+  if (voicePack[fileKey]) {
+    const jsonAudio = new Audio(voicePack[fileKey]);
+    jsonAudio.volume = 0.96;
+    activeAudioRef.current = jsonAudio;
+    jsonAudio.play().catch(() => {});
+    return;
   }
 
-  // 2. Controlla se esiste il file .mp3 nella cartella public/audio/ su Vercel
-  const publicAudioUrl = `/audio/${specificKey}.mp3`;
-  const audioEl = new Audio(publicAudioUrl);
-  activeAudioRef.current = audioEl;
+  // 2. Altrimenti prova il singolo file .wav in public/
+  const wavAudio = new Audio(`/${fileKey}.wav`);
+  wavAudio.volume = 0.96;
+  activeAudioRef.current = wavAudio;
 
-  audioEl
-    .play()
-    .then(() => {
-      // Riproduzione del file .mp3 della tua voce riuscita!
-    })
-    .catch(() => {
-      // 3. Fallback automatico su sintesi vocale se il file .mp3 non è ancora stato caricato su GitHub
-      if (!fallbackText || !('speechSynthesis' in window)) return;
-      try {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(fallbackText);
-        utterance.lang = 'it-IT';
-        utterance.rate = 0.92;
-        utterance.pitch = 0.98;
-        utterance.volume = 0.9;
-        window.speechSynthesis.speak(utterance);
-      } catch {
-        // Silenzioso
-      }
-    });
+  wavAudio.play().catch(() => {
+    if (!fallbackText || !('speechSynthesis' in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(fallbackText);
+      utterance.lang = 'it-IT';
+      utterance.rate = 0.9;
+      utterance.pitch = 0.92;
+      window.speechSynthesis.speak(utterance);
+    } catch {
+      // Silenzioso
+    }
+  });
 }
 
 function useBreathScale(phase: Phase, breath: number, phaseDuration: number) {
@@ -496,17 +481,6 @@ function Sphere({
   );
 }
 
-const VOICE_SLOTS = [
-  { key: 'level1_inspire', label: 'Livello 1 · Inspira', hint: 'Es: "Inspira dolcemente dal naso e rilassa gli occhi"' },
-  { key: 'level1_expire', label: 'Livello 1 · Espira', hint: 'Es: "Espira lentamente, lascia andare le spalle"' },
-  { key: 'level2_inspire', label: 'Livello 2 · Inspira (Gambe)', hint: 'Es: "Inspira, solleva i talloni e attiva i polpacci"' },
-  { key: 'level2_hold', label: 'Livello 2 · Trattieni', hint: 'Es: "Mantieni la spinta"' },
-  { key: 'level2_expire', label: 'Livello 2 · Espira (Gambe)', hint: 'Es: "Espira e riappoggia i talloni a terra"' },
-  { key: 'level3_inspire', label: 'Livello 3 · Inspira (Postura)', hint: 'Es: "Inspira in piedi, apri il petto e ruota i palmi in fuori"' },
-  { key: 'level3_hold', label: 'Livello 3 · Trattieni', hint: 'Es: "Allunga bene la nuca verso l’alto"' },
-  { key: 'level3_expire', label: 'Livello 3 · Espira (Postura)', hint: 'Es: "Espira profondamente, sciogli collo e spalle"' },
-];
-
 export default function App() {
   const params =
     typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
@@ -527,25 +501,24 @@ export default function App() {
   const [sessionCompleted, setSessionCompleted] = useState<boolean>(false);
   const [showExecutiveModal, setShowExecutiveModal] = useState<boolean>(false);
   const [showQrModal, setShowQrModal] = useState<boolean>(false);
-  const [showVoiceStudioModal, setShowVoiceStudioModal] = useState<boolean>(false);
 
-  // Contatore minimo lavoratori impostato a 10
+  // Contatore minimo lavoratori a 10
   const [employeesCount, setEmployeesCount] = useState<number>(10);
 
-  // Stato per le registrazioni della TUA voce
-  const [customRecordings, setCustomRecordings] = useState<Record<string, string>>(() => {
-    if (typeof window === 'undefined') return {};
-    try {
-      const saved = window.localStorage.getItem(VOICE_STORAGE_KEY);
-      return saved ? JSON.parse(saved) : {};
-    } catch {
-      return {};
-    }
-  });
-  const [recordingKey, setRecordingKey] = useState<string | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
+  // Carica automaticamente il file unico /pausa81_voice.json dalla cartella public
+  const [voicePack, setVoicePack] = useState<Record<string, string>>({});
   const activeAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    fetch('/pausa81_voice.json')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && typeof data === 'object') {
+          setVoicePack(data);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const [partnerStudioName, setPartnerStudioName] = useState<string>(
     initialPartner || 'Studio Partner RSPP / Sicurezza'
@@ -558,51 +531,6 @@ export default function App() {
   );
 
   const timerRef = useRef<number | null>(null);
-
-  const startRecordingSlot = async (slotKey: string) => {
-    if (typeof navigator === 'undefined' || !navigator.mediaDevices) return;
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
-      chunksRef.current = [];
-
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
-      };
-
-      recorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const base64data = reader.result as string;
-          setCustomRecordings((prev) => {
-            const updated = { ...prev, [slotKey]: base64data };
-            try {
-              window.localStorage.setItem(VOICE_STORAGE_KEY, JSON.stringify(updated));
-            } catch {
-              // Se localStorage è pieno mantiene in RAM
-            }
-            return updated;
-          });
-        };
-        reader.readAsDataURL(blob);
-        stream.getTracks().forEach((t) => t.stop());
-      };
-
-      mediaRecorderRef.current = recorder;
-      recorder.start();
-      setRecordingKey(slotKey);
-    } catch {
-      alert('Consenti l’accesso al microfono del telefono o del PC per registrare la tua voce.');
-    }
-  };
-
-  const stopRecordingSlot = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.stop();
-    }
-    setRecordingKey(null);
-  };
 
   const getNextPhase = useCallback(
     (current: Phase): { next: Phase; duration: number; targetBreath: number } => {
@@ -650,15 +578,15 @@ export default function App() {
     setPhaseTimeLeft(first.duration);
     setBreath(first.targetBreath);
     playSoftChime(first.next, soundEnabled);
-    playCoachVoice(
+    playFounderMasteredVoice(
       selectedLevel.id,
       first.next,
       selectedLevel.voicePrompts[first.next],
       voiceCoachEnabled,
-      customRecordings,
+      voicePack,
       activeAudioRef
     );
-  }, [getNextPhase, soundEnabled, voiceCoachEnabled, selectedLevel, customRecordings]);
+  }, [getNextPhase, soundEnabled, voiceCoachEnabled, selectedLevel, voicePack]);
 
   useEffect(() => {
     if (phase === 'idle') return;
@@ -683,12 +611,12 @@ export default function App() {
           setPhaseDuration(nextStep.duration);
           setBreath(nextStep.targetBreath);
           playSoftChime(nextStep.next, soundEnabled);
-          playCoachVoice(
+          playFounderMasteredVoice(
             selectedLevel.id,
             nextStep.next,
             selectedLevel.voicePrompts[nextStep.next],
             voiceCoachEnabled,
-            customRecordings,
+            voicePack,
             activeAudioRef
           );
           return nextStep.duration;
@@ -700,7 +628,7 @@ export default function App() {
     return () => {
       if (timerRef.current) window.clearInterval(timerRef.current);
     };
-  }, [phase, getNextPhase, soundEnabled, voiceCoachEnabled, selectedLevel, customRecordings]);
+  }, [phase, getNextPhase, soundEnabled, voiceCoachEnabled, selectedLevel, voicePack]);
 
   const estimatedHoursSavedMonthly = Math.round(employeesCount * 3.2);
   const estimatedAnnualSavings = (employeesCount * 410).toLocaleString('it-IT');
@@ -709,13 +637,10 @@ export default function App() {
     partnerStudioName.replace(/\s+/g, '_')
   )}&cliente=${encodeURIComponent(clientCompanyName.replace(/\s+/g, '_'))}`;
 
-  const hasCustomVoiceRecorded = Object.keys(customRecordings).length > 0;
-
   return (
     <div className={`app ${eyeRestMode ? 'app--warm-rest' : ''}`}>
       <CloudBackground />
 
-      {/* Topbar ottimizzata per Mobile e Desktop */}
       <header className="topbar no-print">
         <div className="topbar-left">
           <button
@@ -744,20 +669,7 @@ export default function App() {
             className={`icon-btn ${voiceCoachEnabled ? 'active' : ''}`}
             onClick={() => setVoiceCoachEnabled((v) => !v)}
           >
-            {voiceCoachEnabled
-              ? hasCustomVoiceRecorded
-                ? 'Tua Voce ON'
-                : 'Voce ON'
-              : 'Voce OFF'}
-          </button>
-
-          <button
-            type="button"
-            className="icon-btn voice-studio-btn"
-            onClick={() => setShowVoiceStudioModal(true)}
-            title="Registra la tua voce reale per i 3 livelli"
-          >
-            🎙️ Mia Voce
+            {voiceCoachEnabled ? 'Voce Guida ON' : 'Voce Guida OFF'}
           </button>
 
           <button
@@ -773,13 +685,12 @@ export default function App() {
             className={`icon-btn ${soundEnabled ? 'active' : ''}`}
             onClick={() => setSoundEnabled((v) => !v)}
           >
-            {soundEnabled ? 'Audio' : 'Muto'}
+            {soundEnabled ? 'Campana ON' : 'Muto'}
           </button>
         </div>
       </header>
 
       <main className="app-main no-print">
-        {/* Barra 3 Livelli compatta (3 colonne affiancate anche su smartphone) */}
         <div className="protocol-bar" role="tablist" aria-label="3 Livelli Pausa81">
           {LEVELS.map((lvl) => (
             <button
@@ -854,133 +765,6 @@ export default function App() {
         </span>
       </footer>
 
-      {/* Modal Studio Registrazione LA TUA VOCE */}
-      <AnimatePresence>
-        {showVoiceStudioModal && (
-          <motion.div
-            className="modal-backdrop no-print"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div
-              className="executive-modal"
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 20, opacity: 0 }}
-            >
-              <div className="executive-header">
-                <div>
-                  <span className="completion-badge">Personalizzazione Vocale Fondatore</span>
-                  <h2>🎙️ Registra la Tua Voce Coach per Pausa81</h2>
-                </div>
-                <button
-                  type="button"
-                  className="close-btn"
-                  onClick={() => {
-                    stopRecordingSlot();
-                    setShowVoiceStudioModal(false);
-                  }}
-                >
-                  ✕
-                </button>
-              </div>
-
-              <p className="legal-note" style={{ marginBottom: '0.9rem' }}>
-                <strong>Come funziona:</strong> Premi <strong>Registra</strong> accanto a ogni fase e
-                pronuncia la frase con tono calmo. La tua voce viene salvata subito in questo
-                telefono/PC per le tue demo dal vivo. Se clicchi su <strong>Scarica file</strong>,
-                puoi caricare i file nella cartella <code>public/audio/</code> su GitHub così tutti
-                i clienti sentiranno la tua voce!
-              </p>
-
-              <div className="voice-slots-list">
-                {VOICE_SLOTS.map((slot) => {
-                  const isRec = recordingKey === slot.key;
-                  const savedAudio = customRecordings[slot.key];
-                  return (
-                    <div key={slot.key} className="voice-slot-card">
-                      <div>
-                        <strong>{slot.label}</strong>
-                        <small>{slot.hint}</small>
-                      </div>
-                      <div className="voice-slot-actions">
-                        {!isRec ? (
-                          <button
-                            type="button"
-                            className="btn-mini btn-mini-rec"
-                            onClick={() => startRecordingSlot(slot.key)}
-                          >
-                            {savedAudio ? 'Riregistra' : '● Registra'}
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            className="btn-mini btn-mini-stop"
-                            onClick={stopRecordingSlot}
-                          >
-                            ■ Stop
-                          </button>
-                        )}
-
-                        {savedAudio && (
-                          <>
-                            <button
-                              type="button"
-                              className="btn-mini"
-                              onClick={() => {
-                                const a = new Audio(savedAudio);
-                                a.play();
-                              }}
-                            >
-                              ▶ Ascolta
-                            </button>
-                            <a
-                              href={savedAudio}
-                              download={`${slot.key}.mp3`}
-                              className="btn-mini"
-                              style={{ textDecoration: 'none' }}
-                            >
-                              ⬇ Scarica
-                            </a>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="executive-footer" style={{ marginTop: '1rem' }}>
-                {hasCustomVoiceRecorded && (
-                  <button
-                    type="button"
-                    className="btn btn-ghost"
-                    onClick={() => {
-                      setCustomRecordings({});
-                      window.localStorage.removeItem(VOICE_STORAGE_KEY);
-                    }}
-                  >
-                    Ripristina Voce Default
-                  </button>
-                )}
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={() => {
-                    stopRecordingSlot();
-                    setShowVoiceStudioModal(false);
-                  }}
-                >
-                  Salva e Torna a Pausa81
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Modal Fine Sessione */}
       <AnimatePresence>
         {sessionCompleted && (
           <motion.div
@@ -1032,7 +816,6 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Modal Generatore Targa Murale QR Code D.Lgs. 81/08 */}
       <AnimatePresence>
         {showQrModal && (
           <motion.div
@@ -1172,7 +955,6 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Modal Presentazione Direzione · HR · RSPP · Medico Competente con Pausa81 e minimo 10 lavoratori */}
       <AnimatePresence>
         {showExecutiveModal && (
           <motion.div
