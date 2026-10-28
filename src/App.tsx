@@ -4,120 +4,207 @@ import { CloudBackground } from './components/CloudBackground';
 
 export type Phase = 'idle' | 'inspire' | 'hold' | 'expire' | 'pause';
 
-interface LevelProtocol {
-  id: string;
+interface StageConfig {
+  id: 'level1' | 'level2' | 'level3';
+  stageNumber: number;
   shortTab: string;
   levelTag: string;
   name: string;
   subtitle: string;
   whenToUse: string;
-  inspire: number;
-  hold: number;
-  expire: number;
-  pause: number;
   benefit: string;
-  prompts: Record<Phase, string>;
-  voicePrompts: Record<Phase, string>;
+  texts: {
+    inspire: string;
+    hold: string;
+    expire: string;
+    pause: string;
+  };
+  audioKeys: {
+    inspire: string;
+    hold: string;
+    expire: string;
+  };
 }
 
-const LEVELS: LevelProtocol[] = [
+/**
+ * I 3 Stadi Biomeccanici di Pausa81 (20 secondi ciascuno = 60 secondi totali).
+ * I testi sono IDENTICI parola per parola alle tue registrazioni vocali masterizzate.
+ */
+const STAGES: StageConfig[] = [
   {
     id: 'level1',
-    shortTab: 'Liv. 1 · Visivo',
-    levelTag: 'LIVELLO 1 · NEURO-VISIVO',
+    stageNumber: 1,
+    shortTab: 'Fase 1 · Visivo',
+    levelTag: 'FASE 1 (0–20s) · RESET NEURO-VISIVO',
     name: 'Reset Tra Due Call',
-    subtitle: 'Riposo Oculare 5·0·5',
-    whenToUse: 'Seduto · Cambio attività o post-videocall',
-    inspire: 5,
-    hold: 0,
-    expire: 5,
-    pause: 0,
+    subtitle: 'Sguardo & Spalle (20s)',
+    whenToUse: 'Fase 1 di 3 · Decompressione oculare e rilascio cervicale',
     benefit:
-      'Riduce l’affaticamento della corteccia visiva (Titolo VII D.Lgs. 81/08) e riequilibra il sistema nervoso in 6 cicli da 10 secondi.',
-    prompts: {
-      idle: 'Livello 1: Riposo Visivo e Coerenza (60s)',
+      'Distoglie la messa a fuoco dai pixel ravvicinati (Titolo VII D.Lgs. 81/08) e rilascia la tensione del trapezio.',
+    texts: {
       inspire: 'Inspira dolcemente dal naso e rilassa lo sguardo',
-      hold: 'Mantieni il respiro calmo',
+      hold: 'Trattieni, mantieni la postura',
       expire: 'Espira lentamente, lascia scendere le spalle',
-      pause: 'Pausa naturale',
+      pause: 'Pausa · Prepara la Fase 2 (Gambe)',
     },
-    voicePrompts: {
-      idle: '',
-      inspire: 'Inspira dolcemente dal naso e rilassa lo sguardo',
-      hold: 'Trattieni',
-      expire: 'Espira lentamente, lascia scendere le spalle',
-      pause: 'Riposa',
+    audioKeys: {
+      inspire: 'level1_inspire',
+      hold: 'level2_hold',
+      expire: 'level1_expire',
     },
   },
   {
     id: 'level2',
-    shortTab: 'Liv. 2 · Gambe 1h',
-    levelTag: 'LIVELLO 2 · DOPO 60 MIN DI SCHERMO',
-    name: 'Pompa Ematica & Gambe',
-    subtitle: 'Soleus & Sit-to-Stand 4·3·5',
-    whenToUse: 'Seduto/Sedia · Riattivazione circolatoria (Zero-Sudore)',
-    inspire: 4,
-    hold: 3,
-    expire: 5,
-    pause: 0,
+    stageNumber: 2,
+    shortTab: 'Fase 2 · Gambe',
+    levelTag: 'FASE 2 (20–40s) · POMPA EMATICA & GAMBE',
+    name: 'Riattivazione Circolatoria',
+    subtitle: 'Talloni & Gambe (20s)',
+    whenToUse: 'Fase 2 di 3 · Attivazione muscolo soleo contro la stasi venosa',
     benefit:
-      'Riattiva il ritorno venoso dagli arti inferiori al cervello (muscolo soleo e glutei) in 5 cicli completi da 12 secondi.',
-    prompts: {
-      idle: 'Livello 2: Riattivazione Circolatoria Post-1h (60s)',
+      'Riattiva il ritorno venoso dagli arti inferiori verso il cervello dopo 60 minuti di postura seduta fissa.',
+    texts: {
       inspire: 'Inspira, solleva i talloni e attiva le gambe',
       hold: 'Trattieni, mantieni la postura',
       expire: 'Espira, riappoggia con controllo',
-      pause: 'Riposa',
+      pause: 'Pausa · Prepara la Fase 3 (Petto e Spalle)',
     },
-    voicePrompts: {
-      idle: '',
-      inspire: 'Inspira, solleva i talloni e attiva le gambe',
-      hold: 'Trattieni, mantieni la postura',
-      expire: 'Espira, riappoggia con controllo',
-      pause: 'Pausa',
+    audioKeys: {
+      inspire: 'level2_inspire',
+      hold: 'level2_hold',
+      expire: 'level2_expire',
     },
   },
   {
     id: 'level3',
-    shortTab: 'Liv. 3 · Postura',
-    levelTag: 'LIVELLO 3 · RIPRESA FISICA & POSTURALE',
-    name: 'Sblocco Collo, Spalle & Polsi',
-    subtitle: 'Decompressione DMS 4·3·5',
-    whenToUse: 'In piedi · Pausa VDT (2h) o Fine Turno',
-    inspire: 4,
-    hold: 3,
-    expire: 5,
-    pause: 0,
+    stageNumber: 3,
+    shortTab: 'Fase 3 · Postura',
+    levelTag: 'FASE 3 (40–60s) · SBLOCCO COLLO, SPALLE & POLSI',
+    name: 'Decompressione Posturale DMS',
+    subtitle: 'Petto, Palmi & Collo (20s)',
+    whenToUse: 'Fase 3 di 3 · Apertura toracica e scarico tunnel carpale',
     benefit:
-      'Previene i Disturbi Muscolo-Scheletrici (DMS): scarica tunnel carpale, rachide cervicale (Tech-Neck) e tratto lombare.',
-    prompts: {
-      idle: 'Livello 3: Decompressione Fisica in Piedi (60s)',
+      'Previene i Disturbi Muscolo-Scheletrici (DMS): decomprime tunnel carpale, rachide cervicale e tratto lombare.',
+    texts: {
       inspire: 'Inspira, apri il petto e ruota i palmi in fuori',
       hold: 'Trattieni, mantieni la postura',
       expire: 'Espira a lungo, sciogli collo e spalle',
-      pause: 'Riposa',
+      pause: 'Pausa · Completamento sessione',
     },
-    voicePrompts: {
-      idle: '',
-      inspire: 'Inspira, apri il petto e ruota i palmi in fuori',
-      hold: 'Trattieni, mantieni la postura',
-      expire: 'Espira a lungo, sciogli collo e spalle',
-      pause: 'Riposa',
+    audioKeys: {
+      inspire: 'level3_inspire',
+      hold: 'level3_hold',
+      expire: 'level3_expire',
     },
   },
 ];
 
-const SESSION_DURATION = 60;
+// Durata esatta di ogni sotto-fase respiratoria dentro ciascuno dei 3 blocchi da 20 secondi:
+// 7s Inspira + 4s Trattieni + 7s Espira + 2s Pausa = 20 secondi per Fase × 3 Fasi = 60 secondi esatti
+const INSPIRE_SEC = 7;
+const HOLD_SEC = 4;
+const EXPIRE_SEC = 7;
+const PAUSE_SEC = 2;
+const CYCLE_SEC = INSPIRE_SEC + HOLD_SEC + EXPIRE_SEC + PAUSE_SEC; // 20s
+const SESSION_DURATION = 60; // 60s totali (3 Fasi complete da 20s)
 
-function playSoftChime(phase: Phase, enabled: boolean) {
+interface TimelineSnapshot {
+  stageIndex: number;
+  stage: StageConfig;
+  phase: Phase;
+  phaseDuration: number;
+  phaseTimeLeft: number;
+  targetBreath: number;
+  displayText: string;
+  audioKey: string | null;
+}
+
+/**
+ * Calcola in modo 100% deterministico lo stato al secondo `elapsed` (0..59).
+ * Nessun disallineamento possibile tra testo a schermo, fase del Loto e traccia vocale.
+ */
+function getTimelineSnapshot(elapsed: number, lockedStageIndex: number | null): TimelineSnapshot {
+  const autoStageIdx = Math.min(2, Math.floor(elapsed / CYCLE_SEC));
+  const stageIndex = lockedStageIndex !== null ? lockedStageIndex : autoStageIdx;
+  const stage = STAGES[stageIndex];
+
+  const secInCycle = elapsed % CYCLE_SEC;
+
+  if (secInCycle < INSPIRE_SEC) {
+    return {
+      stageIndex,
+      stage,
+      phase: 'inspire',
+      phaseDuration: INSPIRE_SEC,
+      phaseTimeLeft: INSPIRE_SEC - secInCycle,
+      targetBreath: 1,
+      displayText: stage.texts.inspire,
+      audioKey: stage.audioKeys.inspire,
+    };
+  }
+
+  if (secInCycle < INSPIRE_SEC + HOLD_SEC) {
+    const intoHold = secInCycle - INSPIRE_SEC;
+    return {
+      stageIndex,
+      stage,
+      phase: 'hold',
+      phaseDuration: HOLD_SEC,
+      phaseTimeLeft: HOLD_SEC - intoHold,
+      targetBreath: 1,
+      displayText: stage.texts.hold,
+      audioKey: stage.audioKeys.hold,
+    };
+  }
+
+  if (secInCycle < INSPIRE_SEC + HOLD_SEC + EXPIRE_SEC) {
+    const intoExpire = secInCycle - (INSPIRE_SEC + HOLD_SEC);
+    return {
+      stageIndex,
+      stage,
+      phase: 'expire',
+      phaseDuration: EXPIRE_SEC,
+      phaseTimeLeft: EXPIRE_SEC - intoExpire,
+      targetBreath: 0,
+      displayText: stage.texts.expire,
+      audioKey: stage.audioKeys.expire,
+    };
+  }
+
+  const intoPause = secInCycle - (INSPIRE_SEC + HOLD_SEC + EXPIRE_SEC);
+  return {
+    stageIndex,
+    stage,
+    phase: 'pause',
+    phaseDuration: PAUSE_SEC,
+    phaseTimeLeft: PAUSE_SEC - intoPause,
+    targetBreath: 0,
+    displayText: stage.texts.pause,
+    audioKey: null,
+  };
+}
+
+/** Campana tibetana morbida */
+function playSoftChime(
+  phase: Phase,
+  enabled: boolean,
+  audioCtxRef: React.MutableRefObject<AudioContext | null>
+) {
   if (!enabled || typeof window === 'undefined') return;
-  const AudioCtx =
-    window.AudioContext ||
-    (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-  if (!AudioCtx) return;
-
   try {
-    const ctx = new AudioCtx();
+    const AudioCtx =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (!AudioCtx) return;
+
+    if (!audioCtxRef.current) {
+      audioCtxRef.current = new AudioCtx();
+    }
+    const ctx = audioCtxRef.current;
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
 
@@ -133,74 +220,22 @@ function playSoftChime(phase: Phase, enabled: boolean) {
     osc.frequency.setValueAtTime(freqMap[phase] || 432, ctx.currentTime);
 
     gain.gain.setValueAtTime(0.001, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.035, ctx.currentTime + 0.08);
-    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 2.0);
+    gain.gain.exponentialRampToValueAtTime(0.03, ctx.currentTime + 0.08);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.8);
 
     osc.connect(gain);
     gain.connect(ctx.destination);
 
     osc.start();
-    osc.stop(ctx.currentTime + 2.1);
+    osc.stop(ctx.currentTime + 1.9);
   } catch {
-    // Audio non ancora sbloccato
+    // Ignora
   }
-}
-
-/**
- * Riproduce la tua voce masterizzata:
- * 1) Legge prima dal pacchetto unico `/pausa81_voice.json` (Base64 precaricato in memoria)
- * 2) Altrimenti cerca `/{levelId}_{phase}.wav` in `public/`
- * 3) Fallback su sintesi vocale se i file non sono ancora presenti
- */
-function playFounderMasteredVoice(
-  levelId: string,
-  phase: Phase,
-  fallbackText: string,
-  enabled: boolean,
-  voicePack: Record<string, string>,
-  activeAudioRef: React.MutableRefObject<HTMLAudioElement | null>
-) {
-  if (!enabled || phase === 'idle' || typeof window === 'undefined') return;
-
-  if (activeAudioRef.current) {
-    activeAudioRef.current.pause();
-    activeAudioRef.current.currentTime = 0;
-  }
-
-  const fileKey = `${levelId}_${phase}`;
-
-  // 1. Se `pausa81_voice.json` è stato caricato, riproduce istantaneamente da memoria
-  if (voicePack[fileKey]) {
-    const jsonAudio = new Audio(voicePack[fileKey]);
-    jsonAudio.volume = 0.96;
-    activeAudioRef.current = jsonAudio;
-    jsonAudio.play().catch(() => {});
-    return;
-  }
-
-  // 2. Altrimenti prova il singolo file .wav in public/
-  const wavAudio = new Audio(`/${fileKey}.wav`);
-  wavAudio.volume = 0.96;
-  activeAudioRef.current = wavAudio;
-
-  wavAudio.play().catch(() => {
-    if (!fallbackText || !('speechSynthesis' in window)) return;
-    try {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(fallbackText);
-      utterance.lang = 'it-IT';
-      utterance.rate = 0.9;
-      utterance.pitch = 0.92;
-      window.speechSynthesis.speak(utterance);
-    } catch {
-      // Silenzioso
-    }
-  });
 }
 
 function useBreathScale(phase: Phase, breath: number, phaseDuration: number) {
   const scale = phase === 'idle' ? 0.84 : 0.64 + 0.34 * breath;
-  const duration = phase === 'idle' ? 0.8 : Math.max(phaseDuration, 1.8);
+  const duration = phase === 'idle' ? 0.8 : Math.max(phaseDuration, 1.5);
   return { scale, duration };
 }
 
@@ -489,12 +524,13 @@ export default function App() {
     .replace(/[-_]/g, ' ')
     .trim();
 
-  const [selectedLevel, setSelectedLevel] = useState<LevelProtocol>(LEVELS[0]);
-  const [phase, setPhase] = useState<Phase>('idle');
-  const [breath, setBreath] = useState<number>(0.5);
-  const [phaseTimeLeft, setPhaseTimeLeft] = useState<number>(0);
-  const [phaseDuration, setPhaseDuration] = useState<number>(5);
-  const [sessionRemaining, setSessionRemaining] = useState<number>(SESSION_DURATION);
+  // Stato della sessione: quando isRunning = true, elapsed va da 0 a 59
+  const [isRunning, setIsRunning] = useState<boolean>(false);
+  const [elapsed, setElapsed] = useState<number>(0);
+  // Se lockedStageIndex === null, l'app esegue tutte le 3 Fasi in sequenza (0-20s Fase 1, 20-40s Fase 2, 40-60s Fase 3)
+  const [lockedStageIndex, setLockedStageIndex] = useState<number | null>(null);
+  const [previewStageIndex, setPreviewStageIndex] = useState<number>(0);
+
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [voiceCoachEnabled, setVoiceCoachEnabled] = useState<boolean>(true);
   const [eyeRestMode, setEyeRestMode] = useState<boolean>(false);
@@ -505,20 +541,232 @@ export default function App() {
   // Contatore minimo lavoratori a 10
   const [employeesCount, setEmployeesCount] = useState<number>(10);
 
-  // Carica automaticamente il file unico /pausa81_voice.json dalla cartella public
+  // Caricamento e pre-decodifica di /pausa81_voice.json per riproduzione istantanea
   const [voicePack, setVoicePack] = useState<Record<string, string>>({});
-  const activeAudioRef = useRef<HTMLAudioElement | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const decodedBuffersRef = useRef<Record<string, AudioBuffer>>({});
+  const currentSourceRef = useRef<AudioBufferSourceNode | null>(null);
+  const htmlAudioRef = useRef<HTMLAudioElement | null>(null);
+  const lastPlayedStepRef = useRef<string>('');
 
   useEffect(() => {
     fetch('/pausa81_voice.json')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data && typeof data === 'object') {
-          setVoicePack(data);
+          // Mappa anche level1_hold sulla tua registrazione di "Trattieni, mantieni la postura"
+          const enriched: Record<string, string> = {
+            ...data,
+            level1_hold: data.level2_hold || data.level3_hold || '',
+          };
+          setVoicePack(enriched);
         }
       })
       .catch(() => {});
   }, []);
+
+  /** Riproduce la tua traccia vocale esattamente all'inizio di ogni fase */
+  const playVoiceKey = useCallback(
+    async (audioKey: string | null, fallbackText: string) => {
+      if (!voiceCoachEnabled || !audioKey || typeof window === 'undefined') return;
+
+      // Ferma qualsiasi voce precedente
+      if (currentSourceRef.current) {
+        try {
+          currentSourceRef.current.stop();
+        } catch {
+          // Ignora
+        }
+        currentSourceRef.current = null;
+      }
+      if (htmlAudioRef.current) {
+        htmlAudioRef.current.pause();
+        htmlAudioRef.current.currentTime = 0;
+      }
+
+      const resolvedKey = audioKey === 'level1_hold' ? 'level2_hold' : audioKey;
+      const dataUri = voicePack[audioKey] || voicePack[resolvedKey];
+
+      // 1. Riproduzione tramite Web Audio API (non viene mai bloccata dai browser mobile durante il timer)
+      if (dataUri) {
+        try {
+          const AudioCtx =
+            window.AudioContext ||
+            (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+          if (AudioCtx) {
+            if (!audioCtxRef.current) {
+              audioCtxRef.current = new AudioCtx();
+            }
+            const ctx = audioCtxRef.current;
+            if (ctx.state === 'suspended') {
+              await ctx.resume();
+            }
+
+            if (!decodedBuffersRef.current[resolvedKey]) {
+              const base64Part = dataUri.split(',')[1];
+              if (base64Part) {
+                const binaryStr = window.atob(base64Part);
+                const len = binaryStr.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
+                  bytes[i] = binaryStr.charCodeAt(i);
+                }
+                const decoded = await ctx.decodeAudioData(bytes.buffer.slice(0));
+                decodedBuffersRef.current[resolvedKey] = decoded;
+              }
+            }
+
+            const buffer = decodedBuffersRef.current[resolvedKey];
+            if (buffer) {
+              const source = ctx.createBufferSource();
+              source.buffer = buffer;
+              const gainNode = ctx.createGain();
+              gainNode.gain.value = 1.0;
+              source.connect(gainNode);
+              gainNode.connect(ctx.destination);
+              source.start(0);
+              currentSourceRef.current = source;
+              return;
+            }
+          }
+        } catch {
+          // Passa al player HTML5
+        }
+
+        // 2. Fallback diretto con elemento HTMLAudio riutilizzato
+        try {
+          if (!htmlAudioRef.current) {
+            htmlAudioRef.current = new Audio();
+          }
+          htmlAudioRef.current.src = dataUri;
+          htmlAudioRef.current.volume = 1.0;
+          await htmlAudioRef.current.play();
+          return;
+        } catch {
+          // Continua
+        }
+      }
+
+      // 3. Prova file .wav diretto in public/
+      try {
+        if (!htmlAudioRef.current) {
+          htmlAudioRef.current = new Audio();
+        }
+        htmlAudioRef.current.src = `/${resolvedKey}.wav`;
+        htmlAudioRef.current.volume = 1.0;
+        await htmlAudioRef.current.play();
+      } catch {
+        if (!fallbackText || !('speechSynthesis' in window)) return;
+        try {
+          window.speechSynthesis.cancel();
+          const u = new SpeechSynthesisUtterance(fallbackText);
+          u.lang = 'it-IT';
+          u.rate = 0.92;
+          window.speechSynthesis.speak(u);
+        } catch {
+          // Silenzioso
+        }
+      }
+    },
+    [voiceCoachEnabled, voicePack]
+  );
+
+  // Stato corrente calcolato matematicamente da `elapsed`
+  const snapshot: TimelineSnapshot = isRunning
+    ? getTimelineSnapshot(elapsed, lockedStageIndex)
+    : {
+        stageIndex: previewStageIndex,
+        stage: STAGES[previewStageIndex],
+        phase: 'idle',
+        phaseDuration: 5,
+        phaseTimeLeft: 0,
+        targetBreath: 0.5,
+        displayText:
+          lockedStageIndex === null
+            ? 'Percorso Completo in 3 Fasi: Visivo (20s) → Gambe (20s) → Postura (20s)'
+            : `${STAGES[previewStageIndex].name}: ${STAGES[previewStageIndex].texts.inspire}`,
+        audioKey: null,
+      };
+
+  // Quando cambia la combinazione (Fase + Sotto-fase respiratoria), riproduce la tua voce e la campana
+  useEffect(() => {
+    if (!isRunning) {
+      lastPlayedStepRef.current = '';
+      return;
+    }
+
+    const stepId = `${snapshot.stage.id}_${snapshot.phase}_${Math.floor(elapsed / CYCLE_SEC)}`;
+    if (lastPlayedStepRef.current !== stepId) {
+      lastPlayedStepRef.current = stepId;
+      playSoftChime(snapshot.phase, soundEnabled, audioCtxRef);
+      if (snapshot.audioKey) {
+        playVoiceKey(snapshot.audioKey, snapshot.displayText);
+      }
+    }
+  }, [isRunning, elapsed, snapshot, soundEnabled, playVoiceKey]);
+
+  // Timer unico da 1 secondo (nessun side-effect dentro lo state updater)
+  useEffect(() => {
+    if (!isRunning) return;
+
+    const interval = window.setInterval(() => {
+      setElapsed((prev) => {
+        if (prev + 1 >= SESSION_DURATION) {
+          setIsRunning(false);
+          setSessionCompleted(true);
+          playSoftChime('idle', soundEnabled, audioCtxRef);
+          return 0;
+        }
+        return prev + 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(interval);
+  }, [isRunning, soundEnabled]);
+
+  const stopSession = useCallback(() => {
+    setIsRunning(false);
+    setElapsed(0);
+    lastPlayedStepRef.current = '';
+    if (currentSourceRef.current) {
+      try {
+        currentSourceRef.current.stop();
+      } catch {
+        // Ignora
+      }
+      currentSourceRef.current = null;
+    }
+    if (htmlAudioRef.current) {
+      htmlAudioRef.current.pause();
+      htmlAudioRef.current.currentTime = 0;
+    }
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+  }, []);
+
+  const startSession = useCallback(
+    (startAtSecond = 0) => {
+      // Sblocca subito AudioContext al tocco del pulsante
+      const AudioCtx =
+        typeof window !== 'undefined'
+          ? window.AudioContext ||
+            (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+          : null;
+      if (AudioCtx && !audioCtxRef.current) {
+        audioCtxRef.current = new AudioCtx();
+      }
+      if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
+        audioCtxRef.current.resume().catch(() => {});
+      }
+
+      lastPlayedStepRef.current = '';
+      setSessionCompleted(false);
+      setElapsed(startAtSecond);
+      setIsRunning(true);
+    },
+    []
+  );
 
   const [partnerStudioName, setPartnerStudioName] = useState<string>(
     initialPartner || 'Studio Partner RSPP / Sicurezza'
@@ -530,112 +778,15 @@ export default function App() {
     'Area Videoterminali / Sale Riunioni / Reparto'
   );
 
-  const timerRef = useRef<number | null>(null);
-
-  const getNextPhase = useCallback(
-    (current: Phase): { next: Phase; duration: number; targetBreath: number } => {
-      const p = selectedLevel;
-      if (current === 'idle' || current === 'pause') {
-        return { next: 'inspire', duration: p.inspire, targetBreath: 1 };
-      }
-      if (current === 'inspire') {
-        if (p.hold > 0) return { next: 'hold', duration: p.hold, targetBreath: 1 };
-        return { next: 'expire', duration: p.expire, targetBreath: 0 };
-      }
-      if (current === 'hold') {
-        return { next: 'expire', duration: p.expire, targetBreath: 0 };
-      }
-      if (current === 'expire') {
-        if (p.pause > 0) return { next: 'pause', duration: p.pause, targetBreath: 0 };
-        return { next: 'inspire', duration: p.inspire, targetBreath: 1 };
-      }
-      return { next: 'inspire', duration: p.inspire, targetBreath: 1 };
-    },
-    [selectedLevel]
-  );
-
-  const stopSession = useCallback(() => {
-    if (timerRef.current) window.clearInterval(timerRef.current);
-    if (activeAudioRef.current) {
-      activeAudioRef.current.pause();
-      activeAudioRef.current.currentTime = 0;
-    }
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-    }
-    setPhase('idle');
-    setBreath(0.5);
-    setSessionRemaining(SESSION_DURATION);
-    setPhaseTimeLeft(0);
-  }, []);
-
-  const startSession = useCallback(() => {
-    setSessionCompleted(false);
-    setSessionRemaining(SESSION_DURATION);
-    const first = getNextPhase('idle');
-    setPhase(first.next);
-    setPhaseDuration(first.duration);
-    setPhaseTimeLeft(first.duration);
-    setBreath(first.targetBreath);
-    playSoftChime(first.next, soundEnabled);
-    playFounderMasteredVoice(
-      selectedLevel.id,
-      first.next,
-      selectedLevel.voicePrompts[first.next],
-      voiceCoachEnabled,
-      voicePack,
-      activeAudioRef
-    );
-  }, [getNextPhase, soundEnabled, voiceCoachEnabled, selectedLevel, voicePack]);
-
-  useEffect(() => {
-    if (phase === 'idle') return;
-
-    timerRef.current = window.setInterval(() => {
-      setSessionRemaining((prev) => {
-        if (prev <= 1) {
-          if (timerRef.current) window.clearInterval(timerRef.current);
-          setPhase('idle');
-          setBreath(0.5);
-          setSessionCompleted(true);
-          playSoftChime('idle', soundEnabled);
-          return 0;
-        }
-        return prev - 1;
-      });
-
-      setPhaseTimeLeft((prev) => {
-        if (prev <= 1) {
-          const nextStep = getNextPhase(phase);
-          setPhase(nextStep.next);
-          setPhaseDuration(nextStep.duration);
-          setBreath(nextStep.targetBreath);
-          playSoftChime(nextStep.next, soundEnabled);
-          playFounderMasteredVoice(
-            selectedLevel.id,
-            nextStep.next,
-            selectedLevel.voicePrompts[nextStep.next],
-            voiceCoachEnabled,
-            voicePack,
-            activeAudioRef
-          );
-          return nextStep.duration;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => {
-      if (timerRef.current) window.clearInterval(timerRef.current);
-    };
-  }, [phase, getNextPhase, soundEnabled, voiceCoachEnabled, selectedLevel, voicePack]);
-
+  const sessionRemaining = isRunning ? SESSION_DURATION - elapsed : SESSION_DURATION;
   const estimatedHoursSavedMonthly = Math.round(employeesCount * 3.2);
   const estimatedAnnualSavings = (employeesCount * 410).toLocaleString('it-IT');
 
   const customWhiteLabelUrl = `https://pranayama-khaki.vercel.app/?partner=${encodeURIComponent(
     partnerStudioName.replace(/\s+/g, '_')
   )}&cliente=${encodeURIComponent(clientCompanyName.replace(/\s+/g, '_'))}`;
+
+  const activeStageIdx = snapshot.stageIndex;
 
   return (
     <div className={`app ${eyeRestMode ? 'app--warm-rest' : ''}`}>
@@ -666,10 +817,19 @@ export default function App() {
         <div className="topbar-actions">
           <button
             type="button"
+            className={`icon-btn ${lockedStageIndex === null ? 'active' : ''}`}
+            onClick={() => setLockedStageIndex(null)}
+            title="Esegue tutte le 3 Fasi in sequenza in 60 secondi"
+          >
+            {lockedStageIndex === null ? '3 Fasi Auto ON' : 'Attiva 3 Fasi Auto'}
+          </button>
+
+          <button
+            type="button"
             className={`icon-btn ${voiceCoachEnabled ? 'active' : ''}`}
             onClick={() => setVoiceCoachEnabled((v) => !v)}
           >
-            {voiceCoachEnabled ? 'Voce Guida ON' : 'Voce Guida OFF'}
+            {voiceCoachEnabled ? 'Voce ON' : 'Voce OFF'}
           </button>
 
           <button
@@ -685,49 +845,75 @@ export default function App() {
             className={`icon-btn ${soundEnabled ? 'active' : ''}`}
             onClick={() => setSoundEnabled((v) => !v)}
           >
-            {soundEnabled ? 'Campana ON' : 'Muto'}
+            {soundEnabled ? 'Campana' : 'Muto'}
           </button>
         </div>
       </header>
 
       <main className="app-main no-print">
-        <div className="protocol-bar" role="tablist" aria-label="3 Livelli Pausa81">
-          {LEVELS.map((lvl) => (
-            <button
-              key={lvl.id}
-              type="button"
-              className={`protocol-chip ${selectedLevel.id === lvl.id ? 'active' : ''}`}
-              onClick={() => {
-                stopSession();
-                setSelectedLevel(lvl);
-                setSessionCompleted(false);
-              }}
-            >
-              <span className="protocol-level-tag">{lvl.shortTab}</span>
-              <span className="protocol-chip-title">{lvl.name}</span>
-              <span className="protocol-chip-sub">{lvl.subtitle}</span>
-            </button>
-          ))}
+        {/* Barra delle 3 Fasi: si illumina automaticamente passando da Fase 1 -> Fase 2 -> Fase 3 */}
+        <div className="protocol-bar" role="tablist" aria-label="3 Fasi Pausa81">
+          {STAGES.map((stg, idx) => {
+            const isCurrent = activeStageIdx === idx;
+            return (
+              <button
+                key={stg.id}
+                type="button"
+                className={`protocol-chip ${isCurrent ? 'active' : ''}`}
+                onClick={() => {
+                  setPreviewStageIndex(idx);
+                  if (isRunning) {
+                    // Se la sessione è attiva, salta subito all'inizio di questa Fase!
+                    lastPlayedStepRef.current = '';
+                    setElapsed(idx * CYCLE_SEC);
+                  }
+                }}
+              >
+                <span className="protocol-level-tag">{stg.shortTab}</span>
+                <span className="protocol-chip-title">{stg.name}</span>
+                <span className="protocol-chip-sub">{stg.subtitle}</span>
+              </button>
+            );
+          })}
         </div>
 
         <Sphere
-          phase={phase}
-          breath={breath}
-          phaseDuration={phaseDuration}
+          phase={snapshot.phase}
+          breath={snapshot.targetBreath}
+          phaseDuration={snapshot.phaseDuration}
           sessionRemaining={sessionRemaining}
         />
 
-        <div className="status">
-          <span className="when-to-use-pill">{selectedLevel.whenToUse}</span>
-          <p className="phase-text">{selectedLevel.prompts[phase]}</p>
+        {/* Indicatori delle 4 Fasi del Ciclo Respiratorio (Inspira -> Trattieni -> Espira -> Pausa) */}
+        <div className="breath-phases-stepper" aria-label="Fasi del respiro">
+          <span className={`step-badge ${snapshot.phase === 'inspire' ? 'active' : ''}`}>
+            1. Inspira ({INSPIRE_SEC}s)
+          </span>
+          <span className={`step-badge ${snapshot.phase === 'hold' ? 'active' : ''}`}>
+            2. Trattieni ({HOLD_SEC}s)
+          </span>
+          <span className={`step-badge ${snapshot.phase === 'expire' ? 'active' : ''}`}>
+            3. Espira ({EXPIRE_SEC}s)
+          </span>
+          <span className={`step-badge ${snapshot.phase === 'pause' ? 'active' : ''}`}>
+            4. Pausa ({PAUSE_SEC}s)
+          </span>
+        </div>
 
-          {phase === 'idle' ? (
-            <p className="protocol-benefit">{selectedLevel.benefit}</p>
+        <div className="status">
+          <span className="when-to-use-pill">{snapshot.stage.levelTag}</span>
+          {/* Il testo qui sotto è IDENTICO alle parole pronunciate dalla tua voce */}
+          <p className="phase-text">{snapshot.displayText}</p>
+
+          {!isRunning ? (
+            <p className="protocol-benefit">{snapshot.stage.benefit}</p>
           ) : (
             <div className="countdown">
               <div className="countdown-row">
-                <span className="countdown-number">{phaseTimeLeft}s</span>
-                <span className="countdown-label">· Fine tra {sessionRemaining}s</span>
+                <span className="countdown-number">{snapshot.phaseTimeLeft}s</span>
+                <span className="countdown-label">
+                  · Fase {snapshot.stage.stageNumber}/3 · Totale {sessionRemaining}s
+                </span>
               </div>
               <div className="tick-bar">
                 <div
@@ -742,9 +928,13 @@ export default function App() {
         </div>
 
         <div className="controls">
-          {phase === 'idle' ? (
-            <button type="button" className="btn btn-primary" onClick={startSession}>
-              Avvia {selectedLevel.name} (60s)
+          {!isRunning ? (
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => startSession(0)}
+            >
+              Avvia Percorso 3 Fasi (60s)
             </button>
           ) : (
             <button type="button" className="btn btn-secondary" onClick={stopSession}>
@@ -779,10 +969,10 @@ export default function App() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.94, opacity: 0 }}
             >
-              <span className="completion-badge">{selectedLevel.levelTag} Completato</span>
+              <span className="completion-badge">Percorso Completo 3 Fasi Completato</span>
               <h2>Decompressione Pausa81 Completata</h2>
               <p>
-                Hai completato 60 secondi di <strong>{selectedLevel.name}</strong>.
+                Hai completato i 60 secondi di <strong>Reset Visivo, Circolatorio e Posturale</strong>.
               </p>
 
               <div className="benchmark-grid">
@@ -896,18 +1086,18 @@ export default function App() {
                   </div>
 
                   <div className="plaque-levels">
-                    <h4>PROTOCOLLI PAUSA81 DA 60 SECONDI</h4>
+                    <h4>PERCORSO GUIDATO PAUSA81 IN 3 FASI (60 SECONDI)</h4>
                     <div className="plaque-level-item">
-                      <strong>LIVELLO 1 · Reset Neuro-Visivo (Tra due call / picco operativo):</strong>
-                      <p>Decompressione oculare e respirazione guidata 5·5 a colori tenui.</p>
+                      <strong>FASE 1 (0–20s) · Reset Neuro-Visivo:</strong>
+                      <p>«Inspira dolcemente dal naso e rilassa lo sguardo · Trattieni · Espira lentamente, lascia scendere le spalle»</p>
                     </div>
                     <div className="plaque-level-item">
-                      <strong>LIVELLO 2 · Pompa Ematica &amp; Gambe (Dopo 60 min di postura fissa):</strong>
-                      <p>Attivazione muscolo soleo e Sit-to-Stand ergonomico contro la stasi venosa.</p>
+                      <strong>FASE 2 (20–40s) · Pompa Ematica &amp; Gambe:</strong>
+                      <p>«Inspira, solleva i talloni e attiva le gambe · Trattieni · Espira, riappoggia con controllo»</p>
                     </div>
                     <div className="plaque-level-item">
-                      <strong>LIVELLO 3 · Decompressione Posturale DMS (Pausa 2h / Fine Turno):</strong>
-                      <p>Scarico guidato di rachide cervicale, spalle, tratto lombare e tunnel carpale.</p>
+                      <strong>FASE 3 (40–60s) · Decompressione Posturale DMS:</strong>
+                      <p>«Inspira, apri il petto e ruota i palmi in fuori · Trattieni · Espira a lungo, sciogli collo e spalle»</p>
                     </div>
                   </div>
                 </div>
