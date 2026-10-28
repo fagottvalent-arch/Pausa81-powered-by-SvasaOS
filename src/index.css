@@ -985,3 +985,49 @@ body {
   border-color: #0d9488;
   box-shadow: 0 2px 8px rgba(13, 148, 136, 0.28);
 }
+/* Griglia a 4 Modalità: 4 colonne su Desktop, 2x2 su Smartphone */
+.protocol-bar {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.38rem;
+  width: 100%;
+}
+
+@media (max-width: 560px) {
+  .protocol-bar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.breath-phases-stepper {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: -0.1rem;
+}
+
+.step-badge {
+  font-size: clamp(0.6rem, 1.9vw, 0.7rem);
+  font-weight: 600;
+  color: #64748b;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  padding: 0.16rem 0.52rem;
+  border-radius: 999px;
+  transition: all 0.2s ease;
+}
+
+.step-badge.active {
+  color: #ffffff;
+  background: #0d9488;
+  border-color: #0d9488;
+  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.28);
+}
+
+.local-counter-pill {
+  font-size: 0.64rem;
+  font-weight: 600;
+  color: #0f766e;
+  margin-top: 3px;
+}
