@@ -5,6 +5,12 @@ import { CloudBackground } from './components/CloudBackground';
 export type Phase = 'idle' | 'inspire' | 'hold' | 'expire' | 'pause';
 export type SessionMode = 'all' | 'level1' | 'level2' | 'level3';
 
+// Cerca automaticamente qualsiasi file *voice* anche se caricato in src/ o nella root invece che in public/
+const BUNDLED_VOICE_FILES = import.meta.glob(
+  ['./*voice*', '../*voice*', '../public/*voice*'],
+  { query: '?raw', import: 'default', eager: true }
+) as Record<string, string>;
+
 interface StageConfig {
   id: 'level1' | 'level2' | 'level3';
   stageNumber: number;
@@ -96,14 +102,70 @@ const STAGES: StageConfig[] = [
   },
 ];
 
-// Ciclo respiratorio da 20s: 7s Inspira + 4s Trattieni + 7s Espira + 2s Pausa = 20s × 3 cicli = 60s esatti
 const INSPIRE_SEC = 7;
 const HOLD_SEC = 4;
 const EXPIRE_SEC = 7;
 const PAUSE_SEC = 2;
 const CYCLE_SEC = INSPIRE_SEC + HOLD_SEC + EXPIRE_SEC + PAUSE_SEC; // 20s
 const SESSION_DURATION = 60;
-const LOCAL_STATS_KEY = 'pausa81_local_Completed_count';
+const LOCAL_STATS_KEY = 'pausa81_local_completed_count';
+
+/** Salvataggio e lettura in IndexedDB per supportare file voce da oltre 1 MB senza limiti */
+function saveVoicePackToIdb(pack: Record<string, string>): Promise<void> {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined' || !('indexedDB' in window)) {
+      resolve();
+      return;
+    }
+    try {
+      const req = window.indexedDB.open('pausa81_audio_db', 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains('packs')) {
+          db.createObjectStore('packs');
+        }
+      };
+      req.onsuccess = () => {
+        const db = req.result;
+        const tx = db.transaction('packs', 'readwrite');
+        tx.objectStore('packs').put(pack, 'custom_voice_pack');
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => resolve();
+      };
+      req.onerror = () => resolve();
+    } catch {
+      resolve();
+    }
+  });
+}
+
+function loadVoicePackFromIdb(): Promise<Record<string, string> | null> {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined' || !('indexedDB' in window)) {
+      resolve(null);
+      return;
+    }
+    try {
+      const req = window.indexedDB.open('pausa81_audio_db', 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains('packs')) {
+          db.createObjectStore('packs');
+        }
+      };
+      req.onsuccess = () => {
+        const db = req.result;
+        const tx = db.transaction('packs', 'readonly');
+        const getReq = tx.objectStore('packs').get('custom_voice_pack');
+        getReq.onsuccess = () => resolve(getReq.result || null);
+        getReq.onerror = () => resolve(null);
+      };
+      req.onerror = () => resolve(null);
+    } catch {
+      resolve(null);
+    }
+  });
+}
 
 interface TimelineSnapshot {
   stageIndex: number;
@@ -118,7 +180,7 @@ interface TimelineSnapshot {
 }
 
 function getTimelineSnapshot(elapsed: number, mode: SessionMode): TimelineSnapshot {
-  const cycleIndex = Math.min(2, Math.floor(elapsed / CYCLE_SEC)); // 0, 1, 2
+  const cycleIndex = Math.min(2, Math.floor(elapsed / CYCLE_SEC));
   const stageIndex =
     mode === 'all'
       ? cycleIndex
@@ -194,7 +256,6 @@ function getTimelineSnapshot(elapsed: number, mode: SessionMode): TimelineSnapsh
   };
 }
 
-/** Campana tibetana morbida ai cambi di fase */
 function playSoftChime(
   phase: Phase,
   enabled: boolean,
@@ -230,7 +291,7 @@ function playSoftChime(
     osc.frequency.setValueAtTime(freqMap[phase] || 432, ctx.currentTime);
 
     gain.gain.setValueAtTime(0.001, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.028, ctx.currentTime + 0.08);
+    gain.gain.exponentialRampToValueAtTime(0.026, ctx.currentTime + 0.08);
     gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.8);
 
     osc.connect(gain);
@@ -526,6 +587,14 @@ function Sphere({
   );
 }
 
+function normalizeVoicePack(raw: Record<string, string>): Record<string, string> {
+  return {
+    ...raw,
+    level1_hold: raw.level1_hold || raw.level2_hold || raw.level3_hold || '',
+    level3_hold: raw.level3_hold || raw.level2_hold || '',
+  };
+}
+
 export default function App() {
   const params =
     typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
@@ -534,7 +603,6 @@ export default function App() {
     .replace(/[-_]/g, ' ')
     .trim();
 
-  // Modalità selezionata: 'all' (3 Fasi in 60s) oppure 'level1' | 'level2' | 'level3' (singola fase per 60s)
   const [sessionMode, setSessionMode] = useState<SessionMode>('all');
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const [elapsed, setElapsed] = useState<number>(0);
@@ -546,23 +614,19 @@ export default function App() {
   const [showExecutiveModal, setShowExecutiveModal] = useState<boolean>(false);
   const [showQrModal, setShowQrModal] = useState<boolean>(false);
 
-  // Sveglia Ergonomica VDT (Art. 175 D.Lgs. 81/08): null | 60 min | 120 min
   const [vdtReminderMinutes, setVdtReminderMinutes] = useState<number | null>(null);
   const [vdtSecondsLeft, setVdtSecondsLeft] = useState<number>(0);
 
-  // Contatore locale anonimo (Zero-Tracking, salvato solo sul browser del lavoratore)
   const [localSessionsCount, setLocalSessionsCount] = useState<number>(() => {
     if (typeof window === 'undefined') return 0;
     const saved = window.localStorage.getItem(LOCAL_STATS_KEY);
     return saved ? Number(saved) || 0 : 0;
   });
   const [lastAuditCode, setLastAuditCode] = useState<string>('P81-VDT-8108');
-
-  // Contatore minimo lavoratori a 10
   const [employeesCount, setEmployeesCount] = useState<number>(10);
 
-  // Caricamento e pre-decodifica di /pausa81_voice.json
   const [voicePack, setVoicePack] = useState<Record<string, string>>({});
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const decodedBuffersRef = useRef<Record<string, AudioBuffer>>({});
   const currentSourceRef = useRef<AudioBufferSourceNode | null>(null);
@@ -573,22 +637,91 @@ export default function App() {
   const lastPlayedStepRef = useRef<string>('');
   const wakeLockRef = useRef<{ release: () => Promise<void> } | null>(null);
 
+  // Caricamento universale: 1) Build-time glob (src/ o root) -> 2) IndexedDB -> 3) /pausa81_voice.json.txt -> 4) /pausa81_voice.json
   useEffect(() => {
-    fetch('/pausa81_voice.json')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data && typeof data === 'object') {
-          const enriched: Record<string, string> = {
-            ...data,
-            level1_hold: data.level2_hold || data.level3_hold || '',
-          };
-          setVoicePack(enriched);
+    let mounted = true;
+
+    async function loadAllVoiceSources() {
+      // 1. Controlla se Vite ha trovato il file in src/, root o public/ tramite import.meta.glob
+      for (const pathKey of Object.keys(BUNDLED_VOICE_FILES)) {
+        const rawText = BUNDLED_VOICE_FILES[pathKey];
+        if (rawText && typeof rawText === 'string' && rawText.includes('level1_inspire')) {
+          try {
+            const parsed = JSON.parse(rawText);
+            if (mounted && parsed && typeof parsed === 'object') {
+              setVoicePack(normalizeVoicePack(parsed));
+              return;
+            }
+          } catch {
+            // Continua
+          }
         }
-      })
-      .catch(() => {});
+      }
+
+      // 2. Controlla IndexedDB locale (se caricato manualmente col bottone)
+      const cachedPack = await loadVoicePackFromIdb();
+      if (mounted && cachedPack && cachedPack.level1_inspire) {
+        setVoicePack(normalizeVoicePack(cachedPack));
+        return;
+      }
+
+      // 3. Cerca tutti i possibili nomi nella cartella public/ (incluso .json.txt aggiunto da Chrome!)
+      const candidateUrls = [
+        '/pausa81_voice.json.txt',
+        '/pausa81_voice.json',
+        '/pausa81_voice.txt',
+        '/audio/pausa81_voice.json.txt',
+        '/audio/pausa81_voice.json',
+      ];
+
+      for (const url of candidateUrls) {
+        try {
+          const res = await fetch(url);
+          if (!res.ok) continue;
+          const text = await res.text();
+          if (text && text.includes('level1_inspire')) {
+            const parsed = JSON.parse(text);
+            if (mounted && parsed && typeof parsed === 'object') {
+              const norm = normalizeVoicePack(parsed);
+              setVoicePack(norm);
+              await saveVoicePackToIdb(norm);
+              return;
+            }
+          }
+        } catch {
+          // Prova il prossimo URL
+        }
+      }
+    }
+
+    loadAllVoiceSources();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  /** Avvia il tappeto armonico continuo a 432Hz + 216Hz che lega le frasi della tua voce */
+  /** Caricamento manuale istantaneo di pausa81_voice.json.txt dal computer/telefono */
+  const handleManualVoiceFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const text = String(reader.result || '');
+        const parsed = JSON.parse(text);
+        if (parsed && parsed.level1_inspire) {
+          const norm = normalizeVoicePack(parsed);
+          decodedBuffersRef.current = {};
+          setVoicePack(norm);
+          await saveVoicePackToIdb(norm);
+        }
+      } catch {
+        alert('Seleziona il file pausa81_voice.json.txt (o pausa81_voice.json) scaricato dalla chat.');
+      }
+    };
+    reader.readAsText(file);
+  };
+
   const startAmbientPad = useCallback((enabled: boolean) => {
     if (!enabled || typeof window === 'undefined') return;
     try {
@@ -618,9 +751,9 @@ export default function App() {
       const padGain = ctx.createGain();
 
       osc1.type = 'sine';
-      osc1.frequency.setValueAtTime(216, ctx.currentTime); // Fondamentale calda 216 Hz
+      osc1.frequency.setValueAtTime(216, ctx.currentTime);
       osc2.type = 'sine';
-      osc2.frequency.setValueAtTime(432, ctx.currentTime); // Armonico 432 Hz
+      osc2.frequency.setValueAtTime(432, ctx.currentTime);
 
       padGain.gain.setValueAtTime(0.0001, ctx.currentTime);
       padGain.gain.linearRampToValueAtTime(0.014, ctx.currentTime + 1.5);
@@ -661,9 +794,12 @@ export default function App() {
     }
   }, []);
 
-  /** Riproduce la tua traccia vocale registrata */
+  /**
+   * Riproduce ESCLUSIVAMENTE la tua vera voce umana con filtro Warm Broadcast EQ in tempo reale.
+   * Nessun sintetizzatore robotico (speechSynthesis) viene mai attivato.
+   */
   const playVoiceKey = useCallback(
-    async (audioKey: string | null, fallbackText: string) => {
+    async (audioKey: string | null) => {
       if (!voiceCoachEnabled || !audioKey || typeof window === 'undefined') return;
 
       if (currentSourceRef.current) {
@@ -714,17 +850,32 @@ export default function App() {
             if (buffer) {
               const source = ctx.createBufferSource();
               source.buffer = buffer;
+
+              // Catena DSP Warm Studio in tempo reale (Calore +3 dB a 160 Hz + morbidezza sulle alte)
+              const warmShelf = ctx.createBiquadFilter();
+              warmShelf.type = 'lowshelf';
+              warmShelf.frequency.setValueAtTime(165, ctx.currentTime);
+              warmShelf.gain.setValueAtTime(2.5, ctx.currentTime);
+
+              const silkLowpass = ctx.createBiquadFilter();
+              silkLowpass.type = 'lowpass';
+              silkLowpass.frequency.setValueAtTime(6800, ctx.currentTime);
+
               const gainNode = ctx.createGain();
-              gainNode.gain.value = 1.0;
-              source.connect(gainNode);
+              gainNode.gain.setValueAtTime(1.0, ctx.currentTime);
+
+              source.connect(warmShelf);
+              warmShelf.connect(silkLowpass);
+              silkLowpass.connect(gainNode);
               gainNode.connect(ctx.destination);
+
               source.start(0);
               currentSourceRef.current = source;
               return;
             }
           }
         } catch {
-          // Passa al fallback HTML5
+          // Passa al player HTML5
         }
 
         try {
@@ -740,6 +891,7 @@ export default function App() {
         }
       }
 
+      // Tentativo diretto se i singoli file .wav sono stati caricati in public/
       try {
         if (!htmlAudioRef.current) {
           htmlAudioRef.current = new Audio();
@@ -748,16 +900,7 @@ export default function App() {
         htmlAudioRef.current.volume = 1.0;
         await htmlAudioRef.current.play();
       } catch {
-        if (!fallbackText || !('speechSynthesis' in window)) return;
-        try {
-          window.speechSynthesis.cancel();
-          const u = new SpeechSynthesisUtterance(fallbackText);
-          u.lang = 'it-IT';
-          u.rate = 0.92;
-          window.speechSynthesis.speak(u);
-        } catch {
-          // Silenzioso
-        }
+        // Silenzioso: MAI usare la voce robotica del browser
       }
     },
     [voiceCoachEnabled, voicePack]
@@ -783,7 +926,6 @@ export default function App() {
         audioKey: null,
       };
 
-  // Trigger audio + vibrazione aptica leggera su smartphone ad ogni cambio di sotto-fase
   useEffect(() => {
     if (!isRunning) {
       lastPlayedStepRef.current = '';
@@ -798,12 +940,11 @@ export default function App() {
         navigator.vibrate(25);
       }
       if (snapshot.audioKey) {
-        playVoiceKey(snapshot.audioKey, snapshot.displayText);
+        playVoiceKey(snapshot.audioKey);
       }
     }
   }, [isRunning, snapshot, soundEnabled, playVoiceKey]);
 
-  // Timer principale della sessione da 60 secondi
   useEffect(() => {
     if (!isRunning) return;
 
@@ -816,7 +957,6 @@ export default function App() {
             wakeLockRef.current.release().catch(() => {});
             wakeLockRef.current = null;
           }
-          // Aggiorna contatore locale anonimo e genera codice ricevuta D.Lgs. 81/08
           setLocalSessionsCount((c) => {
             const nextCount = c + 1;
             try {
@@ -839,7 +979,6 @@ export default function App() {
     return () => window.clearInterval(interval);
   }, [isRunning, soundEnabled, stopAmbientPad]);
 
-  // Timer Sveglia VDT (60m / 120m per Art. 175 D.Lgs. 81/08)
   useEffect(() => {
     if (!vdtReminderMinutes || vdtSecondsLeft <= 0) return;
     const t = window.setInterval(() => {
@@ -875,9 +1014,6 @@ export default function App() {
       htmlAudioRef.current.pause();
       htmlAudioRef.current.currentTime = 0;
     }
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-    }
   }, [stopAmbientPad]);
 
   const startSession = useCallback(async () => {
@@ -893,7 +1029,6 @@ export default function App() {
       audioCtxRef.current.resume().catch(() => {});
     }
 
-    // Impedisce allo schermo dello smartphone di spegnersi durante i 60 secondi
     try {
       const navWithWake = navigator as unknown as {
         wakeLock?: { request: (t: string) => Promise<{ release: () => Promise<void> }> };
@@ -902,7 +1037,7 @@ export default function App() {
         wakeLockRef.current = await navWithWake.wakeLock.request('screen');
       }
     } catch {
-      // WakeLock non supportato
+      // Ignora
     }
 
     lastPlayedStepRef.current = '';
@@ -943,6 +1078,8 @@ export default function App() {
     partnerStudioName.replace(/\s+/g, '_')
   )}&cliente=${encodeURIComponent(clientCompanyName.replace(/\s+/g, '_'))}`;
 
+  const isCustomVoiceReady = Boolean(voicePack.level1_inspire);
+
   const startButtonLabel =
     sessionMode === 'all'
       ? 'Avvia Percorso Completo 3 Fasi (60s)'
@@ -951,6 +1088,15 @@ export default function App() {
   return (
     <div className={`app ${eyeRestMode ? 'app--warm-rest' : ''}`}>
       <CloudBackground />
+
+      {/* Input file nascosto per collegare al volo pausa81_voice.json.txt se necessario */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json,.txt"
+        style={{ display: 'none' }}
+        onChange={handleManualVoiceFileUpload}
+      />
 
       <header className="topbar no-print">
         <div className="topbar-left">
@@ -975,6 +1121,30 @@ export default function App() {
         </div>
 
         <div className="topbar-actions">
+          {/* Spia diagnostica e collegamento diretto del file voce */}
+          <button
+            type="button"
+            className={`icon-btn ${isCustomVoiceReady ? 'active' : 'voice-studio-btn'}`}
+            onClick={() => {
+              if (!isCustomVoiceReady) {
+                fileInputRef.current?.click();
+              } else {
+                setVoiceCoachEnabled((v) => !v);
+              }
+            }}
+            title={
+              isCustomVoiceReady
+                ? 'La tua voce reale è attiva! Clicca per mutare/riattivare la voce.'
+                : 'Clicca per selezionare il file pausa81_voice.json.txt dal tuo dispositivo'
+            }
+          >
+            {isCustomVoiceReady
+              ? voiceCoachEnabled
+                ? '🎙️ Tua Voce ON ✓'
+                : '🎙️ Tua Voce OFF'
+              : '📂 Collega .json.txt'}
+          </button>
+
           <button
             type="button"
             className={`icon-btn ${vdtReminderMinutes !== null ? 'active' : ''}`}
@@ -984,14 +1154,6 @@ export default function App() {
             {vdtReminderMinutes === null
               ? '⏰ Sveglia VDT'
               : `⏰ VDT ${Math.ceil(vdtSecondsLeft / 60)}m`}
-          </button>
-
-          <button
-            type="button"
-            className={`icon-btn ${voiceCoachEnabled ? 'active' : ''}`}
-            onClick={() => setVoiceCoachEnabled((v) => !v)}
-          >
-            {voiceCoachEnabled ? 'Voce ON' : 'Voce OFF'}
           </button>
 
           <button
@@ -1013,7 +1175,6 @@ export default function App() {
       </header>
 
       <main className="app-main no-print">
-        {/* Selettore a 4 Modalità: 1) Percorso Completo 3 Fasi + 2) Solo Liv.1 + 3) Solo Liv.2 + 4) Solo Liv.3 */}
         <div className="protocol-bar" role="tablist" aria-label="Modalità Pausa81 da 60 secondi">
           <button
             type="button"
@@ -1059,7 +1220,6 @@ export default function App() {
           sessionRemaining={sessionRemaining}
         />
 
-        {/* Indicatori delle 4 Fasi del Ciclo Respiratorio */}
         <div className="breath-phases-stepper" aria-label="Fasi del respiro">
           <span className={`step-badge ${snapshot.phase === 'inspire' ? 'active' : ''}`}>
             1. Inspira ({INSPIRE_SEC}s)
@@ -1082,7 +1242,6 @@ export default function App() {
               : `${snapshot.stage.levelTag} (SESSIONE DEDICATA 60S)`}
           </span>
 
-          {/* Parole identiche alla tua voce registrata */}
           <p className="phase-text">{snapshot.displayText}</p>
 
           {!isRunning ? (
@@ -1140,7 +1299,6 @@ export default function App() {
         </span>
       </footer>
 
-      {/* Card di Fine Sessione con Tagliando Anonimo di Conformità D.Lgs. 81/08 */}
       <AnimatePresence>
         {sessionCompleted && (
           <motion.div
@@ -1201,7 +1359,6 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Modal Generatore Targa Murale QR Code D.Lgs. 81/08 */}
       <AnimatePresence>
         {showQrModal && (
           <motion.div
@@ -1341,7 +1498,6 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Modal Presentazione Direzione · HR · RSPP · Medico Competente */}
       <AnimatePresence>
         {showExecutiveModal && (
           <motion.div
