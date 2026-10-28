@@ -959,3 +959,29 @@ body {
     padding: 0 !important;
   }
 }
+/* Barra delle 4 Fasi del Respiro (Inspira, Trattieni, Espira, Pausa) */
+.breath-phases-stepper {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: -0.1rem;
+}
+
+.step-badge {
+  font-size: clamp(0.62rem, 2vw, 0.72rem);
+  font-weight: 600;
+  color: #64748b;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  transition: all 0.2s ease;
+}
+
+.step-badge.active {
+  color: #ffffff;
+  background: #0d9488;
+  border-color: #0d9488;
+  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.28);
+}
