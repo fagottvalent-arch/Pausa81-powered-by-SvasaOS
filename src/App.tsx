@@ -6,6 +6,7 @@ export type Phase = 'idle' | 'inspire' | 'hold' | 'expire' | 'pause';
 
 interface LevelProtocol {
   id: string;
+  shortTab: string;
   levelTag: string;
   name: string;
   subtitle: string;
@@ -22,18 +23,19 @@ interface LevelProtocol {
 const LEVELS: LevelProtocol[] = [
   {
     id: 'level1',
+    shortTab: 'Liv. 1 · Visivo',
     levelTag: 'LIVELLO 1 · NEURO-VISIVO',
     name: 'Reset Tra Due Call',
-    subtitle: 'Decompressione Oculare & Mentale (5·0·5)',
-    whenToUse: 'Seduto · Ogni cambio attività o post-videocall',
+    subtitle: 'Riposo Oculare 5·0·5',
+    whenToUse: 'Seduto · Cambio attività o post-videocall',
     inspire: 5,
     hold: 0,
     expire: 5,
     pause: 0,
     benefit:
-      'Riduce l’affaticamento della corteccia visiva (Titolo VII D.Lgs. 81/08) e riequilibra il sistema nervoso autonomo in 6 cicli da 10 secondi.',
+      'Riduce l’affaticamento della corteccia visiva (Titolo VII D.Lgs. 81/08) e riequilibra il sistema nervoso in 60 secondi.',
     prompts: {
-      idle: 'Livello 1: Riposo Visivo e Coerenza Cardiaca (60s)',
+      idle: 'Livello 1: Riposo Visivo e Coerenza (60s)',
       inspire: 'Inspira dal naso · Distogli il fuoco dai pixel e segui il Loto',
       hold: 'Mantieni il respiro calmo',
       expire: 'Espira lentamente · Rilascia mandibola, occhi e spalle',
@@ -49,10 +51,11 @@ const LEVELS: LevelProtocol[] = [
   },
   {
     id: 'level2',
+    shortTab: 'Liv. 2 · Gambe 1h',
     levelTag: 'LIVELLO 2 · DOPO 60 MIN DI SCHERMO',
     name: 'Pompa Ematica & Gambe',
-    subtitle: 'Soleus Push-Up & Sit-to-Stand (4·2·4)',
-    whenToUse: 'Seduto / Sedia · Riattivazione circolatoria sicura (Zero-Sudore)',
+    subtitle: 'Soleus & Sit-to-Stand 4·2·4',
+    whenToUse: 'Seduto/Sedia · Riattivazione circolatoria (Zero-Sudore)',
     inspire: 4,
     hold: 2,
     expire: 4,
@@ -60,7 +63,7 @@ const LEVELS: LevelProtocol[] = [
     benefit:
       'Riattiva il ritorno venoso dagli arti inferiori al cervello (muscolo soleo e glutei) senza sovraccaricare le ginocchia.',
     prompts: {
-      idle: 'Livello 2: Riattivazione Circolatoria Post-60 Minuti (60s)',
+      idle: 'Livello 2: Riattivazione Circolatoria Post-1h (60s)',
       inspire: 'Inspira (4s) · Solleva i talloni da terra attivando i polpacci',
       hold: 'Trattieni (2s) · Contrai polpacci e glutei (o sali in piedi)',
       expire: 'Espira (4s) · Riappoggia i talloni (o siediti lentamente)',
@@ -76,10 +79,11 @@ const LEVELS: LevelProtocol[] = [
   },
   {
     id: 'level3',
+    shortTab: 'Liv. 3 · Postura',
     levelTag: 'LIVELLO 3 · RIPRESA FISICA & POSTURALE',
     name: 'Sblocco Collo, Spalle & Polsi',
-    subtitle: 'Decompressione Miofasciale DMS (4·2·6)',
-    whenToUse: 'In piedi · Pausa Videoterminale (2h) o Fine Turno',
+    subtitle: 'Decompressione DMS 4·2·6',
+    whenToUse: 'In piedi · Pausa VDT (2h) o Fine Turno',
     inspire: 4,
     hold: 2,
     expire: 6,
@@ -87,7 +91,7 @@ const LEVELS: LevelProtocol[] = [
     benefit:
       'Previene i Disturbi Muscolo-Scheletrici (DMS): scarica tunnel carpale, rachide cervicale (Tech-Neck) e tratto lombare.',
     prompts: {
-      idle: 'Livello 3: Decompressione Fisica Completa in Piedi (60s)',
+      idle: 'Livello 3: Decompressione Fisica in Piedi (60s)',
       inspire: 'Inspira (4s) · In piedi, ruota i palmi in fuori, apri dita e torace',
       hold: 'Trattieni (2s) · Allunga la nuca verso l’alto e attiva i glutei',
       expire: 'Espira (6s) · Rilascia braccia, trapezio e tensione lombare',
@@ -104,8 +108,9 @@ const LEVELS: LevelProtocol[] = [
 ];
 
 const SESSION_DURATION = 60;
+const VOICE_STORAGE_KEY = 'pausa81_custom_voice_v1';
 
-/** Sintetizzatore campana tibetana morbida */
+/** Sintetizzatore campana armonica */
 function playSoftChime(phase: Phase, enabled: boolean) {
   if (!enabled || typeof window === 'undefined') return;
   const AudioCtx =
@@ -130,33 +135,82 @@ function playSoftChime(phase: Phase, enabled: boolean) {
     osc.frequency.setValueAtTime(freqMap[phase] || 432, ctx.currentTime);
 
     gain.gain.setValueAtTime(0.001, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.055, ctx.currentTime + 0.08);
-    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 2.1);
+    gain.gain.exponentialRampToValueAtTime(0.05, ctx.currentTime + 0.08);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 2.0);
 
     osc.connect(gain);
     gain.connect(ctx.destination);
 
     osc.start();
-    osc.stop(ctx.currentTime + 2.2);
+    osc.stop(ctx.currentTime + 2.1);
   } catch {
-    // Ignora se l'utente non ha ancora interagito
+    // Ignora se audio bloccato
   }
 }
 
-/** Voce Guida Umana (Web Speech API) per dare calore umano senza togliere il Loto */
-function speakCoachPrompt(text: string, enabled: boolean) {
-  if (!enabled || !text || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-  try {
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'it-IT';
-    utterance.rate = 0.92; // Ritmo calmo e rilassante
-    utterance.pitch = 0.98;
-    utterance.volume = 0.85;
-    window.speechSynthesis.speak(utterance);
-  } catch {
-    // Fallback silenzioso
+/**
+ * Riproduce LA TUA VOCE REALE:
+ * 1) Cerca prima se hai registrato la tua voce nello Studio Integrato (salvata sul dispositivo)
+ * 2) Altrimenti cerca il tuo file audio in `/audio/{levelId}_{phase}.mp3` o `/audio/{phase}.mp3` nella cartella public di GitHub
+ * 3) Se non trova file registrati, usa la sintesi vocale italiana di backup.
+ */
+function playCoachVoice(
+  levelId: string,
+  phase: Phase,
+  fallbackText: string,
+  enabled: boolean,
+  customRecordings: Record<string, string>,
+  activeAudioRef: React.MutableRefObject<HTMLAudioElement | null>
+) {
+  if (!enabled || typeof window === 'undefined') return;
+
+  // Ferma eventuale audio precedente
+  if (activeAudioRef.current) {
+    activeAudioRef.current.pause();
+    activeAudioRef.current.currentTime = 0;
   }
+
+  const specificKey = `${levelId}_${phase}`;
+  const genericKey = phase;
+
+  // 1. Controlla registrazione vocale personalizzata salvata
+  const recordedDataUrl = customRecordings[specificKey] || customRecordings[genericKey];
+  if (recordedDataUrl) {
+    try {
+      const audio = new Audio(recordedDataUrl);
+      activeAudioRef.current = audio;
+      audio.play().catch(() => {});
+      return;
+    } catch {
+      // Continua sul fallback
+    }
+  }
+
+  // 2. Controlla se esiste il file .mp3 nella cartella public/audio/ su Vercel
+  const publicAudioUrl = `/audio/${specificKey}.mp3`;
+  const audioEl = new Audio(publicAudioUrl);
+  activeAudioRef.current = audioEl;
+
+  audioEl
+    .play()
+    .then(() => {
+      // Riproduzione del file .mp3 della tua voce riuscita!
+    })
+    .catch(() => {
+      // 3. Fallback automatico su sintesi vocale se il file .mp3 non è ancora stato caricato su GitHub
+      if (!fallbackText || !('speechSynthesis' in window)) return;
+      try {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(fallbackText);
+        utterance.lang = 'it-IT';
+        utterance.rate = 0.92;
+        utterance.pitch = 0.98;
+        utterance.volume = 0.9;
+        window.speechSynthesis.speak(utterance);
+      } catch {
+        // Silenzioso
+      }
+    });
 }
 
 function useBreathScale(phase: Phase, breath: number, phaseDuration: number) {
@@ -165,18 +219,19 @@ function useBreathScale(phase: Phase, breath: number, phaseDuration: number) {
   return { scale, duration };
 }
 
-function SvasaLogo({ partnerName }: { partnerName: string }) {
+function Pausa81Logo({ partnerName }: { partnerName: string }) {
   return (
-    <div style={{ textAlign: 'center', lineHeight: 1.2 }} aria-hidden="true">
+    <div className="brand-block" aria-hidden="true">
       <span className="svasa-wordmark">
         Pausa81 <small className="svasa-badge-b2b">{partnerName || 'D.Lgs. 81/08'}</small>
       </span>
-      <div style={{ fontSize: '0.68rem', color: '#64748b', marginTop: '3px', letterSpacing: '0.04em' }}>
+      <span className="powered-by-sub">
         powered by <strong>SvasaOS Engine</strong>
-      </div>
+      </span>
     </div>
   );
 }
+
 function SacredLotus({ phase }: { phase: Phase }) {
   const openFactor =
     phase === 'inspire' || phase === 'hold'
@@ -316,7 +371,6 @@ function SacredLotus({ phase }: { phase: Phase }) {
   );
 }
 
-/** Generatore SVG QR Code deterministico Client-Side (Zero dipendenze esterne) */
 function DynamicQrSvg({ text }: { text: string }) {
   const size = 21;
   const cells: boolean[][] = Array.from({ length: size }, () => Array(size).fill(false));
@@ -353,7 +407,7 @@ function DynamicQrSvg({ text }: { text: string }) {
   }
 
   return (
-    <svg viewBox={`0 0 ${size + 4} ${size + 4}`} className="qr-svg" aria-label="QR Code Presidio">
+    <svg viewBox={`0 0 ${size + 4} ${size + 4}`} className="qr-svg" aria-label="QR Code Pausa81">
       <rect width={size + 4} height={size + 4} fill="#ffffff" rx="1.5" />
       {cells.map((row, r) =>
         row.map((filled, c) =>
@@ -400,7 +454,7 @@ function Sphere({
           r={radius}
           fill="none"
           stroke="#0d9488"
-          strokeWidth="3.2"
+          strokeWidth="3.5"
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
@@ -442,6 +496,17 @@ function Sphere({
   );
 }
 
+const VOICE_SLOTS = [
+  { key: 'level1_inspire', label: 'Livello 1 · Inspira', hint: 'Es: "Inspira dolcemente dal naso e rilassa gli occhi"' },
+  { key: 'level1_expire', label: 'Livello 1 · Espira', hint: 'Es: "Espira lentamente, lascia andare le spalle"' },
+  { key: 'level2_inspire', label: 'Livello 2 · Inspira (Gambe)', hint: 'Es: "Inspira, solleva i talloni e attiva i polpacci"' },
+  { key: 'level2_hold', label: 'Livello 2 · Trattieni', hint: 'Es: "Mantieni la spinta"' },
+  { key: 'level2_expire', label: 'Livello 2 · Espira (Gambe)', hint: 'Es: "Espira e riappoggia i talloni a terra"' },
+  { key: 'level3_inspire', label: 'Livello 3 · Inspira (Postura)', hint: 'Es: "Inspira in piedi, apri il petto e ruota i palmi in fuori"' },
+  { key: 'level3_hold', label: 'Livello 3 · Trattieni', hint: 'Es: "Allunga bene la nuca verso l’alto"' },
+  { key: 'level3_expire', label: 'Livello 3 · Espira (Postura)', hint: 'Es: "Espira profondamente, sciogli collo e spalle"' },
+];
+
 export default function App() {
   const params =
     typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
@@ -457,12 +522,30 @@ export default function App() {
   const [phaseDuration, setPhaseDuration] = useState<number>(5);
   const [sessionRemaining, setSessionRemaining] = useState<number>(SESSION_DURATION);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
-  const [voiceCoachEnabled, setVoiceCoachEnabled] = useState<boolean>(false);
+  const [voiceCoachEnabled, setVoiceCoachEnabled] = useState<boolean>(true);
   const [eyeRestMode, setEyeRestMode] = useState<boolean>(false);
   const [sessionCompleted, setSessionCompleted] = useState<boolean>(false);
   const [showExecutiveModal, setShowExecutiveModal] = useState<boolean>(false);
   const [showQrModal, setShowQrModal] = useState<boolean>(false);
-  const [employeesCount, setEmployeesCount] = useState<number>(120);
+  const [showVoiceStudioModal, setShowVoiceStudioModal] = useState<boolean>(false);
+
+  // Contatore minimo lavoratori impostato a 10
+  const [employeesCount, setEmployeesCount] = useState<number>(10);
+
+  // Stato per le registrazioni della TUA voce
+  const [customRecordings, setCustomRecordings] = useState<Record<string, string>>(() => {
+    if (typeof window === 'undefined') return {};
+    try {
+      const saved = window.localStorage.getItem(VOICE_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+  const [recordingKey, setRecordingKey] = useState<string | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const activeAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const [partnerStudioName, setPartnerStudioName] = useState<string>(
     initialPartner || 'Studio Partner RSPP / Sicurezza'
@@ -475,6 +558,51 @@ export default function App() {
   );
 
   const timerRef = useRef<number | null>(null);
+
+  const startRecordingSlot = async (slotKey: string) => {
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      chunksRef.current = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+
+      recorder.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64data = reader.result as string;
+          setCustomRecordings((prev) => {
+            const updated = { ...prev, [slotKey]: base64data };
+            try {
+              window.localStorage.setItem(VOICE_STORAGE_KEY, JSON.stringify(updated));
+            } catch {
+              // Se localStorage è pieno mantiene in RAM
+            }
+            return updated;
+          });
+        };
+        reader.readAsDataURL(blob);
+        stream.getTracks().forEach((t) => t.stop());
+      };
+
+      mediaRecorderRef.current = recorder;
+      recorder.start();
+      setRecordingKey(slotKey);
+    } catch {
+      alert('Consenti l’accesso al microfono del telefono o del PC per registrare la tua voce.');
+    }
+  };
+
+  const stopRecordingSlot = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+    setRecordingKey(null);
+  };
 
   const getNextPhase = useCallback(
     (current: Phase): { next: Phase; duration: number; targetBreath: number } => {
@@ -500,6 +628,10 @@ export default function App() {
 
   const stopSession = useCallback(() => {
     if (timerRef.current) window.clearInterval(timerRef.current);
+    if (activeAudioRef.current) {
+      activeAudioRef.current.pause();
+      activeAudioRef.current.currentTime = 0;
+    }
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
@@ -518,8 +650,15 @@ export default function App() {
     setPhaseTimeLeft(first.duration);
     setBreath(first.targetBreath);
     playSoftChime(first.next, soundEnabled);
-    speakCoachPrompt(selectedLevel.voicePrompts[first.next], voiceCoachEnabled);
-  }, [getNextPhase, soundEnabled, voiceCoachEnabled, selectedLevel]);
+    playCoachVoice(
+      selectedLevel.id,
+      first.next,
+      selectedLevel.voicePrompts[first.next],
+      voiceCoachEnabled,
+      customRecordings,
+      activeAudioRef
+    );
+  }, [getNextPhase, soundEnabled, voiceCoachEnabled, selectedLevel, customRecordings]);
 
   useEffect(() => {
     if (phase === 'idle') return;
@@ -532,7 +671,6 @@ export default function App() {
           setBreath(0.5);
           setSessionCompleted(true);
           playSoftChime('idle', soundEnabled);
-          speakCoachPrompt('Sessione completata. Ottimo lavoro.', voiceCoachEnabled);
           return 0;
         }
         return prev - 1;
@@ -545,7 +683,14 @@ export default function App() {
           setPhaseDuration(nextStep.duration);
           setBreath(nextStep.targetBreath);
           playSoftChime(nextStep.next, soundEnabled);
-          speakCoachPrompt(selectedLevel.voicePrompts[nextStep.next], voiceCoachEnabled);
+          playCoachVoice(
+            selectedLevel.id,
+            nextStep.next,
+            selectedLevel.voicePrompts[nextStep.next],
+            voiceCoachEnabled,
+            customRecordings,
+            activeAudioRef
+          );
           return nextStep.duration;
         }
         return prev - 1;
@@ -555,7 +700,7 @@ export default function App() {
     return () => {
       if (timerRef.current) window.clearInterval(timerRef.current);
     };
-  }, [phase, getNextPhase, soundEnabled, voiceCoachEnabled, selectedLevel]);
+  }, [phase, getNextPhase, soundEnabled, voiceCoachEnabled, selectedLevel, customRecordings]);
 
   const estimatedHoursSavedMonthly = Math.round(employeesCount * 3.2);
   const estimatedAnnualSavings = (employeesCount * 410).toLocaleString('it-IT');
@@ -564,11 +709,13 @@ export default function App() {
     partnerStudioName.replace(/\s+/g, '_')
   )}&cliente=${encodeURIComponent(clientCompanyName.replace(/\s+/g, '_'))}`;
 
+  const hasCustomVoiceRecorded = Object.keys(customRecordings).length > 0;
+
   return (
     <div className={`app ${eyeRestMode ? 'app--warm-rest' : ''}`}>
       <CloudBackground />
 
-      {/* Topbar B2B con Generatore Targa QR e Area Direttori */}
+      {/* Topbar ottimizzata per Mobile e Desktop */}
       <header className="topbar no-print">
         <div className="topbar-left">
           <button
@@ -578,8 +725,8 @@ export default function App() {
           >
             <span className="pill-dot" />
             {initialPartner || initialClient
-              ? `${initialClient || initialPartner} · Presidio D.Lgs. 81/08`
-              : 'Area Direttori & Partner RSPP (IT)'}
+              ? `${initialClient || initialPartner} · D.Lgs. 81/08`
+              : 'Direzione · HR · RSPP · Medico'}
           </button>
 
           <button
@@ -587,7 +734,7 @@ export default function App() {
             className="qr-pill-btn"
             onClick={() => setShowQrModal(true)}
           >
-            Genera Targa QR Code Reparto
+            Targa QR
           </button>
         </div>
 
@@ -596,9 +743,21 @@ export default function App() {
             type="button"
             className={`icon-btn ${voiceCoachEnabled ? 'active' : ''}`}
             onClick={() => setVoiceCoachEnabled((v) => !v)}
-            title="Attiva una voce calma in italiano che detta i tempi e i movimenti"
           >
-            {voiceCoachEnabled ? 'Voce Coach ON' : 'Voce Coach OFF'}
+            {voiceCoachEnabled
+              ? hasCustomVoiceRecorded
+                ? 'Tua Voce ON'
+                : 'Voce ON'
+              : 'Voce OFF'}
+          </button>
+
+          <button
+            type="button"
+            className="icon-btn voice-studio-btn"
+            onClick={() => setShowVoiceStudioModal(true)}
+            title="Registra la tua voce reale per i 3 livelli"
+          >
+            🎙️ Mia Voce
           </button>
 
           <button
@@ -606,7 +765,7 @@ export default function App() {
             className={`icon-btn ${eyeRestMode ? 'active' : ''}`}
             onClick={() => setEyeRestMode((v) => !v)}
           >
-            {eyeRestMode ? 'Filtro Caldo ON' : 'Riposo Visivo'}
+            {eyeRestMode ? 'Filtro ON' : 'Vista'}
           </button>
 
           <button
@@ -614,14 +773,14 @@ export default function App() {
             className={`icon-btn ${soundEnabled ? 'active' : ''}`}
             onClick={() => setSoundEnabled((v) => !v)}
           >
-            {soundEnabled ? 'Campana ON' : 'Muto'}
+            {soundEnabled ? 'Audio' : 'Muto'}
           </button>
         </div>
       </header>
 
       <main className="app-main no-print">
-        {/* Selettore dei 3 Livelli Progressivi (Mentale -> Gambe 1h -> Posturale 2h) */}
-        <div className="protocol-bar" role="tablist" aria-label="3 Livelli di Decompressione">
+        {/* Barra 3 Livelli compatta (3 colonne affiancate anche su smartphone) */}
+        <div className="protocol-bar" role="tablist" aria-label="3 Livelli Pausa81">
           {LEVELS.map((lvl) => (
             <button
               key={lvl.id}
@@ -633,7 +792,7 @@ export default function App() {
                 setSessionCompleted(false);
               }}
             >
-              <span className="protocol-level-tag">{lvl.levelTag}</span>
+              <span className="protocol-level-tag">{lvl.shortTab}</span>
               <span className="protocol-chip-title">{lvl.name}</span>
               <span className="protocol-chip-sub">{lvl.subtitle}</span>
             </button>
@@ -655,10 +814,10 @@ export default function App() {
             <p className="protocol-benefit">{selectedLevel.benefit}</p>
           ) : (
             <div className="countdown">
-              <span className="countdown-number">{phaseTimeLeft}</span>
-              <span className="countdown-label">
-                Fine protocollo tra {sessionRemaining}s
-              </span>
+              <div className="countdown-row">
+                <span className="countdown-number">{phaseTimeLeft}s</span>
+                <span className="countdown-label">· Fine tra {sessionRemaining}s</span>
+              </div>
               <div className="tick-bar">
                 <div
                   className="tick-bar-fill"
@@ -684,17 +843,142 @@ export default function App() {
         </div>
 
         <div className="brand">
-          <SvasaLogo partnerName={initialClient || initialPartner} />
+          <Pausa81Logo partnerName={initialClient || initialPartner} />
         </div>
       </main>
 
       <footer className="compliance-footer no-print">
         <span>
-          <strong>100% Anonimo &amp; Zero-Tracking:</strong> nessun dato personale, biometrico o
-          emotivo viene raccolto o condiviso con il datore di lavoro (Conforme Garante Privacy ·
-          Esente Art. 4 L. 300/1970 · Presidio integrativo Art. 28 e Titolo VII D.Lgs. 81/2008).
+          <strong>Pausa81 · 100% Anonimo &amp; Zero-Tracking:</strong> conforme Garante Privacy ·
+          Esente Art. 4 L. 300/70 · Presidio Art. 28 e Titolo VII D.Lgs. 81/2008.
         </span>
       </footer>
+
+      {/* Modal Studio Registrazione LA TUA VOCE */}
+      <AnimatePresence>
+        {showVoiceStudioModal && (
+          <motion.div
+            className="modal-backdrop no-print"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="executive-modal"
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 20, opacity: 0 }}
+            >
+              <div className="executive-header">
+                <div>
+                  <span className="completion-badge">Personalizzazione Vocale Fondatore</span>
+                  <h2>🎙️ Registra la Tua Voce Coach per Pausa81</h2>
+                </div>
+                <button
+                  type="button"
+                  className="close-btn"
+                  onClick={() => {
+                    stopRecordingSlot();
+                    setShowVoiceStudioModal(false);
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <p className="legal-note" style={{ marginBottom: '0.9rem' }}>
+                <strong>Come funziona:</strong> Premi <strong>Registra</strong> accanto a ogni fase e
+                pronuncia la frase con tono calmo. La tua voce viene salvata subito in questo
+                telefono/PC per le tue demo dal vivo. Se clicchi su <strong>Scarica file</strong>,
+                puoi caricare i file nella cartella <code>public/audio/</code> su GitHub così tutti
+                i clienti sentiranno la tua voce!
+              </p>
+
+              <div className="voice-slots-list">
+                {VOICE_SLOTS.map((slot) => {
+                  const isRec = recordingKey === slot.key;
+                  const savedAudio = customRecordings[slot.key];
+                  return (
+                    <div key={slot.key} className="voice-slot-card">
+                      <div>
+                        <strong>{slot.label}</strong>
+                        <small>{slot.hint}</small>
+                      </div>
+                      <div className="voice-slot-actions">
+                        {!isRec ? (
+                          <button
+                            type="button"
+                            className="btn-mini btn-mini-rec"
+                            onClick={() => startRecordingSlot(slot.key)}
+                          >
+                            {savedAudio ? 'Riregistra' : '● Registra'}
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            className="btn-mini btn-mini-stop"
+                            onClick={stopRecordingSlot}
+                          >
+                            ■ Stop
+                          </button>
+                        )}
+
+                        {savedAudio && (
+                          <>
+                            <button
+                              type="button"
+                              className="btn-mini"
+                              onClick={() => {
+                                const a = new Audio(savedAudio);
+                                a.play();
+                              }}
+                            >
+                              ▶ Ascolta
+                            </button>
+                            <a
+                              href={savedAudio}
+                              download={`${slot.key}.mp3`}
+                              className="btn-mini"
+                              style={{ textDecoration: 'none' }}
+                            >
+                              ⬇ Scarica
+                            </a>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="executive-footer" style={{ marginTop: '1rem' }}>
+                {hasCustomVoiceRecorded && (
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    onClick={() => {
+                      setCustomRecordings({});
+                      window.localStorage.removeItem(VOICE_STORAGE_KEY);
+                    }}
+                  >
+                    Ripristina Voce Default
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => {
+                    stopRecordingSlot();
+                    setShowVoiceStudioModal(false);
+                  }}
+                >
+                  Salva e Torna a Pausa81
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Modal Fine Sessione */}
       <AnimatePresence>
@@ -712,7 +996,7 @@ export default function App() {
               exit={{ scale: 0.94, opacity: 0 }}
             >
               <span className="completion-badge">{selectedLevel.levelTag} Completato</span>
-              <h2>Reset Neuro-Visivo e Posturale Completato</h2>
+              <h2>Decompressione Pausa81 Completata</h2>
               <p>
                 Hai completato 60 secondi di <strong>{selectedLevel.name}</strong>.
               </p>
@@ -729,10 +1013,9 @@ export default function App() {
               </div>
 
               <p className="legal-note">
-                *Valori medi di riferimento tratti dalla letteratura scientifica sulle micro-pause
-                ergonomiche e respiratorie. Questa web-app non effettua misurazioni biometriche o di
-                monitoraggio emotivo sul lavoratore, né sostituisce la valutazione ufficiale INAIL
-                dello stress lavoro-correlato.
+                *Valori medi da letteratura scientifica sulle micro-pause ergonomiche. Pausa81 non
+                effettua misurazioni biometriche o monitoraggio emotivo sul lavoratore, né
+                sostituisce la valutazione ufficiale INAIL dello stress lavoro-correlato.
               </p>
 
               <div className="completion-actions">
@@ -749,7 +1032,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Modal Generatore Targa Murale QR Code D.Lgs. 81/08 (Stampabile in diretta per i Clienti) */}
+      {/* Modal Generatore Targa Murale QR Code D.Lgs. 81/08 */}
       <AnimatePresence>
         {showQrModal && (
           <motion.div
@@ -766,7 +1049,7 @@ export default function App() {
             >
               <div className="executive-header no-print">
                 <div>
-                  <span className="completion-badge">Kit Phygital Istantaneo · White-Label</span>
+                  <span className="completion-badge">Kit Phygital Pausa81 · White-Label</span>
                   <h2>Generatore Targa Murale QR Code (D.Lgs. 81/2008)</h2>
                 </div>
                 <button
@@ -805,10 +1088,9 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Targa Ufficiale Pronta per Stampa A4 */}
               <div className="printable-plaque">
                 <div className="plaque-header">
-                  <span>PRESIDIO AZIENDALE SALUTE, SICUREZZA E BENESSERE ORGANIZZATIVO</span>
+                  <span>PRESIDIO AZIENDALE PAUSA81 · SALUTE, SICUREZZA E BENESSERE ORGANIZZATIVO</span>
                   <strong>D.LGS. 81/2008 · ART. 28 (STRESS LAVORO-CORRELATO) &amp; TITOLO VII (VDT)</strong>
                 </div>
 
@@ -831,7 +1113,7 @@ export default function App() {
                   </div>
 
                   <div className="plaque-levels">
-                    <h4>PROTOCOLLI DI DECOMPRESSIONE DA 60 SECONDI</h4>
+                    <h4>PROTOCOLLI PAUSA81 DA 60 SECONDI</h4>
                     <div className="plaque-level-item">
                       <strong>LIVELLO 1 · Reset Neuro-Visivo (Tra due call / picco operativo):</strong>
                       <p>Decompressione oculare e respirazione guidata 5·5 a colori tenui.</p>
@@ -854,16 +1136,19 @@ export default function App() {
                     Esente da accordi sindacali ex Art. 4 L. 300/1970 · Misura integrativa INAIL).
                   </p>
                   <div className="plaque-partner-signature">
-  <span>Presidio fornito in partnership con: <strong>{partnerStudioName}</strong></span>
-  <span>Sistema: <strong>Pausa81</strong> <em>powered by SvasaOS</em></span>
-</div>
+                    <span>Presidio fornito in partnership con: <strong>{partnerStudioName}</strong></span>
+                    <span>Sistema: <strong>Pausa81</strong> <em>powered by SvasaOS</em></span>
+                  </div>
+                </div>
+              </div>
+
               <div className="executive-footer no-print" style={{ marginTop: '1rem' }}>
                 <button
                   type="button"
                   className="btn btn-primary"
                   onClick={() => window.print()}
                 >
-                  Stampa / Salva Targa in PDF (A4)
+                  Stampa / Salva Targa PDF (A4)
                 </button>
                 <button
                   type="button"
@@ -872,7 +1157,7 @@ export default function App() {
                     navigator.clipboard?.writeText(customWhiteLabelUrl);
                   }}
                 >
-                  Copia Link White-Label Cliente
+                  Copia Link Cliente
                 </button>
                 <button
                   type="button"
@@ -887,7 +1172,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Modal Area Direttori: ROI + Conformità Legale Italiana */}
+      {/* Modal Presentazione Direzione · HR · RSPP · Medico Competente con Pausa81 e minimo 10 lavoratori */}
       <AnimatePresence>
         {showExecutiveModal && (
           <motion.div
@@ -904,8 +1189,13 @@ export default function App() {
             >
               <div className="executive-header">
                 <div>
-                  <span className="completion-badge">Presentazione Direzione · HR · RSPP · Medico Competente</span>
-                  <h2>SvasaOS Enterprise — Sistema a 3 Livelli Anti-Tecnostress &amp; DMS</h2>
+                  <span className="completion-badge">
+                    Presentazione Direzione · HR · RSPP · Medico Competente
+                  </span>
+                  <h2>Pausa81 — Sistema a 3 Livelli Anti-Tecnostress &amp; DMS</h2>
+                  <small style={{ color: '#64748b', fontSize: '0.76rem' }}>
+                    powered by <strong>SvasaOS Engine</strong> · Presidio Art. 28 e Titolo VII D.Lgs. 81/2008
+                  </small>
                 </div>
                 <button
                   type="button"
@@ -921,12 +1211,12 @@ export default function App() {
                   <label htmlFor="emp-slider">
                     Numero Lavoratori / Videoterminalisti: <strong>{employeesCount}</strong>
                   </label>
-                  <span>3 micro-pause da 60s / giorno</span>
+                  <span>Minimo 10 lavoratori · 3 pause da 60s/giorno</span>
                 </div>
                 <input
                   id="emp-slider"
                   type="range"
-                  min={15}
+                  min={10}
                   max={1000}
                   step={5}
                   value={employeesCount}
@@ -950,13 +1240,13 @@ export default function App() {
               </div>
 
               <h3 className="compliance-section-title">
-                Quadro di Conformità Normativa Italiana (Audit DPO / RSPP / Medico Competente)
+                Quadro di Conformità Normativa Italiana Pausa81 (Audit DPO / RSPP / Medico Competente)
               </h3>
               <div className="compliance-grid">
                 <div className="compliance-card">
                   <h4>1. Garante Privacy (gpdp.it — Zero-Tracking)</h4>
                   <p>
-                    Conforme ai provvedimenti del Garante Privacy sul lavoro: SvasaOS non usa
+                    Conforme ai provvedimenti del Garante Privacy sul lavoro: <strong>Pausa81</strong> non usa
                     algoritmi di monitoraggio emotivo, webcam o braccialetti biometrici. Nessun dato
                     personale o sanitario viene raccolto (Art. 9 GDPR e Art. 8 L. 300/1970).
                   </p>
@@ -965,9 +1255,9 @@ export default function App() {
                 <div className="compliance-card">
                   <h4>2. Linee Guida INAIL &amp; Prevenzione DMS</h4>
                   <p>
-                    Si integra con i criteri della piattaforma INAIL sullo Stress Lavoro-Correlato
-                    senza sostituirla (Art. 28 D.Lgs. 81/08) e supporta la prevenzione dei Disturbi
-                    Muscolo-Scheletrici e dell’affaticamento visivo (Titolo VII D.Lgs. 81/08).
+                    <strong>Pausa81</strong> si integra con i criteri della piattaforma INAIL sullo Stress
+                    Lavoro-Correlato senza sostituirla (Art. 28 D.Lgs. 81/08) e supporta la
+                    prevenzione dei Disturbi Muscolo-Scheletrici e dell’affaticamento visivo (Titolo VII).
                   </p>
                 </div>
 
@@ -975,8 +1265,8 @@ export default function App() {
                   <h4>3. Ispettorato Nazionale del Lavoro (INL — Art. 4)</h4>
                   <p>
                     L’assenza totale di login nominativi o tracciamento orario esclude qualsiasi
-                    controllo a distanza dei lavoratori: non richiede accordo sindacale preventivo
-                    né autorizzazione dell’Ispettorato Nazionale del Lavoro.
+                    controllo a distanza dei lavoratori: <strong>Pausa81</strong> non richiede accordo
+                    sindacale preventivo né autorizzazione dell’Ispettorato Nazionale del Lavoro.
                   </p>
                 </div>
 
