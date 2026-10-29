@@ -1,15 +1,16 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  type MutableRefObject,
+  type ChangeEvent,
+} from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CloudBackground } from './components/CloudBackground';
 
 export type Phase = 'idle' | 'inspire' | 'hold' | 'expire' | 'pause';
 export type SessionMode = 'all' | 'level1' | 'level2' | 'level3';
-
-// Cerca automaticamente qualsiasi file *voice* anche se caricato in src/ o nella root invece che in public/
-const BUNDLED_VOICE_FILES = import.meta.glob(
-  ['./*voice*', '../*voice*', '../public/*voice*'],
-  { query: '?raw', import: 'default', eager: true }
-) as Record<string, string>;
 
 interface StageConfig {
   id: 'level1' | 'level2' | 'level3';
@@ -110,7 +111,7 @@ const CYCLE_SEC = INSPIRE_SEC + HOLD_SEC + EXPIRE_SEC + PAUSE_SEC; // 20s
 const SESSION_DURATION = 60;
 const LOCAL_STATS_KEY = 'pausa81_local_completed_count';
 
-/** Salvataggio e lettura in IndexedDB per supportare file voce da oltre 1 MB senza limiti */
+/** Salvataggio e lettura in IndexedDB per supportare file voce oltre 1 MB */
 function saveVoicePackToIdb(pack: Record<string, string>): Promise<void> {
   return new Promise((resolve) => {
     if (typeof window === 'undefined' || !('indexedDB' in window)) {
@@ -165,6 +166,24 @@ function loadVoicePackFromIdb(): Promise<Record<string, string> | null> {
       resolve(null);
     }
   });
+}
+
+/** Converte un Data URI Base64 in un Blob URL nativo velocissimo per Chrome/Safari */
+function dataUriToBlobUrl(dataUri: string): string {
+  try {
+    const parts = dataUri.split(',');
+    const base64 = parts.length > 1 ? parts[1] : parts[0];
+    const binary = window.atob(base64.trim());
+    const len = binary.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    const blob = new Blob([bytes], { type: 'audio/wav' });
+    return URL.createObjectURL(blob);
+  } catch {
+    return dataUri;
+  }
 }
 
 interface TimelineSnapshot {
@@ -254,54 +273,6 @@ function getTimelineSnapshot(elapsed: number, mode: SessionMode): TimelineSnapsh
     displayText: pauseText,
     audioKey: null,
   };
-}
-
-function playSoftChime(
-  phase: Phase,
-  enabled: boolean,
-  audioCtxRef: React.MutableRefObject<AudioContext | null>
-) {
-  if (!enabled || typeof window === 'undefined') return;
-  try {
-    const AudioCtx =
-      window.AudioContext ||
-      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    if (!AudioCtx) return;
-
-    if (!audioCtxRef.current) {
-      audioCtxRef.current = new AudioCtx();
-    }
-    const ctx = audioCtxRef.current;
-    if (ctx.state === 'suspended') {
-      ctx.resume().catch(() => {});
-    }
-
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    const freqMap: Record<Phase, number> = {
-      idle: 432,
-      inspire: 528,
-      hold: 639,
-      expire: 396,
-      pause: 432,
-    };
-
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(freqMap[phase] || 432, ctx.currentTime);
-
-    gain.gain.setValueAtTime(0.001, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.026, ctx.currentTime + 0.08);
-    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.8);
-
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-
-    osc.start();
-    osc.stop(ctx.currentTime + 1.9);
-  } catch {
-    // Ignora
-  }
 }
 
 function useBreathScale(phase: Phase, breath: number, phaseDuration: number) {
@@ -626,51 +597,177 @@ export default function App() {
   const [employeesCount, setEmployeesCount] = useState<number>(10);
 
   const [voicePack, setVoicePack] = useState<Record<string, string>>({});
+  const blobUrlsRef = useRef<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const decodedBuffersRef = useRef<Record<string, AudioBuffer>>({});
-  const currentSourceRef = useRef<AudioBufferSourceNode | null>(null);
-  const ambientPadGainRef = useRef<GainNode | null>(null);
-  const ambientOsc1Ref = useRef<OscillatorNode | null>(null);
-  const ambientOsc2Ref = useRef<OscillatorNode | null>(null);
-  const htmlAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Riferimenti audio controllati per stop immediato in 0ms
+  const audioCtxRef: MutableRefObject<AudioContext | null> = useRef<AudioContext | null>(null);
+  const chimeOscRef: MutableRefObject<OscillatorNode | null> = useRef<OscillatorNode | null>(null);
+  const chimeGainRef: MutableRefObject<GainNode | null> = useRef<GainNode | null>(null);
+  const activeVoiceAudioRef: MutableRefObject<HTMLAudioElement | null> =
+    useRef<HTMLAudioElement | null>(null);
   const lastPlayedStepRef = useRef<string>('');
   const wakeLockRef = useRef<{ release: () => Promise<void> } | null>(null);
 
-  // Caricamento universale: 1) Build-time glob (src/ o root) -> 2) IndexedDB -> 3) /pausa81_voice.json.txt -> 4) /pausa81_voice.json
-  useEffect(() => {
-    let mounted = true;
+  /** Converte tutte le tracce del JSON in Blob URL nativi appena caricate */
+  const registerVoicePack = useCallback((rawPack: Record<string, string>) => {
+    const norm = normalizeVoicePack(rawPack);
+    const urls: Record<string, string> = {};
+    for (const k of Object.keys(norm)) {
+      if (norm[k]) {
+        urls[k] = dataUriToBlobUrl(norm[k]);
+      }
+    }
+    blobUrlsRef.current = urls;
+    setVoicePack(norm);
+  }, []);
 
-    async function loadAllVoiceSources() {
-      // 1. Controlla se Vite ha trovato il file in src/, root o public/ tramite import.meta.glob
-      for (const pathKey of Object.keys(BUNDLED_VOICE_FILES)) {
-        const rawText = BUNDLED_VOICE_FILES[pathKey];
-        if (rawText && typeof rawText === 'string' && rawText.includes('level1_inspire')) {
+  /** Ferma ISTANTANEAMENTE sia la campana sia la voce (0ms) */
+  const stopAllAudio = useCallback(() => {
+    // 1. Taglia subito la campana
+    if (chimeGainRef.current && audioCtxRef.current) {
+      try {
+        chimeGainRef.current.gain.cancelScheduledValues(0);
+        chimeGainRef.current.gain.setValueAtTime(0, audioCtxRef.current.currentTime);
+      } catch {
+        // Ignora
+      }
+    }
+    if (chimeOscRef.current) {
+      try {
+        chimeOscRef.current.stop();
+        chimeOscRef.current.disconnect();
+      } catch {
+        // Ignora
+      }
+      chimeOscRef.current = null;
+    }
+
+    // 2. Taglia subito la voce
+    if (activeVoiceAudioRef.current) {
+      try {
+        activeVoiceAudioRef.current.pause();
+        activeVoiceAudioRef.current.currentTime = 0;
+      } catch {
+        // Ignora
+      }
+    }
+  }, []);
+
+  /** Suona un tocco di campana morbido che si interrompe subito se cambi modalità */
+  const triggerSoftChime = useCallback(
+    (phase: Phase) => {
+      if (!soundEnabled || typeof window === 'undefined') return;
+      try {
+        const AudioCtx =
+          window.AudioContext ||
+          (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        if (!AudioCtx) return;
+
+        if (!audioCtxRef.current) {
+          audioCtxRef.current = new AudioCtx();
+        }
+        const ctx = audioCtxRef.current;
+        if (ctx.state === 'suspended') {
+          ctx.resume().catch(() => {});
+        }
+
+        // Ferma eventuale rintocco precedente prima di suonare il nuovo
+        if (chimeOscRef.current) {
           try {
-            const parsed = JSON.parse(rawText);
-            if (mounted && parsed && typeof parsed === 'object') {
-              setVoicePack(normalizeVoicePack(parsed));
-              return;
-            }
+            chimeOscRef.current.stop();
+            chimeOscRef.current.disconnect();
           } catch {
-            // Continua
+            // Ignora
           }
+          chimeOscRef.current = null;
+        }
+
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        const freqMap: Record<Phase, number> = {
+          idle: 432,
+          inspire: 528,
+          hold: 639,
+          expire: 396,
+          pause: 432,
+        };
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freqMap[phase] || 432, ctx.currentTime);
+
+        gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.032, ctx.currentTime + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.35);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        chimeOscRef.current = osc;
+        chimeGainRef.current = gain;
+
+        osc.start();
+        osc.stop(ctx.currentTime + 1.4);
+      } catch {
+        // Ignora
+      }
+    },
+    [soundEnabled]
+  );
+
+  /** Riproduce ESCLUSIVAMENTE la tua vera voce (mai il sintetizzatore robotico) */
+  const playVoiceKey = useCallback(
+    (audioKey: string | null) => {
+      if (!voiceCoachEnabled || !audioKey || typeof window === 'undefined') return;
+
+      if (activeVoiceAudioRef.current) {
+        try {
+          activeVoiceAudioRef.current.pause();
+          activeVoiceAudioRef.current.currentTime = 0;
+        } catch {
+          // Ignora
         }
       }
 
-      // 2. Controlla IndexedDB locale (se caricato manualmente col bottone)
-      const cachedPack = await loadVoicePackFromIdb();
-      if (mounted && cachedPack && cachedPack.level1_inspire) {
-        setVoicePack(normalizeVoicePack(cachedPack));
+      const resolvedKey = audioKey === 'level1_hold' ? 'level2_hold' : audioKey;
+      const srcUrl =
+        blobUrlsRef.current[audioKey] ||
+        blobUrlsRef.current[resolvedKey] ||
+        voicePack[audioKey] ||
+        voicePack[resolvedKey] ||
+        `/${resolvedKey}.wav`;
+
+      try {
+        const audio = new Audio(srcUrl);
+        audio.volume = 1.0;
+        activeVoiceAudioRef.current = audio;
+        audio.play().catch(() => {});
+      } catch {
+        // Silenzioso
+      }
+    },
+    [voiceCoachEnabled, voicePack]
+  );
+
+  // Caricamento automatico di pausa81_voice.json (con o senza punto/txt finale) o da IndexedDB
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadVoice() {
+      const cached = await loadVoicePackFromIdb();
+      if (mounted && cached && cached.level1_inspire) {
+        registerVoicePack(cached);
         return;
       }
 
-      // 3. Cerca tutti i possibili nomi nella cartella public/ (incluso .json.txt aggiunto da Chrome!)
       const candidateUrls = [
-        '/pausa81_voice.json.txt',
         '/pausa81_voice.json',
+        '/pausa81_voice.json.',
+        '/pausa81_voice.json.txt',
+        '/pausa81_voice_2.json',
+        '/pausa81_voice_2.json.txt',
         '/pausa81_voice.txt',
-        '/audio/pausa81_voice.json.txt',
         '/audio/pausa81_voice.json',
       ];
 
@@ -682,26 +779,24 @@ export default function App() {
           if (text && text.includes('level1_inspire')) {
             const parsed = JSON.parse(text);
             if (mounted && parsed && typeof parsed === 'object') {
-              const norm = normalizeVoicePack(parsed);
-              setVoicePack(norm);
-              await saveVoicePackToIdb(norm);
+              registerVoicePack(parsed);
+              await saveVoicePackToIdb(parsed);
               return;
             }
           }
         } catch {
-          // Prova il prossimo URL
+          // Continua col prossimo candidato
         }
       }
     }
 
-    loadAllVoiceSources();
+    loadVoice();
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [registerVoicePack]);
 
-  /** Caricamento manuale istantaneo di pausa81_voice.json.txt dal computer/telefono */
-  const handleManualVoiceFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleManualVoiceFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
@@ -710,201 +805,15 @@ export default function App() {
         const text = String(reader.result || '');
         const parsed = JSON.parse(text);
         if (parsed && parsed.level1_inspire) {
-          const norm = normalizeVoicePack(parsed);
-          decodedBuffersRef.current = {};
-          setVoicePack(norm);
-          await saveVoicePackToIdb(norm);
+          registerVoicePack(parsed);
+          await saveVoicePackToIdb(parsed);
         }
       } catch {
-        alert('Seleziona il file pausa81_voice.json.txt (o pausa81_voice.json) scaricato dalla chat.');
+        alert('Seleziona il file pausa81_voice.json scaricato dalla chat.');
       }
     };
     reader.readAsText(file);
   };
-
-  const startAmbientPad = useCallback((enabled: boolean) => {
-    if (!enabled || typeof window === 'undefined') return;
-    try {
-      const AudioCtx =
-        window.AudioContext ||
-        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      if (!AudioCtx) return;
-      if (!audioCtxRef.current) {
-        audioCtxRef.current = new AudioCtx();
-      }
-      const ctx = audioCtxRef.current;
-      if (ctx.state === 'suspended') {
-        ctx.resume().catch(() => {});
-      }
-
-      if (ambientOsc1Ref.current) {
-        try {
-          ambientOsc1Ref.current.stop();
-          ambientOsc2Ref.current?.stop();
-        } catch {
-          // Ignora
-        }
-      }
-
-      const osc1 = ctx.createOscillator();
-      const osc2 = ctx.createOscillator();
-      const padGain = ctx.createGain();
-
-      osc1.type = 'sine';
-      osc1.frequency.setValueAtTime(216, ctx.currentTime);
-      osc2.type = 'sine';
-      osc2.frequency.setValueAtTime(432, ctx.currentTime);
-
-      padGain.gain.setValueAtTime(0.0001, ctx.currentTime);
-      padGain.gain.linearRampToValueAtTime(0.014, ctx.currentTime + 1.5);
-
-      osc1.connect(padGain);
-      osc2.connect(padGain);
-      padGain.connect(ctx.destination);
-
-      osc1.start();
-      osc2.start();
-
-      ambientOsc1Ref.current = osc1;
-      ambientOsc2Ref.current = osc2;
-      ambientPadGainRef.current = padGain;
-    } catch {
-      // Ignora
-    }
-  }, []);
-
-  const stopAmbientPad = useCallback(() => {
-    try {
-      if (ambientPadGainRef.current && audioCtxRef.current) {
-        const ctx = audioCtxRef.current;
-        ambientPadGainRef.current.gain.linearRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
-      }
-      window.setTimeout(() => {
-        try {
-          ambientOsc1Ref.current?.stop();
-          ambientOsc2Ref.current?.stop();
-        } catch {
-          // Ignora
-        }
-        ambientOsc1Ref.current = null;
-        ambientOsc2Ref.current = null;
-      }, 550);
-    } catch {
-      // Ignora
-    }
-  }, []);
-
-  /**
-   * Riproduce ESCLUSIVAMENTE la tua vera voce umana con filtro Warm Broadcast EQ in tempo reale.
-   * Nessun sintetizzatore robotico (speechSynthesis) viene mai attivato.
-   */
-  const playVoiceKey = useCallback(
-    async (audioKey: string | null) => {
-      if (!voiceCoachEnabled || !audioKey || typeof window === 'undefined') return;
-
-      if (currentSourceRef.current) {
-        try {
-          currentSourceRef.current.stop();
-        } catch {
-          // Ignora
-        }
-        currentSourceRef.current = null;
-      }
-      if (htmlAudioRef.current) {
-        htmlAudioRef.current.pause();
-        htmlAudioRef.current.currentTime = 0;
-      }
-
-      const resolvedKey = audioKey === 'level1_hold' ? 'level2_hold' : audioKey;
-      const dataUri = voicePack[audioKey] || voicePack[resolvedKey];
-
-      if (dataUri) {
-        try {
-          const AudioCtx =
-            window.AudioContext ||
-            (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-          if (AudioCtx) {
-            if (!audioCtxRef.current) {
-              audioCtxRef.current = new AudioCtx();
-            }
-            const ctx = audioCtxRef.current;
-            if (ctx.state === 'suspended') {
-              await ctx.resume();
-            }
-
-            if (!decodedBuffersRef.current[resolvedKey]) {
-              const base64Part = dataUri.split(',')[1];
-              if (base64Part) {
-                const binaryStr = window.atob(base64Part);
-                const len = binaryStr.length;
-                const bytes = new Uint8Array(len);
-                for (let i = 0; i < len; i++) {
-                  bytes[i] = binaryStr.charCodeAt(i);
-                }
-                const decoded = await ctx.decodeAudioData(bytes.buffer.slice(0));
-                decodedBuffersRef.current[resolvedKey] = decoded;
-              }
-            }
-
-            const buffer = decodedBuffersRef.current[resolvedKey];
-            if (buffer) {
-              const source = ctx.createBufferSource();
-              source.buffer = buffer;
-
-              // Catena DSP Warm Studio in tempo reale (Calore +3 dB a 160 Hz + morbidezza sulle alte)
-              const warmShelf = ctx.createBiquadFilter();
-              warmShelf.type = 'lowshelf';
-              warmShelf.frequency.setValueAtTime(165, ctx.currentTime);
-              warmShelf.gain.setValueAtTime(2.5, ctx.currentTime);
-
-              const silkLowpass = ctx.createBiquadFilter();
-              silkLowpass.type = 'lowpass';
-              silkLowpass.frequency.setValueAtTime(6800, ctx.currentTime);
-
-              const gainNode = ctx.createGain();
-              gainNode.gain.setValueAtTime(1.0, ctx.currentTime);
-
-              source.connect(warmShelf);
-              warmShelf.connect(silkLowpass);
-              silkLowpass.connect(gainNode);
-              gainNode.connect(ctx.destination);
-
-              source.start(0);
-              currentSourceRef.current = source;
-              return;
-            }
-          }
-        } catch {
-          // Passa al player HTML5
-        }
-
-        try {
-          if (!htmlAudioRef.current) {
-            htmlAudioRef.current = new Audio();
-          }
-          htmlAudioRef.current.src = dataUri;
-          htmlAudioRef.current.volume = 1.0;
-          await htmlAudioRef.current.play();
-          return;
-        } catch {
-          // Continua
-        }
-      }
-
-      // Tentativo diretto se i singoli file .wav sono stati caricati in public/
-      try {
-        if (!htmlAudioRef.current) {
-          htmlAudioRef.current = new Audio();
-        }
-        htmlAudioRef.current.src = `/${resolvedKey}.wav`;
-        htmlAudioRef.current.volume = 1.0;
-        await htmlAudioRef.current.play();
-      } catch {
-        // Silenzioso: MAI usare la voce robotica del browser
-      }
-    },
-    [voiceCoachEnabled, voicePack]
-  );
 
   const previewStageIdx =
     sessionMode === 'level2' ? 1 : sessionMode === 'level3' ? 2 : 0;
@@ -926,6 +835,7 @@ export default function App() {
         audioKey: null,
       };
 
+  // Ad ogni cambio di sotto-fase durante i 60 secondi, suona la campana e la tua voce
   useEffect(() => {
     if (!isRunning) {
       lastPlayedStepRef.current = '';
@@ -935,7 +845,7 @@ export default function App() {
     const stepId = `${snapshot.stage.id}_${snapshot.phase}_${snapshot.cycleNumber}`;
     if (lastPlayedStepRef.current !== stepId) {
       lastPlayedStepRef.current = stepId;
-      playSoftChime(snapshot.phase, soundEnabled, audioCtxRef);
+      triggerSoftChime(snapshot.phase);
       if (typeof navigator !== 'undefined' && navigator.vibrate) {
         navigator.vibrate(25);
       }
@@ -943,7 +853,32 @@ export default function App() {
         playVoiceKey(snapshot.audioKey);
       }
     }
-  }, [isRunning, snapshot, soundEnabled, playVoiceKey]);
+  }, [isRunning, snapshot, triggerSoftChime, playVoiceKey]);
+
+  // Se l'utente clicca su "Muto" mentre la campana sta suonando, la ferma subito
+  useEffect(() => {
+    if (!soundEnabled && chimeOscRef.current) {
+      try {
+        chimeOscRef.current.stop();
+        chimeOscRef.current.disconnect();
+      } catch {
+        // Ignora
+      }
+      chimeOscRef.current = null;
+    }
+  }, [soundEnabled]);
+
+  // Se l'utente disattiva la voce mentre sta parlando, la ferma subito
+  useEffect(() => {
+    if (!voiceCoachEnabled && activeVoiceAudioRef.current) {
+      try {
+        activeVoiceAudioRef.current.pause();
+        activeVoiceAudioRef.current.currentTime = 0;
+      } catch {
+        // Ignora
+      }
+    }
+  }, [voiceCoachEnabled]);
 
   useEffect(() => {
     if (!isRunning) return;
@@ -952,7 +887,7 @@ export default function App() {
       setElapsed((prev) => {
         if (prev + 1 >= SESSION_DURATION) {
           setIsRunning(false);
-          stopAmbientPad();
+          stopAllAudio();
           if (wakeLockRef.current) {
             wakeLockRef.current.release().catch(() => {});
             wakeLockRef.current = null;
@@ -969,7 +904,6 @@ export default function App() {
           const randomHex = Math.floor(1000 + Math.random() * 9000);
           setLastAuditCode(`P81-VDT-${randomHex}`);
           setSessionCompleted(true);
-          playSoftChime('idle', soundEnabled, audioCtxRef);
           return 0;
         }
         return prev + 1;
@@ -977,56 +911,47 @@ export default function App() {
     }, 1000);
 
     return () => window.clearInterval(interval);
-  }, [isRunning, soundEnabled, stopAmbientPad]);
+  }, [isRunning, stopAllAudio]);
 
   useEffect(() => {
     if (!vdtReminderMinutes || vdtSecondsLeft <= 0) return;
     const t = window.setInterval(() => {
       setVdtSecondsLeft((prev) => {
         if (prev <= 1) {
-          playSoftChime('inspire', true, audioCtxRef);
+          triggerSoftChime('inspire');
           return vdtReminderMinutes * 60;
         }
         return prev - 1;
       });
     }, 1000);
     return () => window.clearInterval(t);
-  }, [vdtReminderMinutes, vdtSecondsLeft]);
+  }, [vdtReminderMinutes, vdtSecondsLeft, triggerSoftChime]);
 
   const stopSession = useCallback(() => {
+    stopAllAudio();
     setIsRunning(false);
     setElapsed(0);
     lastPlayedStepRef.current = '';
-    stopAmbientPad();
     if (wakeLockRef.current) {
       wakeLockRef.current.release().catch(() => {});
       wakeLockRef.current = null;
     }
-    if (currentSourceRef.current) {
-      try {
-        currentSourceRef.current.stop();
-      } catch {
-        // Ignora
-      }
-      currentSourceRef.current = null;
-    }
-    if (htmlAudioRef.current) {
-      htmlAudioRef.current.pause();
-      htmlAudioRef.current.currentTime = 0;
-    }
-  }, [stopAmbientPad]);
+  }, [stopAllAudio]);
 
   const startSession = useCallback(async () => {
-    const AudioCtx =
-      typeof window !== 'undefined'
-        ? window.AudioContext ||
-          (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
-        : null;
-    if (AudioCtx && !audioCtxRef.current) {
-      audioCtxRef.current = new AudioCtx();
-    }
-    if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
-      audioCtxRef.current.resume().catch(() => {});
+    stopAllAudio();
+
+    const firstSnap = getTimelineSnapshot(0, sessionMode);
+    lastPlayedStepRef.current = `${firstSnap.stage.id}_${firstSnap.phase}_${firstSnap.cycleNumber}`;
+
+    setSessionCompleted(false);
+    setElapsed(0);
+    setIsRunning(true);
+
+    // Avvia IMMEDIATAMENTE sul clic del pulsante sia la campana sia la tua voce!
+    triggerSoftChime(firstSnap.phase);
+    if (firstSnap.audioKey) {
+      playVoiceKey(firstSnap.audioKey);
     }
 
     try {
@@ -1039,13 +964,7 @@ export default function App() {
     } catch {
       // Ignora
     }
-
-    lastPlayedStepRef.current = '';
-    setSessionCompleted(false);
-    setElapsed(0);
-    startAmbientPad(soundEnabled);
-    setIsRunning(true);
-  }, [soundEnabled, startAmbientPad]);
+  }, [sessionMode, stopAllAudio, triggerSoftChime, playVoiceKey]);
 
   const toggleVdtReminder = () => {
     if (vdtReminderMinutes === null) {
@@ -1089,7 +1008,6 @@ export default function App() {
     <div className={`app ${eyeRestMode ? 'app--warm-rest' : ''}`}>
       <CloudBackground />
 
-      {/* Input file nascosto per collegare al volo pausa81_voice.json.txt se necessario */}
       <input
         ref={fileInputRef}
         type="file"
@@ -1121,10 +1039,9 @@ export default function App() {
         </div>
 
         <div className="topbar-actions">
-          {/* Spia diagnostica e collegamento diretto del file voce */}
           <button
             type="button"
-            className={`icon-btn ${isCustomVoiceReady ? 'active' : 'voice-studio-btn'}`}
+            className={`icon-btn ${isCustomVoiceReady && voiceCoachEnabled ? 'active' : ''}`}
             onClick={() => {
               if (!isCustomVoiceReady) {
                 fileInputRef.current?.click();
@@ -1132,24 +1049,18 @@ export default function App() {
                 setVoiceCoachEnabled((v) => !v);
               }
             }}
-            title={
-              isCustomVoiceReady
-                ? 'La tua voce reale è attiva! Clicca per mutare/riattivare la voce.'
-                : 'Clicca per selezionare il file pausa81_voice.json.txt dal tuo dispositivo'
-            }
           >
             {isCustomVoiceReady
               ? voiceCoachEnabled
                 ? '🎙️ Tua Voce ON ✓'
                 : '🎙️ Tua Voce OFF'
-              : '📂 Collega .json.txt'}
+              : '📂 Collega Voce'}
           </button>
 
           <button
             type="button"
             className={`icon-btn ${vdtReminderMinutes !== null ? 'active' : ''}`}
             onClick={toggleVdtReminder}
-            title="Promemoria automatico Pausa VDT (Art. 175 D.Lgs. 81/08)"
           >
             {vdtReminderMinutes === null
               ? '⏰ Sveglia VDT'
@@ -1169,7 +1080,7 @@ export default function App() {
             className={`icon-btn ${soundEnabled ? 'active' : ''}`}
             onClick={() => setSoundEnabled((v) => !v)}
           >
-            {soundEnabled ? '432Hz ON' : 'Muto'}
+            {soundEnabled ? 'Campana ON' : 'Muto'}
           </button>
         </div>
       </header>
