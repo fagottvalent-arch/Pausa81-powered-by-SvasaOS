@@ -4,13 +4,19 @@ import {
   useRef,
   useCallback,
   type MutableRefObject,
-  type ChangeEvent,
 } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CloudBackground } from './components/CloudBackground';
 
 export type Phase = 'idle' | 'inspire' | 'hold' | 'expire' | 'pause';
 export type SessionMode = 'all' | 'level1' | 'level2' | 'level3';
+export type VoiceGender = 'female' | 'male' | 'off';
+
+interface SpokenPhrase {
+  part1: string;
+  part2: string;
+  fullText: string;
+}
 
 interface StageConfig {
   id: 'level1' | 'level2' | 'level3';
@@ -21,16 +27,11 @@ interface StageConfig {
   subtitle: string;
   whenToUse: string;
   benefit: string;
-  texts: {
-    inspire: string;
-    hold: string;
-    expire: string;
-    pause: string;
-  };
-  audioKeys: {
-    inspire: string;
-    hold: string;
-    expire: string;
+  phrases: {
+    inspire: SpokenPhrase;
+    hold: SpokenPhrase;
+    expire: SpokenPhrase;
+    pause: SpokenPhrase;
   };
 }
 
@@ -45,16 +46,27 @@ const STAGES: StageConfig[] = [
     whenToUse: 'Seduto · Decompressione oculare e rilascio cervicale',
     benefit:
       'Distoglie la messa a fuoco dai pixel ravvicinati (Titolo VII D.Lgs. 81/08) e rilascia la tensione del trapezio.',
-    texts: {
-      inspire: 'Inspira dolcemente dal naso e rilassa lo sguardo',
-      hold: 'Trattieni, mantieni la postura',
-      expire: 'Espira lentamente, lascia scendere le spalle',
-      pause: 'Pausa · Rilassa completamente il viso',
-    },
-    audioKeys: {
-      inspire: 'level1_inspire',
-      hold: 'level2_hold',
-      expire: 'level1_expire',
+    phrases: {
+      inspire: {
+        part1: 'Inspira dolcemente dal naso...',
+        part2: 'e rilassa lo sguardo.',
+        fullText: 'Inspira dolcemente dal naso e rilassa lo sguardo',
+      },
+      hold: {
+        part1: 'Trattieni con calma...',
+        part2: 'mantieni la postura.',
+        fullText: 'Trattieni, mantieni la postura',
+      },
+      expire: {
+        part1: 'Espira lentamente...',
+        part2: 'lascia scendere le spalle.',
+        fullText: 'Espira lentamente, lascia scendere le spalle',
+      },
+      pause: {
+        part1: '',
+        part2: '',
+        fullText: 'Pausa · Rilassa completamente il viso',
+      },
     },
   },
   {
@@ -67,16 +79,27 @@ const STAGES: StageConfig[] = [
     whenToUse: 'Dopo 60 min di schermo · Attivazione muscolo soleo (Zero-Sudore)',
     benefit:
       'Riattiva il ritorno venoso dagli arti inferiori verso il cervello dopo un’ora di postura seduta fissa.',
-    texts: {
-      inspire: 'Inspira, solleva i talloni e attiva le gambe',
-      hold: 'Trattieni, mantieni la postura',
-      expire: 'Espira, riappoggia con controllo',
-      pause: 'Pausa · Lascia fluire la circolazione',
-    },
-    audioKeys: {
-      inspire: 'level2_inspire',
-      hold: 'level2_hold',
-      expire: 'level2_expire',
+    phrases: {
+      inspire: {
+        part1: 'Inspira profondamente...',
+        part2: 'solleva i talloni, e attiva le gambe.',
+        fullText: 'Inspira, solleva i talloni e attiva le gambe',
+      },
+      hold: {
+        part1: 'Trattieni...',
+        part2: 'mantieni la postura.',
+        fullText: 'Trattieni, mantieni la postura',
+      },
+      expire: {
+        part1: 'Espira dolcemente...',
+        part2: 'riappoggia con controllo.',
+        fullText: 'Espira, riappoggia con controllo',
+      },
+      pause: {
+        part1: '',
+        part2: '',
+        fullText: 'Pausa · Lascia fluire la circolazione',
+      },
     },
   },
   {
@@ -89,16 +112,27 @@ const STAGES: StageConfig[] = [
     whenToUse: 'Pausa VDT (2h) o Fine Turno · Prevenzione DMS',
     benefit:
       'Previene i Disturbi Muscolo-Scheletrici (DMS): decomprime tunnel carpale, rachide cervicale e tratto lombare.',
-    texts: {
-      inspire: 'Inspira, apri il petto e ruota i palmi in fuori',
-      hold: 'Trattieni, mantieni la postura',
-      expire: 'Espira a lungo, sciogli collo e spalle',
-      pause: 'Pausa · Ascolta il rilascio muscolare',
-    },
-    audioKeys: {
-      inspire: 'level3_inspire',
-      hold: 'level3_hold',
-      expire: 'level3_expire',
+    phrases: {
+      inspire: {
+        part1: 'Inspira, apri il petto...',
+        part2: 'e ruota i palmi in fuori.',
+        fullText: 'Inspira, apri il petto e ruota i palmi in fuori',
+      },
+      hold: {
+        part1: 'Trattieni...',
+        part2: 'mantieni la postura.',
+        fullText: 'Trattieni, mantieni la postura',
+      },
+      expire: {
+        part1: 'Espira a lungo...',
+        part2: 'sciogli collo e spalle.',
+        fullText: 'Espira a lungo, sciogli collo e spalle',
+      },
+      pause: {
+        part1: '',
+        part2: '',
+        fullText: 'Pausa · Ascolta il rilascio muscolare',
+      },
     },
   },
 ];
@@ -111,81 +145,6 @@ const CYCLE_SEC = INSPIRE_SEC + HOLD_SEC + EXPIRE_SEC + PAUSE_SEC; // 20s
 const SESSION_DURATION = 60;
 const LOCAL_STATS_KEY = 'pausa81_local_completed_count';
 
-/** Salvataggio e lettura in IndexedDB per supportare file voce oltre 1 MB */
-function saveVoicePackToIdb(pack: Record<string, string>): Promise<void> {
-  return new Promise((resolve) => {
-    if (typeof window === 'undefined' || !('indexedDB' in window)) {
-      resolve();
-      return;
-    }
-    try {
-      const req = window.indexedDB.open('pausa81_audio_db', 1);
-      req.onupgradeneeded = () => {
-        const db = req.result;
-        if (!db.objectStoreNames.contains('packs')) {
-          db.createObjectStore('packs');
-        }
-      };
-      req.onsuccess = () => {
-        const db = req.result;
-        const tx = db.transaction('packs', 'readwrite');
-        tx.objectStore('packs').put(pack, 'custom_voice_pack');
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => resolve();
-      };
-      req.onerror = () => resolve();
-    } catch {
-      resolve();
-    }
-  });
-}
-
-function loadVoicePackFromIdb(): Promise<Record<string, string> | null> {
-  return new Promise((resolve) => {
-    if (typeof window === 'undefined' || !('indexedDB' in window)) {
-      resolve(null);
-      return;
-    }
-    try {
-      const req = window.indexedDB.open('pausa81_audio_db', 1);
-      req.onupgradeneeded = () => {
-        const db = req.result;
-        if (!db.objectStoreNames.contains('packs')) {
-          db.createObjectStore('packs');
-        }
-      };
-      req.onsuccess = () => {
-        const db = req.result;
-        const tx = db.transaction('packs', 'readonly');
-        const getReq = tx.objectStore('packs').get('custom_voice_pack');
-        getReq.onsuccess = () => resolve(getReq.result || null);
-        getReq.onerror = () => resolve(null);
-      };
-      req.onerror = () => resolve(null);
-    } catch {
-      resolve(null);
-    }
-  });
-}
-
-/** Converte un Data URI Base64 in un Blob URL nativo velocissimo per Chrome/Safari */
-function dataUriToBlobUrl(dataUri: string): string {
-  try {
-    const parts = dataUri.split(',');
-    const base64 = parts.length > 1 ? parts[1] : parts[0];
-    const binary = window.atob(base64.trim());
-    const len = binary.length;
-    const bytes = new Uint8Array(len);
-    for (let i = 0; i < len; i++) {
-      bytes[i] = binary.charCodeAt(i);
-    }
-    const blob = new Blob([bytes], { type: 'audio/wav' });
-    return URL.createObjectURL(blob);
-  } catch {
-    return dataUri;
-  }
-}
-
 interface TimelineSnapshot {
   stageIndex: number;
   stage: StageConfig;
@@ -195,7 +154,7 @@ interface TimelineSnapshot {
   phaseTimeLeft: number;
   targetBreath: number;
   displayText: string;
-  audioKey: string | null;
+  spokenPhrase: SpokenPhrase | null;
 }
 
 function getTimelineSnapshot(elapsed: number, mode: SessionMode): TimelineSnapshot {
@@ -221,8 +180,8 @@ function getTimelineSnapshot(elapsed: number, mode: SessionMode): TimelineSnapsh
       phaseDuration: INSPIRE_SEC,
       phaseTimeLeft: INSPIRE_SEC - secInCycle,
       targetBreath: 1,
-      displayText: stage.texts.inspire,
-      audioKey: stage.audioKeys.inspire,
+      displayText: stage.phrases.inspire.fullText,
+      spokenPhrase: stage.phrases.inspire,
     };
   }
 
@@ -236,8 +195,8 @@ function getTimelineSnapshot(elapsed: number, mode: SessionMode): TimelineSnapsh
       phaseDuration: HOLD_SEC,
       phaseTimeLeft: HOLD_SEC - intoHold,
       targetBreath: 1,
-      displayText: stage.texts.hold,
-      audioKey: stage.audioKeys.hold,
+      displayText: stage.phrases.hold.fullText,
+      spokenPhrase: stage.phrases.hold,
     };
   }
 
@@ -251,8 +210,8 @@ function getTimelineSnapshot(elapsed: number, mode: SessionMode): TimelineSnapsh
       phaseDuration: EXPIRE_SEC,
       phaseTimeLeft: EXPIRE_SEC - intoExpire,
       targetBreath: 0,
-      displayText: stage.texts.expire,
-      audioKey: stage.audioKeys.expire,
+      displayText: stage.phrases.expire.fullText,
+      spokenPhrase: stage.phrases.expire,
     };
   }
 
@@ -260,7 +219,7 @@ function getTimelineSnapshot(elapsed: number, mode: SessionMode): TimelineSnapsh
   const pauseText =
     mode === 'all' && cycleIndex < 2
       ? `Pausa · Passaggio automatico alla Fase ${cycleIndex + 2} di 3`
-      : stage.texts.pause;
+      : stage.phrases.pause.fullText;
 
   return {
     stageIndex,
@@ -271,8 +230,66 @@ function getTimelineSnapshot(elapsed: number, mode: SessionMode): TimelineSnapsh
     phaseTimeLeft: PAUSE_SEC - intoPause,
     targetBreath: 0,
     displayText: pauseText,
-    audioKey: null,
+    spokenPhrase: null,
   };
+}
+
+/**
+ * Seleziona la miglior voce naturale Italiana Femminile o Maschile disponibile sul dispositivo
+ * (Google Neural, Microsoft Natural Elsa/Isabella/Diego/Cosimo, Apple Alice/Federica/Luca).
+ */
+function pickItalianVoice(
+  voices: SpeechSynthesisVoice[],
+  gender: 'female' | 'male'
+): { voice: SpeechSynthesisVoice | null; isDedicatedGenderMatch: boolean } {
+  const itVoices = voices.filter(
+    (v) =>
+      v.lang.toLowerCase().startsWith('it') ||
+      v.name.toLowerCase().includes('ital')
+  );
+
+  if (itVoices.length === 0) {
+    return { voice: null, isDedicatedGenderMatch: false };
+  }
+
+  const femaleKeywords = ['elsa', 'isabella', 'alice', 'federica', 'fabiola', 'google italiano', 'female', 'donna'];
+  const maleKeywords = ['diego', 'cosimo', 'luca', 'giuseppe', 'giorgio', 'male', 'uomo'];
+
+  if (gender === 'female') {
+    // Priorità a voci Neural/Online femminili
+    const neuralFemale = itVoices.find(
+      (v) =>
+        (v.name.toLowerCase().includes('natural') || v.name.toLowerCase().includes('google')) &&
+        femaleKeywords.some((k) => v.name.toLowerCase().includes(k))
+    );
+    if (neuralFemale) return { voice: neuralFemale, isDedicatedGenderMatch: true };
+
+    const anyFemale = itVoices.find((v) =>
+      femaleKeywords.some((k) => v.name.toLowerCase().includes(k))
+    );
+    if (anyFemale) return { voice: anyFemale, isDedicatedGenderMatch: true };
+
+    // Fallback sulla prima voce italiana non maschile
+    const nonMale = itVoices.find(
+      (v) => !maleKeywords.some((k) => v.name.toLowerCase().includes(k))
+    );
+    return { voice: nonMale || itVoices[0], isDedicatedGenderMatch: Boolean(nonMale) };
+  }
+
+  // Ricerca voce Maschile (Diego, Cosimo, Luca, Giuseppe)
+  const neuralMale = itVoices.find(
+    (v) =>
+      v.name.toLowerCase().includes('natural') &&
+      maleKeywords.some((k) => v.name.toLowerCase().includes(k))
+  );
+  if (neuralMale) return { voice: neuralMale, isDedicatedGenderMatch: true };
+
+  const anyMale = itVoices.find((v) =>
+    maleKeywords.some((k) => v.name.toLowerCase().includes(k))
+  );
+  if (anyMale) return { voice: anyMale, isDedicatedGenderMatch: true };
+
+  return { voice: itVoices[0], isDedicatedGenderMatch: false };
 }
 
 function useBreathScale(phase: Phase, breath: number, phaseDuration: number) {
@@ -558,14 +575,6 @@ function Sphere({
   );
 }
 
-function normalizeVoicePack(raw: Record<string, string>): Record<string, string> {
-  return {
-    ...raw,
-    level1_hold: raw.level1_hold || raw.level2_hold || raw.level3_hold || '',
-    level3_hold: raw.level3_hold || raw.level2_hold || '',
-  };
-}
-
 export default function App() {
   const params =
     typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
@@ -578,9 +587,14 @@ export default function App() {
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const [elapsed, setElapsed] = useState<number>(0);
 
-  const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
-  const [voiceCoachEnabled, setVoiceCoachEnabled] = useState<boolean>(true);
+  // Scelta immediata tra Voce Donna, Voce Uomo o Voce OFF
+  const [voiceGender, setVoiceGender] = useState<VoiceGender>('female');
+  // Tappeto Armonico Binaurale 432Hz attivabile/disattivabile in 1 clic
+  const [binauralEnabled, setBinauralEnabled] = useState<boolean>(true);
+  // Campana Tibetana di cambio fase attivabile/disattivabile in 1 clic
+  const [chimeEnabled, setChimeEnabled] = useState<boolean>(true);
   const [eyeRestMode, setEyeRestMode] = useState<boolean>(false);
+
   const [sessionCompleted, setSessionCompleted] = useState<boolean>(false);
   const [showExecutiveModal, setShowExecutiveModal] = useState<boolean>(false);
   const [showQrModal, setShowQrModal] = useState<boolean>(false);
@@ -596,35 +610,58 @@ export default function App() {
   const [lastAuditCode, setLastAuditCode] = useState<string>('P81-VDT-8108');
   const [employeesCount, setEmployeesCount] = useState<number>(10);
 
-  const [voicePack, setVoicePack] = useState<Record<string, string>>({});
-  const blobUrlsRef = useRef<Record<string, string>>({});
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-
-  // Riferimenti audio controllati per stop immediato in 0ms
+  // Riferimenti per controllo totale e stop istantaneo (0ms)
   const audioCtxRef: MutableRefObject<AudioContext | null> = useRef<AudioContext | null>(null);
-  const chimeOscRef: MutableRefObject<OscillatorNode | null> = useRef<OscillatorNode | null>(null);
+  const chimeOscsRef: MutableRefObject<OscillatorNode[]> = useRef<OscillatorNode[]>([]);
   const chimeGainRef: MutableRefObject<GainNode | null> = useRef<GainNode | null>(null);
-  const activeVoiceAudioRef: MutableRefObject<HTMLAudioElement | null> =
-    useRef<HTMLAudioElement | null>(null);
+
+  const binauralOscsRef: MutableRefObject<OscillatorNode[]> = useRef<OscillatorNode[]>([]);
+  const binauralGainRef: MutableRefObject<GainNode | null> = useRef<GainNode | null>(null);
+
+  const availableVoicesRef: MutableRefObject<SpeechSynthesisVoice[]> = useRef<
+    SpeechSynthesisVoice[]
+  >([]);
+  const phraseTimeoutRef: MutableRefObject<number | null> = useRef<number | null>(null);
   const lastPlayedStepRef = useRef<string>('');
   const wakeLockRef = useRef<{ release: () => Promise<void> } | null>(null);
 
-  /** Converte tutte le tracce del JSON in Blob URL nativi appena caricate */
-  const registerVoicePack = useCallback((rawPack: Record<string, string>) => {
-    const norm = normalizeVoicePack(rawPack);
-    const urls: Record<string, string> = {};
-    for (const k of Object.keys(norm)) {
-      if (norm[k]) {
-        urls[k] = dataUriToBlobUrl(norm[k]);
+  // Pre-carica le voci di sistema appena il browser è pronto
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+
+    const updateVoices = () => {
+      const v = window.speechSynthesis.getVoices();
+      if (v.length > 0) {
+        availableVoicesRef.current = v;
       }
-    }
-    blobUrlsRef.current = urls;
-    setVoicePack(norm);
+    };
+
+    updateVoices();
+    window.speechSynthesis.onvoiceschanged = updateVoices;
+    return () => {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.onvoiceschanged = null;
+      }
+    };
   }, []);
 
-  /** Ferma ISTANTANEAMENTE sia la campana sia la voce (0ms) */
-  const stopAllAudio = useCallback(() => {
-    // 1. Taglia subito la campana
+  const getOrCreateAudioCtx = useCallback((): AudioContext | null => {
+    if (typeof window === 'undefined') return null;
+    const AudioCtx =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (!AudioCtx) return null;
+    if (!audioCtxRef.current) {
+      audioCtxRef.current = new AudioCtx();
+    }
+    if (audioCtxRef.current.state === 'suspended') {
+      audioCtxRef.current.resume().catch(() => {});
+    }
+    return audioCtxRef.current;
+  }, []);
+
+  /** Ferma all'istante la Campana Tibetana */
+  const stopChimeNow = useCallback(() => {
     if (chimeGainRef.current && audioCtxRef.current) {
       try {
         chimeGainRef.current.gain.cancelScheduledValues(0);
@@ -633,59 +670,117 @@ export default function App() {
         // Ignora
       }
     }
-    if (chimeOscRef.current) {
+    for (const osc of chimeOscsRef.current) {
       try {
-        chimeOscRef.current.stop();
-        chimeOscRef.current.disconnect();
+        osc.stop();
+        osc.disconnect();
       } catch {
         // Ignora
       }
-      chimeOscRef.current = null;
     }
+    chimeOscsRef.current = [];
+  }, []);
 
-    // 2. Taglia subito la voce
-    if (activeVoiceAudioRef.current) {
+  /** Ferma all'istante il Tappeto Armonico Binaurale 432Hz */
+  const stopBinauralNow = useCallback(() => {
+    if (binauralGainRef.current && audioCtxRef.current) {
       try {
-        activeVoiceAudioRef.current.pause();
-        activeVoiceAudioRef.current.currentTime = 0;
+        binauralGainRef.current.gain.cancelScheduledValues(0);
+        binauralGainRef.current.gain.setValueAtTime(0, audioCtxRef.current.currentTime);
+      } catch {
+        // Ignora
+      }
+    }
+    for (const osc of binauralOscsRef.current) {
+      try {
+        osc.stop();
+        osc.disconnect();
+      } catch {
+        // Ignora
+      }
+    }
+    binauralOscsRef.current = [];
+    binauralGainRef.current = null;
+  }, []);
+
+  /** Ferma all'istante la Voce e le pause prosodiche */
+  const stopVoiceNow = useCallback(() => {
+    if (phraseTimeoutRef.current !== null) {
+      window.clearTimeout(phraseTimeoutRef.current);
+      phraseTimeoutRef.current = null;
+    }
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.cancel();
       } catch {
         // Ignora
       }
     }
   }, []);
 
-  /** Suona un tocco di campana morbido che si interrompe subito se cambi modalità */
+  /** Ferma TUTTO (Campana + Binaurale + Voce) in 0 millisecondi */
+  const stopAllAudio = useCallback(() => {
+    stopChimeNow();
+    stopBinauralNow();
+    stopVoiceNow();
+  }, [stopChimeNow, stopBinauralNow, stopVoiceNow]);
+
+  /** Avvia il Tappeto Armonico Binaurale caldo (216Hz + 432Hz + 438Hz Theta/Alpha 6Hz) */
+  const startBinauralPad = useCallback(() => {
+    stopBinauralNow();
+    if (!binauralEnabled) return;
+    const ctx = getOrCreateAudioCtx();
+    if (!ctx) return;
+
+    try {
+      const subOsc = ctx.createOscillator();
+      const leftOsc = ctx.createOscillator();
+      const rightOsc = ctx.createOscillator();
+
+      const lowpass = ctx.createBiquadFilter();
+      lowpass.type = 'lowpass';
+      lowpass.frequency.setValueAtTime(620, ctx.currentTime);
+
+      const masterGain = ctx.createGain();
+
+      subOsc.type = 'sine';
+      subOsc.frequency.setValueAtTime(216, ctx.currentTime); // Fondamentale calda 216 Hz
+
+      leftOsc.type = 'sine';
+      leftOsc.frequency.setValueAtTime(432, ctx.currentTime); // 432 Hz
+
+      rightOsc.type = 'sine';
+      rightOsc.frequency.setValueAtTime(438, ctx.currentTime); // 438 Hz (Battimento binaurale rilassante a 6 Hz)
+
+      masterGain.gain.setValueAtTime(0.0001, ctx.currentTime);
+      masterGain.gain.linearRampToValueAtTime(0.018, ctx.currentTime + 1.2);
+
+      subOsc.connect(lowpass);
+      leftOsc.connect(lowpass);
+      rightOsc.connect(lowpass);
+      lowpass.connect(masterGain);
+      masterGain.connect(ctx.destination);
+
+      subOsc.start();
+      leftOsc.start();
+      rightOsc.start();
+
+      binauralOscsRef.current = [subOsc, leftOsc, rightOsc];
+      binauralGainRef.current = masterGain;
+    } catch {
+      // Ignora
+    }
+  }, [binauralEnabled, getOrCreateAudioCtx, stopBinauralNow]);
+
+  /** Suona un rintocco caldo di Campana Tibetana (con armonico naturale) */
   const triggerSoftChime = useCallback(
     (phase: Phase) => {
-      if (!soundEnabled || typeof window === 'undefined') return;
+      stopChimeNow();
+      if (!chimeEnabled) return;
+      const ctx = getOrCreateAudioCtx();
+      if (!ctx) return;
+
       try {
-        const AudioCtx =
-          window.AudioContext ||
-          (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-        if (!AudioCtx) return;
-
-        if (!audioCtxRef.current) {
-          audioCtxRef.current = new AudioCtx();
-        }
-        const ctx = audioCtxRef.current;
-        if (ctx.state === 'suspended') {
-          ctx.resume().catch(() => {});
-        }
-
-        // Ferma eventuale rintocco precedente prima di suonare il nuovo
-        if (chimeOscRef.current) {
-          try {
-            chimeOscRef.current.stop();
-            chimeOscRef.current.disconnect();
-          } catch {
-            // Ignora
-          }
-          chimeOscRef.current = null;
-        }
-
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-
         const freqMap: Record<Phase, number> = {
           idle: 432,
           inspire: 528,
@@ -693,127 +788,100 @@ export default function App() {
           expire: 396,
           pause: 432,
         };
+        const baseFreq = freqMap[phase] || 432;
 
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freqMap[phase] || 432, ctx.currentTime);
+        const osc1 = ctx.createOscillator();
+        const osc2 = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(baseFreq, ctx.currentTime);
+
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(baseFreq * 1.5, ctx.currentTime); // Quinta armonica dolce
 
         gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-        gain.gain.linearRampToValueAtTime(0.032, ctx.currentTime + 0.05);
-        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.35);
+        gain.gain.linearRampToValueAtTime(0.028, ctx.currentTime + 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.25);
 
-        osc.connect(gain);
+        osc1.connect(gain);
+        osc2.connect(gain);
         gain.connect(ctx.destination);
 
-        chimeOscRef.current = osc;
+        chimeOscsRef.current = [osc1, osc2];
         chimeGainRef.current = gain;
 
-        osc.start();
-        osc.stop(ctx.currentTime + 1.4);
+        osc1.start();
+        osc2.start();
+        osc1.stop(ctx.currentTime + 1.3);
+        osc2.stop(ctx.currentTime + 1.3);
       } catch {
         // Ignora
       }
     },
-    [soundEnabled]
+    [chimeEnabled, getOrCreateAudioCtx, stopChimeNow]
   );
 
-  /** Riproduce ESCLUSIVAMENTE la tua vera voce (mai il sintetizzatore robotico) */
-  const playVoiceKey = useCallback(
-    (audioKey: string | null) => {
-      if (!voiceCoachEnabled || !audioKey || typeof window === 'undefined') return;
+  /**
+   * Pronuncia una frase con Micro-Prosodia Umana Bipartita:
+   * - Parte 1: calma, accogliente
+   * - Pausa respiratoria di 620ms
+   * - Parte 2: intonazione leggermente più profonda e lenta (effetto rassicurante da coach reale)
+   */
+  const speakHumanPhrase = useCallback(
+    (phrase: SpokenPhrase | null, overrideGender?: VoiceGender) => {
+      const activeGender = overrideGender !== undefined ? overrideGender : voiceGender;
+      stopVoiceNow();
+      if (activeGender === 'off' || !phrase || typeof window === 'undefined') return;
+      if (!('speechSynthesis' in window)) return;
 
-      if (activeVoiceAudioRef.current) {
-        try {
-          activeVoiceAudioRef.current.pause();
-          activeVoiceAudioRef.current.currentTime = 0;
-        } catch {
-          // Ignora
-        }
-      }
+      const voices =
+        availableVoicesRef.current.length > 0
+          ? availableVoicesRef.current
+          : window.speechSynthesis.getVoices();
 
-      const resolvedKey = audioKey === 'level1_hold' ? 'level2_hold' : audioKey;
-      const srcUrl =
-        blobUrlsRef.current[audioKey] ||
-        blobUrlsRef.current[resolvedKey] ||
-        voicePack[audioKey] ||
-        voicePack[resolvedKey] ||
-        `/${resolvedKey}.wav`;
+      const { voice, isDedicatedGenderMatch } = pickItalianVoice(voices, activeGender);
+
+      // Calibrazione acustica per Voce Donna (calda, vellutata) vs Voce Uomo (profonda, baritonale)
+      const baseRate = activeGender === 'female' ? 0.84 : 0.80;
+      const basePitch =
+        activeGender === 'female'
+          ? 1.02
+          : isDedicatedGenderMatch
+          ? 0.88
+          : 0.72; // Se il sistema ha una sola voce, la trasforma in baritono profondo e calmo
 
       try {
-        const audio = new Audio(srcUrl);
-        audio.volume = 1.0;
-        activeVoiceAudioRef.current = audio;
-        audio.play().catch(() => {});
+        if (phrase.part1) {
+          const u1 = new SpeechSynthesisUtterance(phrase.part1);
+          u1.lang = 'it-IT';
+          if (voice) u1.voice = voice;
+          u1.rate = baseRate;
+          u1.pitch = basePitch;
+          u1.volume = 0.95;
+
+          u1.onend = () => {
+            if (!phrase.part2) return;
+            phraseTimeoutRef.current = window.setTimeout(() => {
+              const u2 = new SpeechSynthesisUtterance(phrase.part2);
+              u2.lang = 'it-IT';
+              if (voice) u2.voice = voice;
+              // Seconda parte leggermente più lenta e morbida (inflessione discendente rassicurante)
+              u2.rate = Math.max(0.74, baseRate - 0.04);
+              u2.pitch = Math.max(0.65, basePitch - 0.05);
+              u2.volume = 0.90;
+              window.speechSynthesis.speak(u2);
+            }, 520);
+          };
+
+          window.speechSynthesis.speak(u1);
+        }
       } catch {
         // Silenzioso
       }
     },
-    [voiceCoachEnabled, voicePack]
+    [voiceGender, stopVoiceNow]
   );
-
-  // Caricamento automatico di pausa81_voice.json (con o senza punto/txt finale) o da IndexedDB
-  useEffect(() => {
-    let mounted = true;
-
-    async function loadVoice() {
-      const cached = await loadVoicePackFromIdb();
-      if (mounted && cached && cached.level1_inspire) {
-        registerVoicePack(cached);
-        return;
-      }
-
-      const candidateUrls = [
-        '/pausa81_voice.json',
-        '/pausa81_voice.json.',
-        '/pausa81_voice.json.txt',
-        '/pausa81_voice_2.json',
-        '/pausa81_voice_2.json.txt',
-        '/pausa81_voice.txt',
-        '/audio/pausa81_voice.json',
-      ];
-
-      for (const url of candidateUrls) {
-        try {
-          const res = await fetch(url);
-          if (!res.ok) continue;
-          const text = await res.text();
-          if (text && text.includes('level1_inspire')) {
-            const parsed = JSON.parse(text);
-            if (mounted && parsed && typeof parsed === 'object') {
-              registerVoicePack(parsed);
-              await saveVoicePackToIdb(parsed);
-              return;
-            }
-          }
-        } catch {
-          // Continua col prossimo candidato
-        }
-      }
-    }
-
-    loadVoice();
-    return () => {
-      mounted = false;
-    };
-  }, [registerVoicePack]);
-
-  const handleManualVoiceFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async () => {
-      try {
-        const text = String(reader.result || '');
-        const parsed = JSON.parse(text);
-        if (parsed && parsed.level1_inspire) {
-          registerVoicePack(parsed);
-          await saveVoicePackToIdb(parsed);
-        }
-      } catch {
-        alert('Seleziona il file pausa81_voice.json scaricato dalla chat.');
-      }
-    };
-    reader.readAsText(file);
-  };
 
   const previewStageIdx =
     sessionMode === 'level2' ? 1 : sessionMode === 'level3' ? 2 : 0;
@@ -831,11 +899,11 @@ export default function App() {
         displayText:
           sessionMode === 'all'
             ? 'Percorso Completo 60s: Visivo (20s) → Gambe (20s) → Postura (20s)'
-            : `${STAGES[previewStageIdx].name} (60s): «${STAGES[previewStageIdx].texts.inspire}»`,
-        audioKey: null,
+            : `${STAGES[previewStageIdx].name} (60s): «${STAGES[previewStageIdx].phrases.inspire.fullText}»`,
+        spokenPhrase: null,
       };
 
-  // Ad ogni cambio di sotto-fase durante i 60 secondi, suona la campana e la tua voce
+  // Ad ogni cambio di sotto-fase durante i 60 secondi, suona la campana e avvia la voce scelta
   useEffect(() => {
     if (!isRunning) {
       lastPlayedStepRef.current = '';
@@ -849,36 +917,38 @@ export default function App() {
       if (typeof navigator !== 'undefined' && navigator.vibrate) {
         navigator.vibrate(25);
       }
-      if (snapshot.audioKey) {
-        playVoiceKey(snapshot.audioKey);
+      if (snapshot.spokenPhrase) {
+        speakHumanPhrase(snapshot.spokenPhrase);
       }
     }
-  }, [isRunning, snapshot, triggerSoftChime, playVoiceKey]);
+  }, [isRunning, snapshot, triggerSoftChime, speakHumanPhrase]);
 
-  // Se l'utente clicca su "Muto" mentre la campana sta suonando, la ferma subito
+  // Se l'utente attiva/disattiva il Tappeto Binaurale mentre la sessione è in corso, reagisce subito in 1 clic
   useEffect(() => {
-    if (!soundEnabled && chimeOscRef.current) {
-      try {
-        chimeOscRef.current.stop();
-        chimeOscRef.current.disconnect();
-      } catch {
-        // Ignora
-      }
-      chimeOscRef.current = null;
+    if (!isRunning) {
+      stopBinauralNow();
+      return;
     }
-  }, [soundEnabled]);
+    if (binauralEnabled) {
+      startBinauralPad();
+    } else {
+      stopBinauralNow();
+    }
+  }, [binauralEnabled, isRunning, startBinauralPad, stopBinauralNow]);
 
-  // Se l'utente disattiva la voce mentre sta parlando, la ferma subito
+  // Se l'utente disattiva la Campana mentre sta suonando, la taglia all'istante
   useEffect(() => {
-    if (!voiceCoachEnabled && activeVoiceAudioRef.current) {
-      try {
-        activeVoiceAudioRef.current.pause();
-        activeVoiceAudioRef.current.currentTime = 0;
-      } catch {
-        // Ignora
-      }
+    if (!chimeEnabled) {
+      stopChimeNow();
     }
-  }, [voiceCoachEnabled]);
+  }, [chimeEnabled, stopChimeNow]);
+
+  // Se l'utente mette Voce OFF mentre sta parlando, la taglia all'istante
+  useEffect(() => {
+    if (voiceGender === 'off') {
+      stopVoiceNow();
+    }
+  }, [voiceGender, stopVoiceNow]);
 
   useEffect(() => {
     if (!isRunning) return;
@@ -886,8 +956,8 @@ export default function App() {
     const interval = window.setInterval(() => {
       setElapsed((prev) => {
         if (prev + 1 >= SESSION_DURATION) {
-          setIsRunning(false);
           stopAllAudio();
+          setIsRunning(false);
           if (wakeLockRef.current) {
             wakeLockRef.current.release().catch(() => {});
             wakeLockRef.current = null;
@@ -948,10 +1018,12 @@ export default function App() {
     setElapsed(0);
     setIsRunning(true);
 
-    // Avvia IMMEDIATAMENTE sul clic del pulsante sia la campana sia la tua voce!
+    if (binauralEnabled) {
+      startBinauralPad();
+    }
     triggerSoftChime(firstSnap.phase);
-    if (firstSnap.audioKey) {
-      playVoiceKey(firstSnap.audioKey);
+    if (firstSnap.spokenPhrase) {
+      speakHumanPhrase(firstSnap.spokenPhrase);
     }
 
     try {
@@ -964,7 +1036,40 @@ export default function App() {
     } catch {
       // Ignora
     }
-  }, [sessionMode, stopAllAudio, triggerSoftChime, playVoiceKey]);
+  }, [
+    sessionMode,
+    binauralEnabled,
+    stopAllAudio,
+    startBinauralPad,
+    triggerSoftChime,
+    speakHumanPhrase,
+  ]);
+
+  /** Cambia voce (Donna / Uomo / OFF) e fa sentire subito un'anteprima rassicurante */
+  const handleSelectVoiceGender = (newGender: VoiceGender) => {
+    setVoiceGender(newGender);
+    if (newGender === 'off') {
+      stopVoiceNow();
+      return;
+    }
+    if (!isRunning) {
+      const sample: SpokenPhrase =
+        newGender === 'female'
+          ? {
+              part1: 'Voce femminile attiva...',
+              part2: 'rilassa lo sguardo e le spalle.',
+              fullText: '',
+            }
+          : {
+              part1: 'Voce maschile attiva...',
+              part2: 'respira con calma e sciogli le tensioni.',
+              fullText: '',
+            };
+      speakHumanPhrase(sample, newGender);
+    } else if (snapshot.spokenPhrase) {
+      speakHumanPhrase(snapshot.spokenPhrase, newGender);
+    }
+  };
 
   const toggleVdtReminder = () => {
     if (vdtReminderMinutes === null) {
@@ -997,8 +1102,6 @@ export default function App() {
     partnerStudioName.replace(/\s+/g, '_')
   )}&cliente=${encodeURIComponent(clientCompanyName.replace(/\s+/g, '_'))}`;
 
-  const isCustomVoiceReady = Boolean(voicePack.level1_inspire);
-
   const startButtonLabel =
     sessionMode === 'all'
       ? 'Avvia Percorso Completo 3 Fasi (60s)'
@@ -1007,14 +1110,6 @@ export default function App() {
   return (
     <div className={`app ${eyeRestMode ? 'app--warm-rest' : ''}`}>
       <CloudBackground />
-
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".json,.txt"
-        style={{ display: 'none' }}
-        onChange={handleManualVoiceFileUpload}
-      />
 
       <header className="topbar no-print">
         <div className="topbar-left">
@@ -1039,32 +1134,52 @@ export default function App() {
         </div>
 
         <div className="topbar-actions">
+          {/* Selettore 1-Clic: Voce Donna / Voce Uomo / Voce OFF */}
           <button
             type="button"
-            className={`icon-btn ${isCustomVoiceReady && voiceCoachEnabled ? 'active' : ''}`}
-            onClick={() => {
-              if (!isCustomVoiceReady) {
-                fileInputRef.current?.click();
-              } else {
-                setVoiceCoachEnabled((v) => !v);
-              }
-            }}
+            className={`icon-btn ${voiceGender === 'female' ? 'active' : ''}`}
+            onClick={() => handleSelectVoiceGender('female')}
+            title="Attiva la voce guida femminile calda e rilassante"
           >
-            {isCustomVoiceReady
-              ? voiceCoachEnabled
-                ? '🎙️ Tua Voce ON ✓'
-                : '🎙️ Tua Voce OFF'
-              : '📂 Collega Voce'}
+            👩 Voce Donna
           </button>
 
           <button
             type="button"
-            className={`icon-btn ${vdtReminderMinutes !== null ? 'active' : ''}`}
-            onClick={toggleVdtReminder}
+            className={`icon-btn ${voiceGender === 'male' ? 'active' : ''}`}
+            onClick={() => handleSelectVoiceGender('male')}
+            title="Attiva la voce guida maschile profonda e calma"
           >
-            {vdtReminderMinutes === null
-              ? '⏰ Sveglia VDT'
-              : `⏰ VDT ${Math.ceil(vdtSecondsLeft / 60)}m`}
+            👨 Voce Uomo
+          </button>
+
+          <button
+            type="button"
+            className={`icon-btn ${voiceGender === 'off' ? 'active' : ''}`}
+            onClick={() => handleSelectVoiceGender('off')}
+            title="Disattiva la guida vocale"
+          >
+            🔇 Voce OFF
+          </button>
+
+          {/* Tappeto Armonico Binaurale 432Hz attivabile/disattivabile in 1 clic */}
+          <button
+            type="button"
+            className={`icon-btn ${binauralEnabled ? 'active' : ''}`}
+            onClick={() => setBinauralEnabled((v) => !v)}
+            title="Attiva o rimuovi il tappeto armonico binaurale a 432Hz"
+          >
+            {binauralEnabled ? '🌊 Binaurale ON' : '🌊 Binaurale OFF'}
+          </button>
+
+          {/* Campana Tibetana di cambio fase */}
+          <button
+            type="button"
+            className={`icon-btn ${chimeEnabled ? 'active' : ''}`}
+            onClick={() => setChimeEnabled((v) => !v)}
+            title="Attiva o disattiva il tocco di campana tibetana ai cambi di fase"
+          >
+            {chimeEnabled ? '🔔 Campana ON' : '🔔 Campana OFF'}
           </button>
 
           <button
@@ -1077,10 +1192,12 @@ export default function App() {
 
           <button
             type="button"
-            className={`icon-btn ${soundEnabled ? 'active' : ''}`}
-            onClick={() => setSoundEnabled((v) => !v)}
+            className={`icon-btn ${vdtReminderMinutes !== null ? 'active' : ''}`}
+            onClick={toggleVdtReminder}
           >
-            {soundEnabled ? 'Campana ON' : 'Muto'}
+            {vdtReminderMinutes === null
+              ? '⏰ Sveglia VDT'
+              : `⏰ VDT ${Math.ceil(vdtSecondsLeft / 60)}m`}
           </button>
         </div>
       </header>
