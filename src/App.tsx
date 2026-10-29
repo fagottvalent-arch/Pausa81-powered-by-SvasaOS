@@ -13,35 +13,59 @@ export type Phase = 'idle' | 'inspire' | 'hold' | 'expire' | 'pause';
 export type SessionMode = 'all' | 'level1' | 'level2' | 'level3';
 export type VoiceGender = 'female' | 'male' | 'off';
 
-// I tuoi 2 Voice ID ufficiali di ElevenLabs
-const ELEVENLABS_VOICE_IDS = {
-  female: 'MxbaIHXywTPlbmHYvbPn', // Voce Femminile Calda e Rilassante
-  male: 'PSp7S6ST9fDNXDwEzX0m',   // Voce Maschile Profonda e Calma
-} as const;
+export type PhraseKey =
+  | 'level1_inspire'
+  | 'level1_expire'
+  | 'level2_inspire'
+  | 'level2_hold'
+  | 'level2_expire'
+  | 'level3_inspire'
+  | 'level3_expire';
 
-// Le 7 frasi ufficiali nell'ordine esatto di pronuncia
-const PHRASE_KEYS_ORDER = [
-  'level1_inspire',
-  'level1_expire',
-  'level2_inspire',
-  'level2_hold',
-  'level2_expire',
-  'level3_inspire',
-  'level3_expire',
-] as const;
-
-const PHRASE_TEXTS: Record<string, string> = {
-  level1_inspire: 'Inspira dolcemente dal naso... e rilassa lo sguardo.',
-  level1_expire: 'Espira lentamente... lascia scendere le spalle.',
-  level2_inspire: 'Inspira... solleva i talloni, e attiva le gambe.',
-  level2_hold: 'Trattieni... mantieni la postura.',
-  level2_expire: 'Espira... riappoggia con controllo.',
-  level3_inspire: 'Inspira... apri il petto, e ruota i palmi in fuori.',
-  level3_expire: 'Espira a lungo... sciogli collo e spalle.',
+/**
+ * Coordinate chirurgiche al millisecondo misurate sui frame MPEG di:
+ * 1) Serena - Calm & Soothing (Femminile, durata 26.59s)
+ * 2) Alessandro - Stoic, Breathy & Steady (Maschile, durata 22.20s)
+ */
+const SERENA_FEMALE_TIMESTAMPS: Record<PhraseKey, [number, number]> = {
+  level1_inspire: [0.0, 4.35],
+  level1_expire: [4.45, 8.55],
+  level2_inspire: [8.68, 12.55],
+  level2_hold: [12.65, 15.35],
+  level2_expire: [15.45, 18.35],
+  level3_inspire: [18.45, 22.68],
+  level3_expire: [22.75, 26.59],
 };
 
+const ALESSANDRO_MALE_TIMESTAMPS: Record<PhraseKey, [number, number]> = {
+  level1_inspire: [0.0, 3.75],
+  level1_expire: [3.82, 7.15],
+  level2_inspire: [7.22, 10.45],
+  level2_hold: [10.52, 12.88],
+  level2_expire: [12.95, 15.48],
+  level3_inspire: [15.54, 19.02],
+  level3_expire: [19.1, 22.2],
+};
+
+// Percorsi automatici cercati nella cartella public/ di GitHub/Vercel
+const FEMALE_MP3_CANDIDATE_URLS = [
+  '/ElevenLabs_2026-10-29T16_48_52_Serena - Calm & Soothing_pvc_sp100_s50_sb75_v4.mp3',
+  '/ElevenLabs_2026-10-29T16_48_52_Serena%20-%20Calm%20%26%20Soothing_pvc_sp100_s50_sb75_v4.mp3',
+  '/donna.mp3',
+  '/serena.mp3',
+  '/female.mp3',
+];
+
+const MALE_MP3_CANDIDATE_URLS = [
+  '/ElevenLabs_2026-10-29T16_51_22_Alessandro - Stoic, Breathy & Steady_pvc_sp100_s50_sb75_v4.mp3',
+  '/ElevenLabs_2026-10-29T16_51_22_Alessandro%20-%20Stoic%2C%20Breathy%20%26%20Steady_pvc_sp100_s50_sb75_v4.mp3',
+  '/uomo.mp3',
+  '/alessandro.mp3',
+  '/male.mp3',
+];
+
 interface SpokenPhrase {
-  audioKey: string;
+  audioKey: PhraseKey | '';
   part1: string;
   part2: string;
   fullText: string;
@@ -178,6 +202,8 @@ const STAGES: StageConfig[] = [
   },
 ];
 
+// Tempi calibrati sulle durate di Serena e Alessandro:
+// 7s Inspira + 4s Trattieni + 7s Espira + 2s Pausa = 20s per Fase × 3 = 60s
 const INSPIRE_SEC = 7;
 const HOLD_SEC = 4;
 const EXPIRE_SEC = 7;
@@ -186,7 +212,6 @@ const CYCLE_SEC = INSPIRE_SEC + HOLD_SEC + EXPIRE_SEC + PAUSE_SEC; // 20s
 const SESSION_DURATION = 60;
 const LOCAL_STATS_KEY = 'pausa81_local_completed_count';
 
-/** Database IndexedDB per salvare permanentemente le 2 voci ElevenLabs (Donna + Uomo) */
 function saveToIdb(key: string, value: unknown): Promise<void> {
   return new Promise((resolve) => {
     if (typeof window === 'undefined' || !('indexedDB' in window)) {
@@ -194,17 +219,17 @@ function saveToIdb(key: string, value: unknown): Promise<void> {
       return;
     }
     try {
-      const req = window.indexedDB.open('pausa81_elevenlabs_db', 1);
+      const req = window.indexedDB.open('pausa81_serena_alessandro_db', 1);
       req.onupgradeneeded = () => {
         const db = req.result;
-        if (!db.objectStoreNames.contains('voices')) {
-          db.createObjectStore('voices');
+        if (!db.objectStoreNames.contains('audio')) {
+          db.createObjectStore('audio');
         }
       };
       req.onsuccess = () => {
         const db = req.result;
-        const tx = db.transaction('voices', 'readwrite');
-        tx.objectStore('voices').put(value, key);
+        const tx = db.transaction('audio', 'readwrite');
+        tx.objectStore('audio').put(value, key);
         tx.oncomplete = () => resolve();
         tx.onerror = () => resolve();
       };
@@ -222,106 +247,25 @@ function loadFromIdb<T>(key: string): Promise<T | null> {
       return;
     }
     try {
-      const req = window.indexedDB.open('pausa81_elevenlabs_db', 1);
+      const req = window.indexedDB.open('pausa81_serena_alessandro_db', 1);
       req.onupgradeneeded = () => {
         const db = req.result;
-        if (!db.objectStoreNames.contains('voices')) {
-          db.createObjectStore('voices');
+        if (!db.objectStoreNames.contains('audio')) {
+          db.createObjectStore('audio');
         }
       };
       req.onsuccess = () => {
         const db = req.result;
-        const tx = db.transaction('voices', 'readonly');
-        const getReq = tx.objectStore('voices').get(key);
+        const tx = db.transaction('audio', 'readonly');
+        const getReq = tx.objectStore('audio').get(key);
         getReq.onsuccess = () => resolve((getReq.result as T) || null);
         getReq.onerror = () => resolve(null);
       };
       req.onerror = () => resolve(null);
     } catch {
-      resolve();
+      resolve(null);
     }
   });
-}
-
-function blobToDataUrl(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(String(reader.result || ''));
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-}
-
-/**
- * Rilevatore automatico intelligente delle 7 frasi in un singolo file MP3/WAV
- * scaricato da ElevenLabs (separa automaticamente i silenzi tra le 7 frasi!).
- */
-function detectSevenSegmentsInBuffer(buffer: AudioBuffer): Record<string, [number, number]> {
-  const ch = buffer.getChannelData(0);
-  const sr = buffer.sampleRate;
-  const winSize = Math.floor(0.05 * sr); // Finestre da 50ms
-  const numWins = Math.floor(ch.length / winSize);
-  const rms: number[] = [];
-  let maxRms = 0.0001;
-
-  for (let i = 0; i < numWins; i++) {
-    let sum = 0;
-    const offset = i * winSize;
-    for (let j = 0; j < winSize; j++) {
-      const v = ch[offset + j];
-      sum += v * v;
-    }
-    const val = Math.sqrt(sum / winSize);
-    rms.push(val);
-    if (val > maxRms) maxRms = val;
-  }
-
-  const threshold = Math.max(0.008, maxRms * 0.06);
-  const rawSegs: [number, number][] = [];
-  let inSeg = false;
-  let startWin = 0;
-
-  for (let i = 0; i < numWins; i++) {
-    if (rms[i] > threshold && !inSeg) {
-      inSeg = true;
-      startWin = i;
-    } else if (rms[i] <= threshold && inSeg) {
-      inSeg = false;
-      rawSegs.push([startWin * 0.05, i * 0.05]);
-    }
-  }
-  if (inSeg) {
-    rawSegs.push([startWin * 0.05, numWins * 0.05]);
-  }
-
-  // Unisce parole vicine separate da meno di 0.55 secondi
-  const merged: [number, number][] = [];
-  for (const seg of rawSegs) {
-    if (merged.length === 0) {
-      merged.push([seg[0], seg[1]]);
-    } else {
-      const last = merged[merged.length - 1];
-      if (seg[0] - last[1] < 0.55) {
-        last[1] = seg[1];
-      } else {
-        merged.push([seg[0], seg[1]]);
-      }
-    }
-  }
-
-  const valid = merged.filter((s) => s[1] - s[0] >= 0.45);
-  const map: Record<string, [number, number]> = {};
-
-  for (let idx = 0; idx < PHRASE_KEYS_ORDER.length; idx++) {
-    const key = PHRASE_KEYS_ORDER[idx];
-    if (valid[idx]) {
-      map[key] = [
-        Math.max(0, valid[idx][0] - 0.12),
-        Math.min(buffer.duration, valid[idx][1] + 0.22),
-      ];
-    }
-  }
-  return map;
 }
 
 function pickItalianSystemVoice(
@@ -740,7 +684,7 @@ export default function App() {
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const [elapsed, setElapsed] = useState<number>(0);
 
-  // Scelta immediata tra Voce Donna (MxbaIHXywTPlbmHYvbPn), Voce Uomo (PSp7S6ST9fDNXDwEzX0m) o OFF
+  // Scelta immediata 1-clic: Voce Donna (Serena) / Voce Uomo (Alessandro) / OFF
   const [voiceGender, setVoiceGender] = useState<VoiceGender>('female');
   const [binauralEnabled, setBinauralEnabled] = useState<boolean>(true);
   const [chimeEnabled, setChimeEnabled] = useState<boolean>(true);
@@ -749,28 +693,16 @@ export default function App() {
   const [sessionCompleted, setSessionCompleted] = useState<boolean>(false);
   const [showExecutiveModal, setShowExecutiveModal] = useState<boolean>(false);
   const [showQrModal, setShowQrModal] = useState<boolean>(false);
-  const [showElevenModal, setShowElevenModal] = useState<boolean>(false);
 
-  // Stato ElevenLabs Studio
-  const [elevenApiKey, setElevenApiKey] = useState<string>('');
-  const [isGeneratingEleven, setIsGeneratingEleven] = useState<boolean>(false);
-  const [elevenStatusMsg, setElevenStatusMsg] = useState<string>('');
-  const [hasElevenFemaleReady, setHasElevenFemaleReady] = useState<boolean>(false);
-  const [hasElevenMaleReady, setHasElevenMaleReady] = useState<boolean>(false);
+  const [hasSerenaLoaded, setHasSerenaLoaded] = useState<boolean>(false);
+  const [hasAlessandroLoaded, setHasAlessandroLoaded] = useState<boolean>(false);
 
-  // Cache delle tracce ElevenLabs (chiave: `female_level1_inspire`, `male_level1_inspire`, ecc.)
-  const elevenTracksRef: MutableRefObject<Record<string, string>> = useRef<
-    Record<string, string>
-  >({});
-  // Buffer MP3 unici (se caricati come singolo file MP3 per Donna e singolo MP3 per Uomo)
-  const masterBufferFemaleRef: MutableRefObject<{
-    buffer: AudioBuffer;
-    slices: Record<string, [number, number]>;
-  } | null> = useRef(null);
-  const masterBufferMaleRef: MutableRefObject<{
-    buffer: AudioBuffer;
-    slices: Record<string, [number, number]>;
-  } | null> = useRef(null);
+  // Buffer e byte raw per Serena (Donna) e Alessandro (Uomo)
+  const serenaBytesRef: MutableRefObject<ArrayBuffer | null> = useRef<ArrayBuffer | null>(null);
+  const alessandroBytesRef: MutableRefObject<ArrayBuffer | null> = useRef<ArrayBuffer | null>(null);
+  const serenaBufferRef: MutableRefObject<AudioBuffer | null> = useRef<AudioBuffer | null>(null);
+  const alessandroBufferRef: MutableRefObject<AudioBuffer | null> = useRef<AudioBuffer | null>(null);
+  const multiFileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [vdtReminderMinutes, setVdtReminderMinutes] = useState<number | null>(null);
   const [vdtSecondsLeft, setVdtSecondsLeft] = useState<number>(0);
@@ -790,11 +722,8 @@ export default function App() {
   const binauralOscsRef: MutableRefObject<OscillatorNode[]> = useRef<OscillatorNode[]>([]);
   const binauralGainRef: MutableRefObject<GainNode | null> = useRef<GainNode | null>(null);
 
-  const activeHtmlAudioRef: MutableRefObject<HTMLAudioElement | null> =
-    useRef<HTMLAudioElement | null>(null);
   const activeBufferSourceRef: MutableRefObject<AudioBufferSourceNode | null> =
     useRef<AudioBufferSourceNode | null>(null);
-
   const availableVoicesRef: MutableRefObject<SpeechSynthesisVoice[]> = useRef<
     SpeechSynthesisVoice[]
   >([]);
@@ -817,7 +746,7 @@ export default function App() {
     return audioCtxRef.current;
   }, []);
 
-  // Pre-carica voci di sistema e cache ElevenLabs da IndexedDB o da public/
+  // Pre-carica i file MP3 di Serena e Alessandro (da IndexedDB o dalla cartella public/)
   useEffect(() => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       const updateVoices = () => {
@@ -828,141 +757,112 @@ export default function App() {
       window.speechSynthesis.onvoiceschanged = updateVoices;
     }
 
-    async function loadCachedElevenVoices() {
-      const savedPack = await loadFromIdb<Record<string, string>>('elevenlabs_dual_pack');
-      if (savedPack && typeof savedPack === 'object') {
-        elevenTracksRef.current = savedPack;
-        if (savedPack.female_level1_inspire) setHasElevenFemaleReady(true);
-        if (savedPack.male_level1_inspire) setHasElevenMaleReady(true);
-      }
+    let mounted = true;
 
-      // Controlla anche se hai messo /female.mp3 e /male.mp3 in public/
-      const ctx = getOrCreateAudioCtx();
-      if (!ctx) return;
-
-      for (const g of ['female', 'male'] as const) {
-        const cachedMp3 = await loadFromIdb<ArrayBuffer>(`eleven_mp3_${g}`);
-        if (cachedMp3 && cachedMp3.byteLength > 10000) {
+    async function autoLoadElevenMp3s() {
+      // 1. Controlla IndexedDB per Serena (Donna)
+      const cachedF = await loadFromIdb<ArrayBuffer>('serena_mp3_bytes');
+      if (mounted && cachedF && cachedF.byteLength > 10000) {
+        serenaBytesRef.current = cachedF;
+        setHasSerenaLoaded(true);
+      } else {
+        // Cerca i file di Serena in public/
+        for (const url of FEMALE_MP3_CANDIDATE_URLS) {
           try {
-            const decoded = await ctx.decodeAudioData(cachedMp3.slice(0));
-            const slices = detectSevenSegmentsInBuffer(decoded);
-            if (g === 'female') {
-              masterBufferFemaleRef.current = { buffer: decoded, slices };
-              setHasElevenFemaleReady(true);
-            } else {
-              masterBufferMaleRef.current = { buffer: decoded, slices };
-              setHasElevenMaleReady(true);
+            const res = await fetch(url);
+            if (!res.ok) continue;
+            const ct = res.headers.get('content-type') || '';
+            if (ct.includes('text/html')) continue;
+            const buf = await res.arrayBuffer();
+            if (buf.byteLength > 20000 && mounted) {
+              serenaBytesRef.current = buf;
+              setHasSerenaLoaded(true);
+              await saveToIdb('serena_mp3_bytes', buf);
+              break;
             }
           } catch {
-            // Ignora
+            // Continua
           }
         }
       }
-    }
 
-    loadCachedElevenVoices();
-  }, [getOrCreateAudioCtx]);
-
-  /** Genera tutte le 14 tracce (7 Donna MxbaIHXywTPlbmHYvbPn + 7 Uomo PSp7S6ST9fDNXDwEzX0m) via API ElevenLabs e le salva in Cache */
-  const generateAllWithElevenLabsApi = async () => {
-    const cleanKey = elevenApiKey.trim();
-    if (!cleanKey) {
-      setElevenStatusMsg('Inserisci prima la tua API Key di ElevenLabs (xi-api-key).');
-      return;
-    }
-
-    setIsGeneratingEleven(true);
-    setElevenStatusMsg(
-      'Generazione in corso sui server ElevenLabs (ID Donna MxbaIHXywTPlbmHYvbPn + ID Uomo PSp7S6ST9fDNXDwEzX0m)...'
-    );
-
-    const newPack: Record<string, string> = { ...elevenTracksRef.current };
-
-    try {
-      for (const gender of ['female', 'male'] as const) {
-        const voiceId = ELEVENLABS_VOICE_IDS[gender];
-        for (const phraseKey of PHRASE_KEYS_ORDER) {
-          const textToSpeak = PHRASE_TEXTS[phraseKey];
-          setElevenStatusMsg(
-            `Generazione ${gender === 'female' ? 'Voce Donna' : 'Voce Uomo'}: "${textToSpeak}"...`
-          );
-
-          const res = await fetch(
-            `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'xi-api-key': cleanKey,
-              },
-              body: JSON.stringify({
-                text: textToSpeak,
-                model_id: 'eleven_multilingual_v2',
-                voice_settings: {
-                  stability: 0.78,
-                  similarity_boost: 0.82,
-                  style: 0.12,
-                  use_speaker_boost: true,
-                },
-              }),
-            }
-          );
-
-          if (!res.ok) {
-            throw new Error(`Errore ElevenLabs (${res.status}): verifica la tua API Key o i crediti.`);
-          }
-
-          const blob = await res.blob();
-          const dataUrl = await blobToDataUrl(blob);
-          newPack[`${gender}_${phraseKey}`] = dataUrl;
-        }
-      }
-
-      elevenTracksRef.current = newPack;
-      await saveToIdb('elevenlabs_dual_pack', newPack);
-      setHasElevenFemaleReady(true);
-      setHasElevenMaleReady(true);
-      setElevenStatusMsg(
-        '✓ Entrambe le voci ElevenLabs (Donna + Uomo) sono state generate e salvate permanentemente!'
-      );
-    } catch (err) {
-      setElevenStatusMsg(
-        err instanceof Error
-          ? err.message
-          : 'Errore durante la connessione a ElevenLabs.'
-      );
-    } finally {
-      setIsGeneratingEleven(false);
-    }
-  };
-
-  /** Carica un file MP3/WAV scaricato da ElevenLabs per la Voce Donna o la Voce Uomo */
-  const handleUploadGenderMp3 = async (
-    e: ChangeEvent<HTMLInputElement>,
-    gender: 'female' | 'male'
-  ) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      const ctx = getOrCreateAudioCtx();
-      if (!ctx) return;
-      const arrayBuf = await file.arrayBuffer();
-      const decoded = await ctx.decodeAudioData(arrayBuf.slice(0));
-      const slices = detectSevenSegmentsInBuffer(decoded);
-
-      if (gender === 'female') {
-        masterBufferFemaleRef.current = { buffer: decoded, slices };
-        setHasElevenFemaleReady(true);
+      // 2. Controlla IndexedDB per Alessandro (Uomo)
+      const cachedM = await loadFromIdb<ArrayBuffer>('alessandro_mp3_bytes');
+      if (mounted && cachedM && cachedM.byteLength > 10000) {
+        alessandroBytesRef.current = cachedM;
+        setHasAlessandroLoaded(true);
       } else {
-        masterBufferMaleRef.current = { buffer: decoded, slices };
-        setHasElevenMaleReady(true);
+        // Cerca i file di Alessandro in public/
+        for (const url of MALE_MP3_CANDIDATE_URLS) {
+          try {
+            const res = await fetch(url);
+            if (!res.ok) continue;
+            const ct = res.headers.get('content-type') || '';
+            if (ct.includes('text/html')) continue;
+            const buf = await res.arrayBuffer();
+            if (buf.byteLength > 20000 && mounted) {
+              alessandroBytesRef.current = buf;
+              setHasAlessandroLoaded(true);
+              await saveToIdb('alessandro_mp3_bytes', buf);
+              break;
+            }
+          } catch {
+            // Continua
+          }
+        }
       }
-      await saveToIdb(`eleven_mp3_${gender}`, arrayBuf);
-      setElevenStatusMsg(
-        `✓ File MP3 ${gender === 'female' ? 'Voce Donna' : 'Voce Uomo'} caricato e diviso automaticamente nelle 7 frasi!`
-      );
-    } catch {
-      setElevenStatusMsg('Seleziona un file audio (.mp3 o .wav) valido.');
+    }
+
+    autoLoadElevenMp3s();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  /**
+   * Quando selezioni uno o entrambi i file MP3 dal tuo computer, riconosce automaticamente
+   * Serena (26.59s o nome "Serena"/"donna") e Alessandro (22.20s o nome "Alessandro"/"uomo")!
+   */
+  const handleUploadMp3Files = async (e: ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const ctx = getOrCreateAudioCtx();
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const lower = file.name.toLowerCase();
+      try {
+        const buf = await file.arrayBuffer();
+        let decoded: AudioBuffer | null = null;
+        if (ctx) {
+          decoded = await ctx.decodeAudioData(buf.slice(0));
+        }
+
+        // Riconoscimento intelligente: dal nome ("serena"/"donna" vs "alessandro"/"uomo") o dalla durata (26.59s vs 22.20s)
+        const isFemale =
+          lower.includes('serena') ||
+          lower.includes('donna') ||
+          lower.includes('female') ||
+          (decoded !== null &&
+            !lower.includes('alessandro') &&
+            !lower.includes('uomo') &&
+            decoded.duration > 24.4);
+
+        if (isFemale) {
+          serenaBytesRef.current = buf;
+          if (decoded) serenaBufferRef.current = decoded;
+          setHasSerenaLoaded(true);
+          await saveToIdb('serena_mp3_bytes', buf);
+        } else {
+          alessandroBytesRef.current = buf;
+          if (decoded) alessandroBufferRef.current = decoded;
+          setHasAlessandroLoaded(true);
+          await saveToIdb('alessandro_mp3_bytes', buf);
+        }
+      } catch {
+        // Ignora file non audio
+      }
     }
   };
 
@@ -1024,14 +924,6 @@ export default function App() {
       }
       activeBufferSourceRef.current = null;
     }
-    if (activeHtmlAudioRef.current) {
-      try {
-        activeHtmlAudioRef.current.pause();
-        activeHtmlAudioRef.current.currentTime = 0;
-      } catch {
-        // Ignora
-      }
-    }
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       try {
         window.speechSynthesis.cancel();
@@ -1047,7 +939,7 @@ export default function App() {
     stopVoiceNow();
   }, [stopChimeNow, stopBinauralNow, stopVoiceNow]);
 
-  /** Avvia il Tappeto Armonico Binaurale 432Hz (con battimento rilassante a 6Hz) */
+  /** Avvia il Tappeto Armonico Binaurale 432Hz */
   const startBinauralPad = useCallback(() => {
     stopBinauralNow();
     if (!binauralEnabled) return;
@@ -1145,46 +1037,73 @@ export default function App() {
   );
 
   /**
-   * Riproduce la voce selezionata (`female` o `male`):
-   * 1) Cerca prima nella cache ElevenLabs (`MxbaIHXywTPlbmHYvbPn` o `PSp7S6ST9fDNXDwEzX0m`)
-   * 2) Altrimenti cerca nel buffer MP3 ElevenLabs caricato per quel sesso
-   * 3) Altrimenti usa il motore prosodico naturale bipartito (Donna / Uomo)
+   * Riproduce la frase selezionata usando i tagli al millisecondo di:
+   * - Serena (Donna: SERENA_FEMALE_TIMESTAMPS)
+   * - Alessandro (Uomo: ALESSANDRO_MALE_TIMESTAMPS)
+   * Con fallback sul motore prosodico naturale se i file MP3 non sono ancora stati collegati.
    */
   const speakPhrase = useCallback(
-    (phrase: SpokenPhrase | null, overrideGender?: VoiceGender) => {
+    async (phrase: SpokenPhrase | null, overrideGender?: VoiceGender) => {
       const activeGender = overrideGender !== undefined ? overrideGender : voiceGender;
       stopVoiceNow();
       if (activeGender === 'off' || !phrase || typeof window === 'undefined') return;
 
-      // 1. Controlla traccia ElevenLabs salvata da API
       if (phrase.audioKey) {
-        const elevenDataUrl =
-          elevenTracksRef.current[`${activeGender}_${phrase.audioKey}`];
-        if (elevenDataUrl) {
-          try {
-            const audio = new Audio(elevenDataUrl);
-            audio.volume = 1.0;
-            activeHtmlAudioRef.current = audio;
-            audio.play().catch(() => {});
-            return;
-          } catch {
-            // Continua
+        const ctx = getOrCreateAudioCtx();
+        if (ctx) {
+          // Decodifica lazy al primo clic se abbiamo i byte in memoria
+          if (activeGender === 'female' && !serenaBufferRef.current && serenaBytesRef.current) {
+            try {
+              serenaBufferRef.current = await ctx.decodeAudioData(
+                serenaBytesRef.current.slice(0)
+              );
+            } catch {
+              // Ignora
+            }
           }
-        }
+          if (
+            activeGender === 'male' &&
+            !alessandroBufferRef.current &&
+            alessandroBytesRef.current
+          ) {
+            try {
+              alessandroBufferRef.current = await ctx.decodeAudioData(
+                alessandroBytesRef.current.slice(0)
+              );
+            } catch {
+              // Ignora
+            }
+          }
 
-        // 2. Controlla MP3 ElevenLabs caricato per Donna o Uomo
-        const masterRef =
-          activeGender === 'female'
-            ? masterBufferFemaleRef.current
-            : masterBufferMaleRef.current;
-        if (masterRef && masterRef.slices[phrase.audioKey]) {
-          const ctx = getOrCreateAudioCtx();
-          if (ctx) {
-            const [startSec, endSec] = masterRef.slices[phrase.audioKey];
+          const targetBuffer =
+            activeGender === 'female'
+              ? serenaBufferRef.current
+              : alessandroBufferRef.current;
+
+          const timestampsTable =
+            activeGender === 'female'
+              ? SERENA_FEMALE_TIMESTAMPS
+              : ALESSANDRO_MALE_TIMESTAMPS;
+
+          const sliceCoords = timestampsTable[phrase.audioKey];
+
+          if (targetBuffer && sliceCoords) {
+            const [startSec, endSec] = sliceCoords;
             const dur = Math.max(0.4, endSec - startSec);
+            const now = ctx.currentTime;
+
             const src = ctx.createBufferSource();
-            src.buffer = masterRef.buffer;
-            src.connect(ctx.destination);
+            src.buffer = targetBuffer;
+
+            // Dissolvenza morbida di 60ms in entrata e uscita per evitare qualsiasi clic
+            const envGain = ctx.createGain();
+            envGain.gain.setValueAtTime(0.001, now);
+            envGain.gain.linearRampToValueAtTime(1.0, now + 0.06);
+            envGain.gain.setValueAtTime(1.0, now + dur - 0.08);
+            envGain.gain.linearRampToValueAtTime(0.001, now + dur);
+
+            src.connect(envGain);
+            envGain.connect(ctx.destination);
             src.start(0, startSec, dur);
             activeBufferSourceRef.current = src;
             return;
@@ -1192,7 +1111,7 @@ export default function App() {
         }
       }
 
-      // 3. Fallback automatico sul motore prosodico umano bipartito (Donna / Uomo)
+      // Fallback prosodico bipartito se l'MP3 non è ancora stato caricato
       if (!('speechSynthesis' in window)) return;
       const voices =
         availableVoicesRef.current.length > 0
@@ -1379,7 +1298,7 @@ export default function App() {
     }
     triggerSoftChime(firstSnap.phase);
     if (firstSnap.spokenPhrase) {
-      speakPhrase(firstSnap.spokenPhrase);
+      await speakPhrase(firstSnap.spokenPhrase);
     }
 
     try {
@@ -1454,6 +1373,16 @@ export default function App() {
     <div className={`app ${eyeRestMode ? 'app--warm-rest' : ''}`}>
       <CloudBackground />
 
+      {/* Selettore multi-file per collegare Serena e Alessandro in 1 secondo */}
+      <input
+        ref={multiFileInputRef}
+        type="file"
+        accept=".mp3,.wav,audio/*"
+        multiple
+        style={{ display: 'none' }}
+        onChange={handleUploadMp3Files}
+      />
+
       <header className="topbar no-print">
         <div className="topbar-left">
           <button
@@ -1477,23 +1406,23 @@ export default function App() {
         </div>
 
         <div className="topbar-actions">
-          {/* Scelta in 1 clic: Voce Donna / Voce Uomo / Voce OFF */}
+          {/* Scelta in 1 clic: Voce Donna (Serena) / Voce Uomo (Alessandro) / OFF */}
           <button
             type="button"
             className={`icon-btn ${voiceGender === 'female' ? 'active' : ''}`}
             onClick={() => handleSelectVoiceGender('female')}
-            title="Voce Femminile (ID ElevenLabs MxbaIHXywTPlbmHYvbPn)"
+            title="Voce Femminile Serena (Calm & Soothing)"
           >
-            👩 Donna {hasElevenFemaleReady ? '✓' : ''}
+            👩 Donna {hasSerenaLoaded ? '✓' : ''}
           </button>
 
           <button
             type="button"
             className={`icon-btn ${voiceGender === 'male' ? 'active' : ''}`}
             onClick={() => handleSelectVoiceGender('male')}
-            title="Voce Maschile (ID ElevenLabs PSp7S6ST9fDNXDwEzX0m)"
+            title="Voce Maschile Alessandro (Stoic, Breathy & Steady)"
           >
-            👨 Uomo {hasElevenMaleReady ? '✓' : ''}
+            👨 Uomo {hasAlessandroLoaded ? '✓' : ''}
           </button>
 
           <button
@@ -1504,17 +1433,16 @@ export default function App() {
             🔇 OFF
           </button>
 
-          {/* Pulsante configurazione ElevenLabs (API Key o MP3 per i 2 Voice ID) */}
-          <button
-            type="button"
-            className={`icon-btn ${
-              hasElevenFemaleReady && hasElevenMaleReady ? 'active' : 'voice-studio-btn'
-            }`}
-            onClick={() => setShowElevenModal(true)}
-            title="Configura o carica le 2 voci ElevenLabs (MxbaIHXywTPlbmHYvbPn e PSp7S6ST9fDNXDwEzX0m)"
-          >
-            ⚡ ElevenLabs
-          </button>
+          {(!hasSerenaLoaded || !hasAlessandroLoaded) && (
+            <button
+              type="button"
+              className="icon-btn voice-studio-btn"
+              onClick={() => multiFileInputRef.current?.click()}
+              title="Seleziona i 2 file MP3 di ElevenLabs (Serena e Alessandro) dal tuo computer"
+            >
+              📂 Collega MP3 ({hasSerenaLoaded ? '1/2' : '0/2'})
+            </button>
+          )}
 
           {/* Tappeto Armonico Binaurale 432Hz in 1 clic */}
           <button
@@ -1678,132 +1606,6 @@ export default function App() {
           Esente Art. 4 L. 300/70 · Presidio Art. 28 e Titolo VII D.Lgs. 81/2008.
         </span>
       </footer>
-
-      {/* Modal Studio ElevenLabs (ID MxbaIHXywTPlbmHYvbPn & PSp7S6ST9fDNXDwEzX0m) */}
-      <AnimatePresence>
-        {showElevenModal && (
-          <motion.div
-            className="modal-backdrop no-print"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div
-              className="executive-modal"
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 20, opacity: 0 }}
-            >
-              <div className="executive-header">
-                <div>
-                  <span className="completion-badge">Integrazione Ufficiale ElevenLabs AI</span>
-                  <h2>⚡ Studio Voci ElevenLabs (Donna + Uomo)</h2>
-                  <small style={{ color: '#64748b', fontSize: '0.75rem' }}>
-                    ID Donna: <code>{ELEVENLABS_VOICE_IDS.female}</code> · ID Uomo:{' '}
-                    <code>{ELEVENLABS_VOICE_IDS.male}</code>
-                  </small>
-                </div>
-                <button
-                  type="button"
-                  className="close-btn"
-                  onClick={() => setShowElevenModal(false)}
-                >
-                  ✕
-                </button>
-              </div>
-
-              <div className="compliance-grid" style={{ marginBottom: '0.9rem' }}>
-                <div className="compliance-card">
-                  <h4>Opzione A · Genera con API Key (Salva-Crediti)</h4>
-                  <p style={{ marginBottom: '0.5rem' }}>
-                    Inserisci la tua <code>xi-api-key</code> di ElevenLabs: l’app genera le 14
-                    frasi con gli ID <strong>MxbaIHXywTPlbmHYvbPn</strong> e{' '}
-                    <strong>PSp7S6ST9fDNXDwEzX0m</strong> una sola volta e le salva in cache!
-                  </p>
-                  <input
-                    type="password"
-                    placeholder="Incolla qui la tua ElevenLabs API Key (sk_...)"
-                    value={elevenApiKey}
-                    onChange={(e) => setElevenApiKey(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '0.45rem 0.6rem',
-                      borderRadius: '8px',
-                      border: '1px solid #cbd5e1',
-                      fontSize: '0.8rem',
-                      marginBottom: '0.5rem',
-                      boxSizing: 'border-box',
-                    }}
-                  />
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    style={{ width: '100%', padding: '0.5rem 1rem', fontSize: '0.82rem' }}
-                    disabled={isGeneratingEleven}
-                    onClick={generateAllWithElevenLabsApi}
-                  >
-                    {isGeneratingEleven
-                      ? 'Generazione in corso...'
-                      : '⚡ Genera e Salva le 2 Voci ElevenLabs'}
-                  </button>
-                </div>
-
-                <div className="compliance-card">
-                  <h4>Opzione B · Carica i 2 MP3 Scaricati da ElevenLabs (Senza API Key)</h4>
-                  <p style={{ marginBottom: '0.5rem' }}>
-                    Se hai scaricato l’MP3 delle 7 frasi direttamente dal sito di ElevenLabs,
-                    caricalo qui: l’app divide automaticamente i silenzi tra le 7 frasi!
-                  </p>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
-                    <label className="btn-mini btn-mini-rec" style={{ textAlign: 'center' }}>
-                      👩 Carica MP3 Voce Donna ({hasElevenFemaleReady ? 'Attiva ✓' : 'Da caricare'})
-                      <input
-                        type="file"
-                        accept=".mp3,.wav,audio/*"
-                        style={{ display: 'none' }}
-                        onChange={(e) => handleUploadGenderMp3(e, 'female')}
-                      />
-                    </label>
-
-                    <label className="btn-mini btn-mini-rec" style={{ textAlign: 'center' }}>
-                      👨 Carica MP3 Voce Uomo ({hasElevenMaleReady ? 'Attiva ✓' : 'Da caricare'})
-                      <input
-                        type="file"
-                        accept=".mp3,.wav,audio/*"
-                        style={{ display: 'none' }}
-                        onChange={(e) => handleUploadGenderMp3(e, 'male')}
-                      />
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              {elevenStatusMsg && (
-                <p
-                  className="legal-note"
-                  style={{
-                    color: '#0f766e',
-                    background: '#f0fdfa',
-                    border: '1px solid #99f6e4',
-                  }}
-                >
-                  {elevenStatusMsg}
-                </p>
-              )}
-
-              <div className="executive-footer">
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={() => setShowElevenModal(false)}
-                >
-                  Chiudi e Torna a Pausa81
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       <AnimatePresence>
         {sessionCompleted && (
