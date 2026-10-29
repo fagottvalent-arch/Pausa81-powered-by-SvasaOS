@@ -4,6 +4,7 @@ import {
   useRef,
   useCallback,
   type MutableRefObject,
+  type ChangeEvent,
 } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CloudBackground } from './components/CloudBackground';
@@ -12,7 +13,35 @@ export type Phase = 'idle' | 'inspire' | 'hold' | 'expire' | 'pause';
 export type SessionMode = 'all' | 'level1' | 'level2' | 'level3';
 export type VoiceGender = 'female' | 'male' | 'off';
 
+// I tuoi 2 Voice ID ufficiali di ElevenLabs
+const ELEVENLABS_VOICE_IDS = {
+  female: 'MxbaIHXywTPlbmHYvbPn', // Voce Femminile Calda e Rilassante
+  male: 'PSp7S6ST9fDNXDwEzX0m',   // Voce Maschile Profonda e Calma
+} as const;
+
+// Le 7 frasi ufficiali nell'ordine esatto di pronuncia
+const PHRASE_KEYS_ORDER = [
+  'level1_inspire',
+  'level1_expire',
+  'level2_inspire',
+  'level2_hold',
+  'level2_expire',
+  'level3_inspire',
+  'level3_expire',
+] as const;
+
+const PHRASE_TEXTS: Record<string, string> = {
+  level1_inspire: 'Inspira dolcemente dal naso... e rilassa lo sguardo.',
+  level1_expire: 'Espira lentamente... lascia scendere le spalle.',
+  level2_inspire: 'Inspira... solleva i talloni, e attiva le gambe.',
+  level2_hold: 'Trattieni... mantieni la postura.',
+  level2_expire: 'Espira... riappoggia con controllo.',
+  level3_inspire: 'Inspira... apri il petto, e ruota i palmi in fuori.',
+  level3_expire: 'Espira a lungo... sciogli collo e spalle.',
+};
+
 interface SpokenPhrase {
+  audioKey: string;
   part1: string;
   part2: string;
   fullText: string;
@@ -48,21 +77,25 @@ const STAGES: StageConfig[] = [
       'Distoglie la messa a fuoco dai pixel ravvicinati (Titolo VII D.Lgs. 81/08) e rilascia la tensione del trapezio.',
     phrases: {
       inspire: {
+        audioKey: 'level1_inspire',
         part1: 'Inspira dolcemente dal naso...',
         part2: 'e rilassa lo sguardo.',
         fullText: 'Inspira dolcemente dal naso e rilassa lo sguardo',
       },
       hold: {
-        part1: 'Trattieni con calma...',
+        audioKey: 'level2_hold',
+        part1: 'Trattieni...',
         part2: 'mantieni la postura.',
         fullText: 'Trattieni, mantieni la postura',
       },
       expire: {
+        audioKey: 'level1_expire',
         part1: 'Espira lentamente...',
         part2: 'lascia scendere le spalle.',
         fullText: 'Espira lentamente, lascia scendere le spalle',
       },
       pause: {
+        audioKey: '',
         part1: '',
         part2: '',
         fullText: 'Pausa · Rilassa completamente il viso',
@@ -81,21 +114,25 @@ const STAGES: StageConfig[] = [
       'Riattiva il ritorno venoso dagli arti inferiori verso il cervello dopo un’ora di postura seduta fissa.',
     phrases: {
       inspire: {
-        part1: 'Inspira profondamente...',
+        audioKey: 'level2_inspire',
+        part1: 'Inspira...',
         part2: 'solleva i talloni, e attiva le gambe.',
         fullText: 'Inspira, solleva i talloni e attiva le gambe',
       },
       hold: {
+        audioKey: 'level2_hold',
         part1: 'Trattieni...',
         part2: 'mantieni la postura.',
         fullText: 'Trattieni, mantieni la postura',
       },
       expire: {
-        part1: 'Espira dolcemente...',
+        audioKey: 'level2_expire',
+        part1: 'Espira...',
         part2: 'riappoggia con controllo.',
         fullText: 'Espira, riappoggia con controllo',
       },
       pause: {
+        audioKey: '',
         part1: '',
         part2: '',
         fullText: 'Pausa · Lascia fluire la circolazione',
@@ -114,21 +151,25 @@ const STAGES: StageConfig[] = [
       'Previene i Disturbi Muscolo-Scheletrici (DMS): decomprime tunnel carpale, rachide cervicale e tratto lombare.',
     phrases: {
       inspire: {
+        audioKey: 'level3_inspire',
         part1: 'Inspira, apri il petto...',
         part2: 'e ruota i palmi in fuori.',
         fullText: 'Inspira, apri il petto e ruota i palmi in fuori',
       },
       hold: {
+        audioKey: 'level2_hold',
         part1: 'Trattieni...',
         part2: 'mantieni la postura.',
         fullText: 'Trattieni, mantieni la postura',
       },
       expire: {
+        audioKey: 'level3_expire',
         part1: 'Espira a lungo...',
         part2: 'sciogli collo e spalle.',
         fullText: 'Espira a lungo, sciogli collo e spalle',
       },
       pause: {
+        audioKey: '',
         part1: '',
         part2: '',
         fullText: 'Pausa · Ascolta il rilascio muscolare',
@@ -144,6 +185,176 @@ const PAUSE_SEC = 2;
 const CYCLE_SEC = INSPIRE_SEC + HOLD_SEC + EXPIRE_SEC + PAUSE_SEC; // 20s
 const SESSION_DURATION = 60;
 const LOCAL_STATS_KEY = 'pausa81_local_completed_count';
+
+/** Database IndexedDB per salvare permanentemente le 2 voci ElevenLabs (Donna + Uomo) */
+function saveToIdb(key: string, value: unknown): Promise<void> {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined' || !('indexedDB' in window)) {
+      resolve();
+      return;
+    }
+    try {
+      const req = window.indexedDB.open('pausa81_elevenlabs_db', 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains('voices')) {
+          db.createObjectStore('voices');
+        }
+      };
+      req.onsuccess = () => {
+        const db = req.result;
+        const tx = db.transaction('voices', 'readwrite');
+        tx.objectStore('voices').put(value, key);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => resolve();
+      };
+      req.onerror = () => resolve();
+    } catch {
+      resolve();
+    }
+  });
+}
+
+function loadFromIdb<T>(key: string): Promise<T | null> {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined' || !('indexedDB' in window)) {
+      resolve(null);
+      return;
+    }
+    try {
+      const req = window.indexedDB.open('pausa81_elevenlabs_db', 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains('voices')) {
+          db.createObjectStore('voices');
+        }
+      };
+      req.onsuccess = () => {
+        const db = req.result;
+        const tx = db.transaction('voices', 'readonly');
+        const getReq = tx.objectStore('voices').get(key);
+        getReq.onsuccess = () => resolve((getReq.result as T) || null);
+        getReq.onerror = () => resolve(null);
+      };
+      req.onerror = () => resolve(null);
+    } catch {
+      resolve();
+    }
+  });
+}
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(String(reader.result || ''));
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+/**
+ * Rilevatore automatico intelligente delle 7 frasi in un singolo file MP3/WAV
+ * scaricato da ElevenLabs (separa automaticamente i silenzi tra le 7 frasi!).
+ */
+function detectSevenSegmentsInBuffer(buffer: AudioBuffer): Record<string, [number, number]> {
+  const ch = buffer.getChannelData(0);
+  const sr = buffer.sampleRate;
+  const winSize = Math.floor(0.05 * sr); // Finestre da 50ms
+  const numWins = Math.floor(ch.length / winSize);
+  const rms: number[] = [];
+  let maxRms = 0.0001;
+
+  for (let i = 0; i < numWins; i++) {
+    let sum = 0;
+    const offset = i * winSize;
+    for (let j = 0; j < winSize; j++) {
+      const v = ch[offset + j];
+      sum += v * v;
+    }
+    const val = Math.sqrt(sum / winSize);
+    rms.push(val);
+    if (val > maxRms) maxRms = val;
+  }
+
+  const threshold = Math.max(0.008, maxRms * 0.06);
+  const rawSegs: [number, number][] = [];
+  let inSeg = false;
+  let startWin = 0;
+
+  for (let i = 0; i < numWins; i++) {
+    if (rms[i] > threshold && !inSeg) {
+      inSeg = true;
+      startWin = i;
+    } else if (rms[i] <= threshold && inSeg) {
+      inSeg = false;
+      rawSegs.push([startWin * 0.05, i * 0.05]);
+    }
+  }
+  if (inSeg) {
+    rawSegs.push([startWin * 0.05, numWins * 0.05]);
+  }
+
+  // Unisce parole vicine separate da meno di 0.55 secondi
+  const merged: [number, number][] = [];
+  for (const seg of rawSegs) {
+    if (merged.length === 0) {
+      merged.push([seg[0], seg[1]]);
+    } else {
+      const last = merged[merged.length - 1];
+      if (seg[0] - last[1] < 0.55) {
+        last[1] = seg[1];
+      } else {
+        merged.push([seg[0], seg[1]]);
+      }
+    }
+  }
+
+  const valid = merged.filter((s) => s[1] - s[0] >= 0.45);
+  const map: Record<string, [number, number]> = {};
+
+  for (let idx = 0; idx < PHRASE_KEYS_ORDER.length; idx++) {
+    const key = PHRASE_KEYS_ORDER[idx];
+    if (valid[idx]) {
+      map[key] = [
+        Math.max(0, valid[idx][0] - 0.12),
+        Math.min(buffer.duration, valid[idx][1] + 0.22),
+      ];
+    }
+  }
+  return map;
+}
+
+function pickItalianSystemVoice(
+  voices: SpeechSynthesisVoice[],
+  gender: 'female' | 'male'
+): { voice: SpeechSynthesisVoice | null; isDedicatedGenderMatch: boolean } {
+  const itVoices = voices.filter(
+    (v) =>
+      v.lang.toLowerCase().startsWith('it') ||
+      v.name.toLowerCase().includes('ital')
+  );
+  if (itVoices.length === 0) return { voice: null, isDedicatedGenderMatch: false };
+
+  const femaleKeywords = ['elsa', 'isabella', 'alice', 'federica', 'fabiola', 'google italiano', 'female', 'donna'];
+  const maleKeywords = ['diego', 'cosimo', 'luca', 'giuseppe', 'giorgio', 'male', 'uomo'];
+
+  if (gender === 'female') {
+    const matchF = itVoices.find((v) =>
+      femaleKeywords.some((k) => v.name.toLowerCase().includes(k))
+    );
+    if (matchF) return { voice: matchF, isDedicatedGenderMatch: true };
+    const nonMale = itVoices.find(
+      (v) => !maleKeywords.some((k) => v.name.toLowerCase().includes(k))
+    );
+    return { voice: nonMale || itVoices[0], isDedicatedGenderMatch: Boolean(nonMale) };
+  }
+
+  const matchM = itVoices.find((v) =>
+    maleKeywords.some((k) => v.name.toLowerCase().includes(k))
+  );
+  if (matchM) return { voice: matchM, isDedicatedGenderMatch: true };
+  return { voice: itVoices[0], isDedicatedGenderMatch: false };
+}
 
 interface TimelineSnapshot {
   stageIndex: number;
@@ -232,64 +443,6 @@ function getTimelineSnapshot(elapsed: number, mode: SessionMode): TimelineSnapsh
     displayText: pauseText,
     spokenPhrase: null,
   };
-}
-
-/**
- * Seleziona la miglior voce naturale Italiana Femminile o Maschile disponibile sul dispositivo
- * (Google Neural, Microsoft Natural Elsa/Isabella/Diego/Cosimo, Apple Alice/Federica/Luca).
- */
-function pickItalianVoice(
-  voices: SpeechSynthesisVoice[],
-  gender: 'female' | 'male'
-): { voice: SpeechSynthesisVoice | null; isDedicatedGenderMatch: boolean } {
-  const itVoices = voices.filter(
-    (v) =>
-      v.lang.toLowerCase().startsWith('it') ||
-      v.name.toLowerCase().includes('ital')
-  );
-
-  if (itVoices.length === 0) {
-    return { voice: null, isDedicatedGenderMatch: false };
-  }
-
-  const femaleKeywords = ['elsa', 'isabella', 'alice', 'federica', 'fabiola', 'google italiano', 'female', 'donna'];
-  const maleKeywords = ['diego', 'cosimo', 'luca', 'giuseppe', 'giorgio', 'male', 'uomo'];
-
-  if (gender === 'female') {
-    // Priorità a voci Neural/Online femminili
-    const neuralFemale = itVoices.find(
-      (v) =>
-        (v.name.toLowerCase().includes('natural') || v.name.toLowerCase().includes('google')) &&
-        femaleKeywords.some((k) => v.name.toLowerCase().includes(k))
-    );
-    if (neuralFemale) return { voice: neuralFemale, isDedicatedGenderMatch: true };
-
-    const anyFemale = itVoices.find((v) =>
-      femaleKeywords.some((k) => v.name.toLowerCase().includes(k))
-    );
-    if (anyFemale) return { voice: anyFemale, isDedicatedGenderMatch: true };
-
-    // Fallback sulla prima voce italiana non maschile
-    const nonMale = itVoices.find(
-      (v) => !maleKeywords.some((k) => v.name.toLowerCase().includes(k))
-    );
-    return { voice: nonMale || itVoices[0], isDedicatedGenderMatch: Boolean(nonMale) };
-  }
-
-  // Ricerca voce Maschile (Diego, Cosimo, Luca, Giuseppe)
-  const neuralMale = itVoices.find(
-    (v) =>
-      v.name.toLowerCase().includes('natural') &&
-      maleKeywords.some((k) => v.name.toLowerCase().includes(k))
-  );
-  if (neuralMale) return { voice: neuralMale, isDedicatedGenderMatch: true };
-
-  const anyMale = itVoices.find((v) =>
-    maleKeywords.some((k) => v.name.toLowerCase().includes(k))
-  );
-  if (anyMale) return { voice: anyMale, isDedicatedGenderMatch: true };
-
-  return { voice: itVoices[0], isDedicatedGenderMatch: false };
 }
 
 function useBreathScale(phase: Phase, breath: number, phaseDuration: number) {
@@ -587,17 +740,37 @@ export default function App() {
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const [elapsed, setElapsed] = useState<number>(0);
 
-  // Scelta immediata tra Voce Donna, Voce Uomo o Voce OFF
+  // Scelta immediata tra Voce Donna (MxbaIHXywTPlbmHYvbPn), Voce Uomo (PSp7S6ST9fDNXDwEzX0m) o OFF
   const [voiceGender, setVoiceGender] = useState<VoiceGender>('female');
-  // Tappeto Armonico Binaurale 432Hz attivabile/disattivabile in 1 clic
   const [binauralEnabled, setBinauralEnabled] = useState<boolean>(true);
-  // Campana Tibetana di cambio fase attivabile/disattivabile in 1 clic
   const [chimeEnabled, setChimeEnabled] = useState<boolean>(true);
   const [eyeRestMode, setEyeRestMode] = useState<boolean>(false);
 
   const [sessionCompleted, setSessionCompleted] = useState<boolean>(false);
   const [showExecutiveModal, setShowExecutiveModal] = useState<boolean>(false);
   const [showQrModal, setShowQrModal] = useState<boolean>(false);
+  const [showElevenModal, setShowElevenModal] = useState<boolean>(false);
+
+  // Stato ElevenLabs Studio
+  const [elevenApiKey, setElevenApiKey] = useState<string>('');
+  const [isGeneratingEleven, setIsGeneratingEleven] = useState<boolean>(false);
+  const [elevenStatusMsg, setElevenStatusMsg] = useState<string>('');
+  const [hasElevenFemaleReady, setHasElevenFemaleReady] = useState<boolean>(false);
+  const [hasElevenMaleReady, setHasElevenMaleReady] = useState<boolean>(false);
+
+  // Cache delle tracce ElevenLabs (chiave: `female_level1_inspire`, `male_level1_inspire`, ecc.)
+  const elevenTracksRef: MutableRefObject<Record<string, string>> = useRef<
+    Record<string, string>
+  >({});
+  // Buffer MP3 unici (se caricati come singolo file MP3 per Donna e singolo MP3 per Uomo)
+  const masterBufferFemaleRef: MutableRefObject<{
+    buffer: AudioBuffer;
+    slices: Record<string, [number, number]>;
+  } | null> = useRef(null);
+  const masterBufferMaleRef: MutableRefObject<{
+    buffer: AudioBuffer;
+    slices: Record<string, [number, number]>;
+  } | null> = useRef(null);
 
   const [vdtReminderMinutes, setVdtReminderMinutes] = useState<number | null>(null);
   const [vdtSecondsLeft, setVdtSecondsLeft] = useState<number>(0);
@@ -610,7 +783,6 @@ export default function App() {
   const [lastAuditCode, setLastAuditCode] = useState<string>('P81-VDT-8108');
   const [employeesCount, setEmployeesCount] = useState<number>(10);
 
-  // Riferimenti per controllo totale e stop istantaneo (0ms)
   const audioCtxRef: MutableRefObject<AudioContext | null> = useRef<AudioContext | null>(null);
   const chimeOscsRef: MutableRefObject<OscillatorNode[]> = useRef<OscillatorNode[]>([]);
   const chimeGainRef: MutableRefObject<GainNode | null> = useRef<GainNode | null>(null);
@@ -618,32 +790,17 @@ export default function App() {
   const binauralOscsRef: MutableRefObject<OscillatorNode[]> = useRef<OscillatorNode[]>([]);
   const binauralGainRef: MutableRefObject<GainNode | null> = useRef<GainNode | null>(null);
 
+  const activeHtmlAudioRef: MutableRefObject<HTMLAudioElement | null> =
+    useRef<HTMLAudioElement | null>(null);
+  const activeBufferSourceRef: MutableRefObject<AudioBufferSourceNode | null> =
+    useRef<AudioBufferSourceNode | null>(null);
+
   const availableVoicesRef: MutableRefObject<SpeechSynthesisVoice[]> = useRef<
     SpeechSynthesisVoice[]
   >([]);
   const phraseTimeoutRef: MutableRefObject<number | null> = useRef<number | null>(null);
   const lastPlayedStepRef = useRef<string>('');
   const wakeLockRef = useRef<{ release: () => Promise<void> } | null>(null);
-
-  // Pre-carica le voci di sistema appena il browser è pronto
-  useEffect(() => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-
-    const updateVoices = () => {
-      const v = window.speechSynthesis.getVoices();
-      if (v.length > 0) {
-        availableVoicesRef.current = v;
-      }
-    };
-
-    updateVoices();
-    window.speechSynthesis.onvoiceschanged = updateVoices;
-    return () => {
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.onvoiceschanged = null;
-      }
-    };
-  }, []);
 
   const getOrCreateAudioCtx = useCallback((): AudioContext | null => {
     if (typeof window === 'undefined') return null;
@@ -659,6 +816,155 @@ export default function App() {
     }
     return audioCtxRef.current;
   }, []);
+
+  // Pre-carica voci di sistema e cache ElevenLabs da IndexedDB o da public/
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      const updateVoices = () => {
+        const v = window.speechSynthesis.getVoices();
+        if (v.length > 0) availableVoicesRef.current = v;
+      };
+      updateVoices();
+      window.speechSynthesis.onvoiceschanged = updateVoices;
+    }
+
+    async function loadCachedElevenVoices() {
+      const savedPack = await loadFromIdb<Record<string, string>>('elevenlabs_dual_pack');
+      if (savedPack && typeof savedPack === 'object') {
+        elevenTracksRef.current = savedPack;
+        if (savedPack.female_level1_inspire) setHasElevenFemaleReady(true);
+        if (savedPack.male_level1_inspire) setHasElevenMaleReady(true);
+      }
+
+      // Controlla anche se hai messo /female.mp3 e /male.mp3 in public/
+      const ctx = getOrCreateAudioCtx();
+      if (!ctx) return;
+
+      for (const g of ['female', 'male'] as const) {
+        const cachedMp3 = await loadFromIdb<ArrayBuffer>(`eleven_mp3_${g}`);
+        if (cachedMp3 && cachedMp3.byteLength > 10000) {
+          try {
+            const decoded = await ctx.decodeAudioData(cachedMp3.slice(0));
+            const slices = detectSevenSegmentsInBuffer(decoded);
+            if (g === 'female') {
+              masterBufferFemaleRef.current = { buffer: decoded, slices };
+              setHasElevenFemaleReady(true);
+            } else {
+              masterBufferMaleRef.current = { buffer: decoded, slices };
+              setHasElevenMaleReady(true);
+            }
+          } catch {
+            // Ignora
+          }
+        }
+      }
+    }
+
+    loadCachedElevenVoices();
+  }, [getOrCreateAudioCtx]);
+
+  /** Genera tutte le 14 tracce (7 Donna MxbaIHXywTPlbmHYvbPn + 7 Uomo PSp7S6ST9fDNXDwEzX0m) via API ElevenLabs e le salva in Cache */
+  const generateAllWithElevenLabsApi = async () => {
+    const cleanKey = elevenApiKey.trim();
+    if (!cleanKey) {
+      setElevenStatusMsg('Inserisci prima la tua API Key di ElevenLabs (xi-api-key).');
+      return;
+    }
+
+    setIsGeneratingEleven(true);
+    setElevenStatusMsg(
+      'Generazione in corso sui server ElevenLabs (ID Donna MxbaIHXywTPlbmHYvbPn + ID Uomo PSp7S6ST9fDNXDwEzX0m)...'
+    );
+
+    const newPack: Record<string, string> = { ...elevenTracksRef.current };
+
+    try {
+      for (const gender of ['female', 'male'] as const) {
+        const voiceId = ELEVENLABS_VOICE_IDS[gender];
+        for (const phraseKey of PHRASE_KEYS_ORDER) {
+          const textToSpeak = PHRASE_TEXTS[phraseKey];
+          setElevenStatusMsg(
+            `Generazione ${gender === 'female' ? 'Voce Donna' : 'Voce Uomo'}: "${textToSpeak}"...`
+          );
+
+          const res = await fetch(
+            `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'xi-api-key': cleanKey,
+              },
+              body: JSON.stringify({
+                text: textToSpeak,
+                model_id: 'eleven_multilingual_v2',
+                voice_settings: {
+                  stability: 0.78,
+                  similarity_boost: 0.82,
+                  style: 0.12,
+                  use_speaker_boost: true,
+                },
+              }),
+            }
+          );
+
+          if (!res.ok) {
+            throw new Error(`Errore ElevenLabs (${res.status}): verifica la tua API Key o i crediti.`);
+          }
+
+          const blob = await res.blob();
+          const dataUrl = await blobToDataUrl(blob);
+          newPack[`${gender}_${phraseKey}`] = dataUrl;
+        }
+      }
+
+      elevenTracksRef.current = newPack;
+      await saveToIdb('elevenlabs_dual_pack', newPack);
+      setHasElevenFemaleReady(true);
+      setHasElevenMaleReady(true);
+      setElevenStatusMsg(
+        '✓ Entrambe le voci ElevenLabs (Donna + Uomo) sono state generate e salvate permanentemente!'
+      );
+    } catch (err) {
+      setElevenStatusMsg(
+        err instanceof Error
+          ? err.message
+          : 'Errore durante la connessione a ElevenLabs.'
+      );
+    } finally {
+      setIsGeneratingEleven(false);
+    }
+  };
+
+  /** Carica un file MP3/WAV scaricato da ElevenLabs per la Voce Donna o la Voce Uomo */
+  const handleUploadGenderMp3 = async (
+    e: ChangeEvent<HTMLInputElement>,
+    gender: 'female' | 'male'
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const ctx = getOrCreateAudioCtx();
+      if (!ctx) return;
+      const arrayBuf = await file.arrayBuffer();
+      const decoded = await ctx.decodeAudioData(arrayBuf.slice(0));
+      const slices = detectSevenSegmentsInBuffer(decoded);
+
+      if (gender === 'female') {
+        masterBufferFemaleRef.current = { buffer: decoded, slices };
+        setHasElevenFemaleReady(true);
+      } else {
+        masterBufferMaleRef.current = { buffer: decoded, slices };
+        setHasElevenMaleReady(true);
+      }
+      await saveToIdb(`eleven_mp3_${gender}`, arrayBuf);
+      setElevenStatusMsg(
+        `✓ File MP3 ${gender === 'female' ? 'Voce Donna' : 'Voce Uomo'} caricato e diviso automaticamente nelle 7 frasi!`
+      );
+    } catch {
+      setElevenStatusMsg('Seleziona un file audio (.mp3 o .wav) valido.');
+    }
+  };
 
   /** Ferma all'istante la Campana Tibetana */
   const stopChimeNow = useCallback(() => {
@@ -703,11 +1009,28 @@ export default function App() {
     binauralGainRef.current = null;
   }, []);
 
-  /** Ferma all'istante la Voce e le pause prosodiche */
+  /** Ferma all'istante qualsiasi Voce attiva */
   const stopVoiceNow = useCallback(() => {
     if (phraseTimeoutRef.current !== null) {
       window.clearTimeout(phraseTimeoutRef.current);
       phraseTimeoutRef.current = null;
+    }
+    if (activeBufferSourceRef.current) {
+      try {
+        activeBufferSourceRef.current.stop();
+        activeBufferSourceRef.current.disconnect();
+      } catch {
+        // Ignora
+      }
+      activeBufferSourceRef.current = null;
+    }
+    if (activeHtmlAudioRef.current) {
+      try {
+        activeHtmlAudioRef.current.pause();
+        activeHtmlAudioRef.current.currentTime = 0;
+      } catch {
+        // Ignora
+      }
     }
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       try {
@@ -718,14 +1041,13 @@ export default function App() {
     }
   }, []);
 
-  /** Ferma TUTTO (Campana + Binaurale + Voce) in 0 millisecondi */
   const stopAllAudio = useCallback(() => {
     stopChimeNow();
     stopBinauralNow();
     stopVoiceNow();
   }, [stopChimeNow, stopBinauralNow, stopVoiceNow]);
 
-  /** Avvia il Tappeto Armonico Binaurale caldo (216Hz + 432Hz + 438Hz Theta/Alpha 6Hz) */
+  /** Avvia il Tappeto Armonico Binaurale 432Hz (con battimento rilassante a 6Hz) */
   const startBinauralPad = useCallback(() => {
     stopBinauralNow();
     if (!binauralEnabled) return;
@@ -744,13 +1066,13 @@ export default function App() {
       const masterGain = ctx.createGain();
 
       subOsc.type = 'sine';
-      subOsc.frequency.setValueAtTime(216, ctx.currentTime); // Fondamentale calda 216 Hz
+      subOsc.frequency.setValueAtTime(216, ctx.currentTime);
 
       leftOsc.type = 'sine';
-      leftOsc.frequency.setValueAtTime(432, ctx.currentTime); // 432 Hz
+      leftOsc.frequency.setValueAtTime(432, ctx.currentTime);
 
       rightOsc.type = 'sine';
-      rightOsc.frequency.setValueAtTime(438, ctx.currentTime); // 438 Hz (Battimento binaurale rilassante a 6 Hz)
+      rightOsc.frequency.setValueAtTime(438, ctx.currentTime);
 
       masterGain.gain.setValueAtTime(0.0001, ctx.currentTime);
       masterGain.gain.linearRampToValueAtTime(0.018, ctx.currentTime + 1.2);
@@ -772,7 +1094,7 @@ export default function App() {
     }
   }, [binauralEnabled, getOrCreateAudioCtx, stopBinauralNow]);
 
-  /** Suona un rintocco caldo di Campana Tibetana (con armonico naturale) */
+  /** Suona il tocco di Campana Tibetana */
   const triggerSoftChime = useCallback(
     (phase: Phase) => {
       stopChimeNow();
@@ -798,7 +1120,7 @@ export default function App() {
         osc1.frequency.setValueAtTime(baseFreq, ctx.currentTime);
 
         osc2.type = 'sine';
-        osc2.frequency.setValueAtTime(baseFreq * 1.5, ctx.currentTime); // Quinta armonica dolce
+        osc2.frequency.setValueAtTime(baseFreq * 1.5, ctx.currentTime);
 
         gain.gain.setValueAtTime(0.0001, ctx.currentTime);
         gain.gain.linearRampToValueAtTime(0.028, ctx.currentTime + 0.04);
@@ -823,33 +1145,72 @@ export default function App() {
   );
 
   /**
-   * Pronuncia una frase con Micro-Prosodia Umana Bipartita:
-   * - Parte 1: calma, accogliente
-   * - Pausa respiratoria di 620ms
-   * - Parte 2: intonazione leggermente più profonda e lenta (effetto rassicurante da coach reale)
+   * Riproduce la voce selezionata (`female` o `male`):
+   * 1) Cerca prima nella cache ElevenLabs (`MxbaIHXywTPlbmHYvbPn` o `PSp7S6ST9fDNXDwEzX0m`)
+   * 2) Altrimenti cerca nel buffer MP3 ElevenLabs caricato per quel sesso
+   * 3) Altrimenti usa il motore prosodico naturale bipartito (Donna / Uomo)
    */
-  const speakHumanPhrase = useCallback(
+  const speakPhrase = useCallback(
     (phrase: SpokenPhrase | null, overrideGender?: VoiceGender) => {
       const activeGender = overrideGender !== undefined ? overrideGender : voiceGender;
       stopVoiceNow();
       if (activeGender === 'off' || !phrase || typeof window === 'undefined') return;
-      if (!('speechSynthesis' in window)) return;
 
+      // 1. Controlla traccia ElevenLabs salvata da API
+      if (phrase.audioKey) {
+        const elevenDataUrl =
+          elevenTracksRef.current[`${activeGender}_${phrase.audioKey}`];
+        if (elevenDataUrl) {
+          try {
+            const audio = new Audio(elevenDataUrl);
+            audio.volume = 1.0;
+            activeHtmlAudioRef.current = audio;
+            audio.play().catch(() => {});
+            return;
+          } catch {
+            // Continua
+          }
+        }
+
+        // 2. Controlla MP3 ElevenLabs caricato per Donna o Uomo
+        const masterRef =
+          activeGender === 'female'
+            ? masterBufferFemaleRef.current
+            : masterBufferMaleRef.current;
+        if (masterRef && masterRef.slices[phrase.audioKey]) {
+          const ctx = getOrCreateAudioCtx();
+          if (ctx) {
+            const [startSec, endSec] = masterRef.slices[phrase.audioKey];
+            const dur = Math.max(0.4, endSec - startSec);
+            const src = ctx.createBufferSource();
+            src.buffer = masterRef.buffer;
+            src.connect(ctx.destination);
+            src.start(0, startSec, dur);
+            activeBufferSourceRef.current = src;
+            return;
+          }
+        }
+      }
+
+      // 3. Fallback automatico sul motore prosodico umano bipartito (Donna / Uomo)
+      if (!('speechSynthesis' in window)) return;
       const voices =
         availableVoicesRef.current.length > 0
           ? availableVoicesRef.current
           : window.speechSynthesis.getVoices();
 
-      const { voice, isDedicatedGenderMatch } = pickItalianVoice(voices, activeGender);
+      const { voice, isDedicatedGenderMatch } = pickItalianSystemVoice(
+        voices,
+        activeGender
+      );
 
-      // Calibrazione acustica per Voce Donna (calda, vellutata) vs Voce Uomo (profonda, baritonale)
       const baseRate = activeGender === 'female' ? 0.84 : 0.80;
       const basePitch =
         activeGender === 'female'
           ? 1.02
           : isDedicatedGenderMatch
           ? 0.88
-          : 0.72; // Se il sistema ha una sola voce, la trasforma in baritono profondo e calmo
+          : 0.72;
 
       try {
         if (phrase.part1) {
@@ -866,7 +1227,6 @@ export default function App() {
               const u2 = new SpeechSynthesisUtterance(phrase.part2);
               u2.lang = 'it-IT';
               if (voice) u2.voice = voice;
-              // Seconda parte leggermente più lenta e morbida (inflessione discendente rassicurante)
               u2.rate = Math.max(0.74, baseRate - 0.04);
               u2.pitch = Math.max(0.65, basePitch - 0.05);
               u2.volume = 0.90;
@@ -880,7 +1240,7 @@ export default function App() {
         // Silenzioso
       }
     },
-    [voiceGender, stopVoiceNow]
+    [voiceGender, stopVoiceNow, getOrCreateAudioCtx]
   );
 
   const previewStageIdx =
@@ -903,7 +1263,6 @@ export default function App() {
         spokenPhrase: null,
       };
 
-  // Ad ogni cambio di sotto-fase durante i 60 secondi, suona la campana e avvia la voce scelta
   useEffect(() => {
     if (!isRunning) {
       lastPlayedStepRef.current = '';
@@ -918,12 +1277,11 @@ export default function App() {
         navigator.vibrate(25);
       }
       if (snapshot.spokenPhrase) {
-        speakHumanPhrase(snapshot.spokenPhrase);
+        speakPhrase(snapshot.spokenPhrase);
       }
     }
-  }, [isRunning, snapshot, triggerSoftChime, speakHumanPhrase]);
+  }, [isRunning, snapshot, triggerSoftChime, speakPhrase]);
 
-  // Se l'utente attiva/disattiva il Tappeto Binaurale mentre la sessione è in corso, reagisce subito in 1 clic
   useEffect(() => {
     if (!isRunning) {
       stopBinauralNow();
@@ -936,14 +1294,12 @@ export default function App() {
     }
   }, [binauralEnabled, isRunning, startBinauralPad, stopBinauralNow]);
 
-  // Se l'utente disattiva la Campana mentre sta suonando, la taglia all'istante
   useEffect(() => {
     if (!chimeEnabled) {
       stopChimeNow();
     }
   }, [chimeEnabled, stopChimeNow]);
 
-  // Se l'utente mette Voce OFF mentre sta parlando, la taglia all'istante
   useEffect(() => {
     if (voiceGender === 'off') {
       stopVoiceNow();
@@ -1023,7 +1379,7 @@ export default function App() {
     }
     triggerSoftChime(firstSnap.phase);
     if (firstSnap.spokenPhrase) {
-      speakHumanPhrase(firstSnap.spokenPhrase);
+      speakPhrase(firstSnap.spokenPhrase);
     }
 
     try {
@@ -1042,10 +1398,9 @@ export default function App() {
     stopAllAudio,
     startBinauralPad,
     triggerSoftChime,
-    speakHumanPhrase,
+    speakPhrase,
   ]);
 
-  /** Cambia voce (Donna / Uomo / OFF) e fa sentire subito un'anteprima rassicurante */
   const handleSelectVoiceGender = (newGender: VoiceGender) => {
     setVoiceGender(newGender);
     if (newGender === 'off') {
@@ -1053,21 +1408,9 @@ export default function App() {
       return;
     }
     if (!isRunning) {
-      const sample: SpokenPhrase =
-        newGender === 'female'
-          ? {
-              part1: 'Voce femminile attiva...',
-              part2: 'rilassa lo sguardo e le spalle.',
-              fullText: '',
-            }
-          : {
-              part1: 'Voce maschile attiva...',
-              part2: 'respira con calma e sciogli le tensioni.',
-              fullText: '',
-            };
-      speakHumanPhrase(sample, newGender);
+      speakPhrase(STAGES[0].phrases.inspire, newGender);
     } else if (snapshot.spokenPhrase) {
-      speakHumanPhrase(snapshot.spokenPhrase, newGender);
+      speakPhrase(snapshot.spokenPhrase, newGender);
     }
   };
 
@@ -1134,50 +1477,59 @@ export default function App() {
         </div>
 
         <div className="topbar-actions">
-          {/* Selettore 1-Clic: Voce Donna / Voce Uomo / Voce OFF */}
+          {/* Scelta in 1 clic: Voce Donna / Voce Uomo / Voce OFF */}
           <button
             type="button"
             className={`icon-btn ${voiceGender === 'female' ? 'active' : ''}`}
             onClick={() => handleSelectVoiceGender('female')}
-            title="Attiva la voce guida femminile calda e rilassante"
+            title="Voce Femminile (ID ElevenLabs MxbaIHXywTPlbmHYvbPn)"
           >
-            👩 Voce Donna
+            👩 Donna {hasElevenFemaleReady ? '✓' : ''}
           </button>
 
           <button
             type="button"
             className={`icon-btn ${voiceGender === 'male' ? 'active' : ''}`}
             onClick={() => handleSelectVoiceGender('male')}
-            title="Attiva la voce guida maschile profonda e calma"
+            title="Voce Maschile (ID ElevenLabs PSp7S6ST9fDNXDwEzX0m)"
           >
-            👨 Voce Uomo
+            👨 Uomo {hasElevenMaleReady ? '✓' : ''}
           </button>
 
           <button
             type="button"
             className={`icon-btn ${voiceGender === 'off' ? 'active' : ''}`}
             onClick={() => handleSelectVoiceGender('off')}
-            title="Disattiva la guida vocale"
           >
-            🔇 Voce OFF
+            🔇 OFF
           </button>
 
-          {/* Tappeto Armonico Binaurale 432Hz attivabile/disattivabile in 1 clic */}
+          {/* Pulsante configurazione ElevenLabs (API Key o MP3 per i 2 Voice ID) */}
+          <button
+            type="button"
+            className={`icon-btn ${
+              hasElevenFemaleReady && hasElevenMaleReady ? 'active' : 'voice-studio-btn'
+            }`}
+            onClick={() => setShowElevenModal(true)}
+            title="Configura o carica le 2 voci ElevenLabs (MxbaIHXywTPlbmHYvbPn e PSp7S6ST9fDNXDwEzX0m)"
+          >
+            ⚡ ElevenLabs
+          </button>
+
+          {/* Tappeto Armonico Binaurale 432Hz in 1 clic */}
           <button
             type="button"
             className={`icon-btn ${binauralEnabled ? 'active' : ''}`}
             onClick={() => setBinauralEnabled((v) => !v)}
-            title="Attiva o rimuovi il tappeto armonico binaurale a 432Hz"
           >
             {binauralEnabled ? '🌊 Binaurale ON' : '🌊 Binaurale OFF'}
           </button>
 
-          {/* Campana Tibetana di cambio fase */}
+          {/* Campana Tibetana in 1 clic */}
           <button
             type="button"
             className={`icon-btn ${chimeEnabled ? 'active' : ''}`}
             onClick={() => setChimeEnabled((v) => !v)}
-            title="Attiva o disattiva il tocco di campana tibetana ai cambi di fase"
           >
             {chimeEnabled ? '🔔 Campana ON' : '🔔 Campana OFF'}
           </button>
@@ -1196,8 +1548,8 @@ export default function App() {
             onClick={toggleVdtReminder}
           >
             {vdtReminderMinutes === null
-              ? '⏰ Sveglia VDT'
-              : `⏰ VDT ${Math.ceil(vdtSecondsLeft / 60)}m`}
+              ? '⏰ VDT'
+              : `⏰ ${Math.ceil(vdtSecondsLeft / 60)}m`}
           </button>
         </div>
       </header>
@@ -1326,6 +1678,132 @@ export default function App() {
           Esente Art. 4 L. 300/70 · Presidio Art. 28 e Titolo VII D.Lgs. 81/2008.
         </span>
       </footer>
+
+      {/* Modal Studio ElevenLabs (ID MxbaIHXywTPlbmHYvbPn & PSp7S6ST9fDNXDwEzX0m) */}
+      <AnimatePresence>
+        {showElevenModal && (
+          <motion.div
+            className="modal-backdrop no-print"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="executive-modal"
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 20, opacity: 0 }}
+            >
+              <div className="executive-header">
+                <div>
+                  <span className="completion-badge">Integrazione Ufficiale ElevenLabs AI</span>
+                  <h2>⚡ Studio Voci ElevenLabs (Donna + Uomo)</h2>
+                  <small style={{ color: '#64748b', fontSize: '0.75rem' }}>
+                    ID Donna: <code>{ELEVENLABS_VOICE_IDS.female}</code> · ID Uomo:{' '}
+                    <code>{ELEVENLABS_VOICE_IDS.male}</code>
+                  </small>
+                </div>
+                <button
+                  type="button"
+                  className="close-btn"
+                  onClick={() => setShowElevenModal(false)}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="compliance-grid" style={{ marginBottom: '0.9rem' }}>
+                <div className="compliance-card">
+                  <h4>Opzione A · Genera con API Key (Salva-Crediti)</h4>
+                  <p style={{ marginBottom: '0.5rem' }}>
+                    Inserisci la tua <code>xi-api-key</code> di ElevenLabs: l’app genera le 14
+                    frasi con gli ID <strong>MxbaIHXywTPlbmHYvbPn</strong> e{' '}
+                    <strong>PSp7S6ST9fDNXDwEzX0m</strong> una sola volta e le salva in cache!
+                  </p>
+                  <input
+                    type="password"
+                    placeholder="Incolla qui la tua ElevenLabs API Key (sk_...)"
+                    value={elevenApiKey}
+                    onChange={(e) => setElevenApiKey(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '0.45rem 0.6rem',
+                      borderRadius: '8px',
+                      border: '1px solid #cbd5e1',
+                      fontSize: '0.8rem',
+                      marginBottom: '0.5rem',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    style={{ width: '100%', padding: '0.5rem 1rem', fontSize: '0.82rem' }}
+                    disabled={isGeneratingEleven}
+                    onClick={generateAllWithElevenLabsApi}
+                  >
+                    {isGeneratingEleven
+                      ? 'Generazione in corso...'
+                      : '⚡ Genera e Salva le 2 Voci ElevenLabs'}
+                  </button>
+                </div>
+
+                <div className="compliance-card">
+                  <h4>Opzione B · Carica i 2 MP3 Scaricati da ElevenLabs (Senza API Key)</h4>
+                  <p style={{ marginBottom: '0.5rem' }}>
+                    Se hai scaricato l’MP3 delle 7 frasi direttamente dal sito di ElevenLabs,
+                    caricalo qui: l’app divide automaticamente i silenzi tra le 7 frasi!
+                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                    <label className="btn-mini btn-mini-rec" style={{ textAlign: 'center' }}>
+                      👩 Carica MP3 Voce Donna ({hasElevenFemaleReady ? 'Attiva ✓' : 'Da caricare'})
+                      <input
+                        type="file"
+                        accept=".mp3,.wav,audio/*"
+                        style={{ display: 'none' }}
+                        onChange={(e) => handleUploadGenderMp3(e, 'female')}
+                      />
+                    </label>
+
+                    <label className="btn-mini btn-mini-rec" style={{ textAlign: 'center' }}>
+                      👨 Carica MP3 Voce Uomo ({hasElevenMaleReady ? 'Attiva ✓' : 'Da caricare'})
+                      <input
+                        type="file"
+                        accept=".mp3,.wav,audio/*"
+                        style={{ display: 'none' }}
+                        onChange={(e) => handleUploadGenderMp3(e, 'male')}
+                      />
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {elevenStatusMsg && (
+                <p
+                  className="legal-note"
+                  style={{
+                    color: '#0f766e',
+                    background: '#f0fdfa',
+                    border: '1px solid #99f6e4',
+                  }}
+                >
+                  {elevenStatusMsg}
+                </p>
+              )}
+
+              <div className="executive-footer">
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => setShowElevenModal(false)}
+                >
+                  Chiudi e Torna a Pausa81
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {sessionCompleted && (
