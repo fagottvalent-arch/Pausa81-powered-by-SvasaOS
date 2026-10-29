@@ -5,6 +5,8 @@ import {
   useCallback,
   type MutableRefObject,
   type ChangeEvent,
+  type MouseEvent as ReactMouseEvent,
+  type TouchEvent as ReactTouchEvent,
 } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CloudBackground } from './components/CloudBackground';
@@ -47,7 +49,6 @@ const ALESSANDRO_MALE_TIMESTAMPS: Record<PhraseKey, [number, number]> = {
   level3_expire: [19.1, 22.2],
 };
 
-// Percorsi automatici cercati nella cartella public/ di GitHub/Vercel
 const FEMALE_MP3_CANDIDATE_URLS = [
   '/ElevenLabs_2026-10-29T16_48_52_Serena - Calm & Soothing_pvc_sp100_s50_sb75_v4.mp3',
   '/ElevenLabs_2026-10-29T16_48_52_Serena%20-%20Calm%20%26%20Soothing_pvc_sp100_s50_sb75_v4.mp3',
@@ -202,8 +203,6 @@ const STAGES: StageConfig[] = [
   },
 ];
 
-// Tempi calibrati sulle durate di Serena e Alessandro:
-// 7s Inspira + 4s Trattieni + 7s Espira + 2s Pausa = 20s per Fase × 3 = 60s
 const INSPIRE_SEC = 7;
 const HOLD_SEC = 4;
 const EXPIRE_SEC = 7;
@@ -547,52 +546,198 @@ function SacredLotus({ phase }: { phase: Phase }) {
   );
 }
 
-function DynamicQrSvg({ text }: { text: string }) {
+/**
+ * VERO QR CODE ISO/IEC 18004 SCANSIONABILE DA QUALSIASI FOTOCAMERA IPHONE / ANDROID
+ * (con fallback SVG se il dispositivo è offline).
+ */
+function RealScannableQrCode({ url }: { url: string }) {
+  const [imgError, setImgError] = useState(false);
+  const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&ecc=M&margin=1&data=${encodeURIComponent(
+    url
+  )}`;
+
+  if (!imgError) {
+    return (
+      <img
+        src={qrApiUrl}
+        alt="QR Code Ufficiale Pausa81 Scansionabile"
+        className="qr-svg"
+        style={{ borderRadius: '8px', border: '1px solid #e2e8f0' }}
+        onError={() => setImgError(true)}
+      />
+    );
+  }
+
+  // Fallback SVG offline
   const size = 21;
-  const cells: boolean[][] = Array.from({ length: size }, () => Array(size).fill(false));
-
-  const drawFinder = (r0: number, c0: number) => {
-    for (let r = 0; r < 7; r++) {
-      for (let c = 0; c < 7; c++) {
-        const isBorder = r === 0 || r === 6 || c === 0 || c === 6;
-        const isInner = r >= 2 && r <= 4 && c >= 2 && c <= 4;
-        if (isBorder || isInner) cells[r0 + r][c0 + c] = true;
-      }
-    }
-  };
-
-  drawFinder(0, 0);
-  drawFinder(0, size - 7);
-  drawFinder(size - 7, 0);
-
-  let hash = 2166136261;
-  for (let i = 0; i < text.length; i++) {
-    hash ^= text.charCodeAt(i);
-    hash = Math.imul(hash, 16777619);
-  }
-
-  for (let r = 0; r < size; r++) {
-    for (let c = 0; c < size; c++) {
-      const inTopLeft = r < 8 && c < 8;
-      const inTopRight = r < 8 && c >= size - 8;
-      const inBottomLeft = r >= size - 8 && c < 8;
-      if (inTopLeft || inTopRight || inBottomLeft) continue;
-      const bit = ((hash >>> ((r * size + c) % 28)) ^ (r * 13 + c * 7)) & 1;
-      cells[r][c] = bit === 1;
-    }
-  }
-
   return (
     <svg viewBox={`0 0 ${size + 4} ${size + 4}`} className="qr-svg" aria-label="QR Code Pausa81">
       <rect width={size + 4} height={size + 4} fill="#ffffff" rx="1.5" />
-      {cells.map((row, r) =>
-        row.map((filled, c) =>
-          filled ? (
-            <rect key={`${r}-${c}`} x={c + 2} y={r + 2} width={0.92} height={0.92} fill="#0f172a" />
-          ) : null
-        )
-      )}
+      <text x="50%" y="50%" textAnchor="middle" fontSize="2.2" fill="#0f766e">
+        QR PAUSA81
+      </text>
     </svg>
+  );
+}
+
+/**
+ * TAVOLETTA DI FIRMA DIGITALE TOUCH / MOUSE DIRETTA SULLO SCHERMO DELL'APP
+ */
+function InteractiveSignaturePad({
+  label,
+  savedDataUrl,
+  onSave,
+  onClear,
+}: {
+  label: string;
+  savedDataUrl: string;
+  onSave: (dataUrl: string) => void;
+  onClear: () => void;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const isDrawingRef = useRef(false);
+
+  const getCoords = (
+    e: ReactMouseEvent<HTMLCanvasElement> | ReactTouchEvent<HTMLCanvasElement>
+  ): { x: number; y: number } | null => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    if ('touches' in e) {
+      const touch = e.touches[0] || e.changedTouches[0];
+      if (!touch) return null;
+      return {
+        x: (touch.clientX - rect.left) * scaleX,
+        y: (touch.clientY - rect.top) * scaleY,
+      };
+    }
+    return {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY,
+    };
+  };
+
+  const startDraw = (
+    e: ReactMouseEvent<HTMLCanvasElement> | ReactTouchEvent<HTMLCanvasElement>
+  ) => {
+    e.preventDefault();
+    const coords = getCoords(e);
+    const ctx = canvasRef.current?.getContext('2d');
+    if (!coords || !ctx) return;
+    isDrawingRef.current = true;
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 2.2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(coords.x, coords.y);
+  };
+
+  const moveDraw = (
+    e: ReactMouseEvent<HTMLCanvasElement> | ReactTouchEvent<HTMLCanvasElement>
+  ) => {
+    if (!isDrawingRef.current) return;
+    e.preventDefault();
+    const coords = getCoords(e);
+    const ctx = canvasRef.current?.getContext('2d');
+    if (!coords || !ctx) return;
+    ctx.lineTo(coords.x, coords.y);
+    ctx.stroke();
+  };
+
+  const endDraw = () => {
+    if (!isDrawingRef.current) return;
+    isDrawingRef.current = false;
+    if (canvasRef.current) {
+      onSave(canvasRef.current.toDataURL('image/png'));
+    }
+  };
+
+  const handleClear = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (canvas && ctx) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    onClear();
+  };
+
+  return (
+    <div
+      style={{
+        background: '#f8fafc',
+        border: '1px solid #cbd5e1',
+        borderRadius: '10px',
+        padding: '0.55rem',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '0.3rem',
+        }}
+      >
+        <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#0f766e' }}>
+          ✍️ {label} (Firma col dito o col mouse)
+        </span>
+        <button
+          type="button"
+          className="btn-mini"
+          onClick={handleClear}
+          style={{ padding: '0.15rem 0.45rem', fontSize: '0.66rem' }}
+        >
+          Cancella Firma
+        </button>
+      </div>
+
+      {savedDataUrl ? (
+        <div
+          style={{
+            background: '#ffffff',
+            border: '1px dashed #0d9488',
+            borderRadius: '8px',
+            padding: '0.3rem',
+            textAlign: 'center',
+          }}
+        >
+          <img
+            src={savedDataUrl}
+            alt={label}
+            style={{ maxHeight: '64px', maxWidth: '100%', objectFit: 'contain' }}
+          />
+          <small style={{ display: 'block', fontSize: '0.62rem', color: '#0d9488' }}>
+            ✓ Firma acquisita e applicata ai documenti ufficiali
+          </small>
+        </div>
+      ) : (
+        <canvas
+          ref={canvasRef}
+          width={340}
+          height={90}
+          style={{
+            width: '100%',
+            height: '78px',
+            background: '#ffffff',
+            border: '1px dashed #94a3b8',
+            borderRadius: '8px',
+            touchAction: 'none',
+            cursor: 'crosshair',
+          }}
+          onMouseDown={startDraw}
+          onMouseMove={moveDraw}
+          onMouseUp={endDraw}
+          onMouseLeave={endDraw}
+          onTouchStart={startDraw}
+          onTouchMove={moveDraw}
+          onTouchEnd={endDraw}
+        />
+      )}
+    </div>
   );
 }
 
@@ -684,7 +829,6 @@ export default function App() {
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const [elapsed, setElapsed] = useState<number>(0);
 
-  // Scelta immediata 1-clic: Voce Donna (Serena) / Voce Uomo (Alessandro) / OFF
   const [voiceGender, setVoiceGender] = useState<VoiceGender>('female');
   const [binauralEnabled, setBinauralEnabled] = useState<boolean>(true);
   const [chimeEnabled, setChimeEnabled] = useState<boolean>(true);
@@ -693,11 +837,11 @@ export default function App() {
   const [sessionCompleted, setSessionCompleted] = useState<boolean>(false);
   const [showExecutiveModal, setShowExecutiveModal] = useState<boolean>(false);
   const [showQrModal, setShowQrModal] = useState<boolean>(false);
+  const [showMedicalModal, setShowMedicalModal] = useState<boolean>(false);
 
   const [hasSerenaLoaded, setHasSerenaLoaded] = useState<boolean>(false);
   const [hasAlessandroLoaded, setHasAlessandroLoaded] = useState<boolean>(false);
 
-  // Buffer e byte raw per Serena (Donna) e Alessandro (Uomo)
   const serenaBytesRef: MutableRefObject<ArrayBuffer | null> = useRef<ArrayBuffer | null>(null);
   const alessandroBytesRef: MutableRefObject<ArrayBuffer | null> = useRef<ArrayBuffer | null>(null);
   const serenaBufferRef: MutableRefObject<AudioBuffer | null> = useRef<AudioBuffer | null>(null);
@@ -714,6 +858,22 @@ export default function App() {
   });
   const [lastAuditCode, setLastAuditCode] = useState<string>('P81-VDT-8108');
   const [employeesCount, setEmployeesCount] = useState<number>(10);
+
+  // Dati e Firme Digitali per Verbale DVR Art. 35 & Validazione Medico Competente
+  const [partnerStudioName, setPartnerStudioName] = useState<string>(
+    initialPartner || 'Studio Partner RSPP / Sicurezza'
+  );
+  const [clientCompanyName, setClientCompanyName] = useState<string>(
+    initialClient || 'Azienda Cliente S.r.l.'
+  );
+  const [departmentName, setDepartmentName] = useState<string>(
+    'Area Videoterminali / Sale Riunioni / Reparto'
+  );
+  const [doctorName, setDoctorName] = useState<string>('Dott. [Nome Medico Competente]');
+  const [doctorAlbo, setDoctorAlbo] = useState<string>('Ordine Medici n. [XXXX]');
+  const [rsppName, setRsppName] = useState<string>('Ing. / Dott. [Nome RSPP / Datore]');
+  const [doctorSignatureUrl, setDoctorSignatureUrl] = useState<string>('');
+  const [employerSignatureUrl, setEmployerSignatureUrl] = useState<string>('');
 
   const audioCtxRef: MutableRefObject<AudioContext | null> = useRef<AudioContext | null>(null);
   const chimeOscsRef: MutableRefObject<OscillatorNode[]> = useRef<OscillatorNode[]>([]);
@@ -746,7 +906,6 @@ export default function App() {
     return audioCtxRef.current;
   }, []);
 
-  // Pre-carica i file MP3 di Serena e Alessandro (da IndexedDB o dalla cartella public/)
   useEffect(() => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       const updateVoices = () => {
@@ -760,13 +919,11 @@ export default function App() {
     let mounted = true;
 
     async function autoLoadElevenMp3s() {
-      // 1. Controlla IndexedDB per Serena (Donna)
       const cachedF = await loadFromIdb<ArrayBuffer>('serena_mp3_bytes');
       if (mounted && cachedF && cachedF.byteLength > 10000) {
         serenaBytesRef.current = cachedF;
         setHasSerenaLoaded(true);
       } else {
-        // Cerca i file di Serena in public/
         for (const url of FEMALE_MP3_CANDIDATE_URLS) {
           try {
             const res = await fetch(url);
@@ -786,13 +943,11 @@ export default function App() {
         }
       }
 
-      // 2. Controlla IndexedDB per Alessandro (Uomo)
       const cachedM = await loadFromIdb<ArrayBuffer>('alessandro_mp3_bytes');
       if (mounted && cachedM && cachedM.byteLength > 10000) {
         alessandroBytesRef.current = cachedM;
         setHasAlessandroLoaded(true);
       } else {
-        // Cerca i file di Alessandro in public/
         for (const url of MALE_MP3_CANDIDATE_URLS) {
           try {
             const res = await fetch(url);
@@ -819,10 +974,6 @@ export default function App() {
     };
   }, []);
 
-  /**
-   * Quando selezioni uno o entrambi i file MP3 dal tuo computer, riconosce automaticamente
-   * Serena (26.59s o nome "Serena"/"donna") e Alessandro (22.20s o nome "Alessandro"/"uomo")!
-   */
   const handleUploadMp3Files = async (e: ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -839,7 +990,6 @@ export default function App() {
           decoded = await ctx.decodeAudioData(buf.slice(0));
         }
 
-        // Riconoscimento intelligente: dal nome ("serena"/"donna" vs "alessandro"/"uomo") o dalla durata (26.59s vs 22.20s)
         const isFemale =
           lower.includes('serena') ||
           lower.includes('donna') ||
@@ -861,12 +1011,11 @@ export default function App() {
           await saveToIdb('alessandro_mp3_bytes', buf);
         }
       } catch {
-        // Ignora file non audio
+        // Ignora
       }
     }
   };
 
-  /** Ferma all'istante la Campana Tibetana */
   const stopChimeNow = useCallback(() => {
     if (chimeGainRef.current && audioCtxRef.current) {
       try {
@@ -887,7 +1036,6 @@ export default function App() {
     chimeOscsRef.current = [];
   }, []);
 
-  /** Ferma all'istante il Tappeto Armonico Binaurale 432Hz */
   const stopBinauralNow = useCallback(() => {
     if (binauralGainRef.current && audioCtxRef.current) {
       try {
@@ -909,7 +1057,6 @@ export default function App() {
     binauralGainRef.current = null;
   }, []);
 
-  /** Ferma all'istante qualsiasi Voce attiva */
   const stopVoiceNow = useCallback(() => {
     if (phraseTimeoutRef.current !== null) {
       window.clearTimeout(phraseTimeoutRef.current);
@@ -939,7 +1086,6 @@ export default function App() {
     stopVoiceNow();
   }, [stopChimeNow, stopBinauralNow, stopVoiceNow]);
 
-  /** Avvia il Tappeto Armonico Binaurale 432Hz */
   const startBinauralPad = useCallback(() => {
     stopBinauralNow();
     if (!binauralEnabled) return;
@@ -986,7 +1132,6 @@ export default function App() {
     }
   }, [binauralEnabled, getOrCreateAudioCtx, stopBinauralNow]);
 
-  /** Suona il tocco di Campana Tibetana */
   const triggerSoftChime = useCallback(
     (phase: Phase) => {
       stopChimeNow();
@@ -1036,12 +1181,6 @@ export default function App() {
     [chimeEnabled, getOrCreateAudioCtx, stopChimeNow]
   );
 
-  /**
-   * Riproduce la frase selezionata usando i tagli al millisecondo di:
-   * - Serena (Donna: SERENA_FEMALE_TIMESTAMPS)
-   * - Alessandro (Uomo: ALESSANDRO_MALE_TIMESTAMPS)
-   * Con fallback sul motore prosodico naturale se i file MP3 non sono ancora stati collegati.
-   */
   const speakPhrase = useCallback(
     async (phrase: SpokenPhrase | null, overrideGender?: VoiceGender) => {
       const activeGender = overrideGender !== undefined ? overrideGender : voiceGender;
@@ -1051,7 +1190,6 @@ export default function App() {
       if (phrase.audioKey) {
         const ctx = getOrCreateAudioCtx();
         if (ctx) {
-          // Decodifica lazy al primo clic se abbiamo i byte in memoria
           if (activeGender === 'female' && !serenaBufferRef.current && serenaBytesRef.current) {
             try {
               serenaBufferRef.current = await ctx.decodeAudioData(
@@ -1095,7 +1233,6 @@ export default function App() {
             const src = ctx.createBufferSource();
             src.buffer = targetBuffer;
 
-            // Dissolvenza morbida di 60ms in entrata e uscita per evitare qualsiasi clic
             const envGain = ctx.createGain();
             envGain.gain.setValueAtTime(0.001, now);
             envGain.gain.linearRampToValueAtTime(1.0, now + 0.06);
@@ -1111,7 +1248,6 @@ export default function App() {
         }
       }
 
-      // Fallback prosodico bipartito se l'MP3 non è ancora stato caricato
       if (!('speechSynthesis' in window)) return;
       const voices =
         availableVoicesRef.current.length > 0
@@ -1346,23 +1482,21 @@ export default function App() {
     }
   };
 
-  const [partnerStudioName, setPartnerStudioName] = useState<string>(
-    initialPartner || 'Studio Partner RSPP / Sicurezza'
-  );
-  const [clientCompanyName, setClientCompanyName] = useState<string>(
-    initialClient || 'Azienda Cliente S.r.l.'
-  );
-  const [departmentName, setDepartmentName] = useState<string>(
-    'Area Videoterminali / Sale Riunioni / Reparto'
-  );
-
   const sessionRemaining = isRunning ? SESSION_DURATION - elapsed : SESSION_DURATION;
   const estimatedHoursSavedMonthly = Math.round(employeesCount * 3.2);
   const estimatedAnnualSavings = (employeesCount * 410).toLocaleString('it-IT');
 
-  const customWhiteLabelUrl = `https://pranayama-khaki.vercel.app/?partner=${encodeURIComponent(
+  // Legge automaticamente il dominio attuale (così quando rinomini in pausa81.vercel.app si aggiorna da solo!)
+  const currentOrigin =
+    typeof window !== 'undefined' && window.location.origin
+      ? window.location.origin
+      : 'https://pausa81.vercel.app';
+
+  const customWhiteLabelUrl = `${currentOrigin}/?partner=${encodeURIComponent(
     partnerStudioName.replace(/\s+/g, '_')
   )}&cliente=${encodeURIComponent(clientCompanyName.replace(/\s+/g, '_'))}`;
+
+  const todayFormatted = new Date().toLocaleDateString('it-IT');
 
   const startButtonLabel =
     sessionMode === 'all'
@@ -1373,7 +1507,6 @@ export default function App() {
     <div className={`app ${eyeRestMode ? 'app--warm-rest' : ''}`}>
       <CloudBackground />
 
-      {/* Selettore multi-file per collegare Serena e Alessandro in 1 secondo */}
       <input
         ref={multiFileInputRef}
         type="file"
@@ -1403,10 +1536,23 @@ export default function App() {
           >
             Targa QR
           </button>
+
+          {/* Pulsante Firma Digitale Medico Competente & Verbale DVR Art. 35 */}
+          <button
+            type="button"
+            className="qr-pill-btn"
+            style={{
+              background: doctorSignatureUrl ? '#dcfce7' : '#eff6ff',
+              borderColor: doctorSignatureUrl ? '#16a34a' : '#2563eb',
+              color: doctorSignatureUrl ? '#15803d' : '#1d4ed8',
+            }}
+            onClick={() => setShowMedicalModal(true)}
+          >
+            🩺 {doctorSignatureUrl ? 'Verbale Medico Firmato ✓' : 'Firma Medico & Verbale DVR'}
+          </button>
         </div>
 
         <div className="topbar-actions">
-          {/* Scelta in 1 clic: Voce Donna (Serena) / Voce Uomo (Alessandro) / OFF */}
           <button
             type="button"
             className={`icon-btn ${voiceGender === 'female' ? 'active' : ''}`}
@@ -1444,7 +1590,6 @@ export default function App() {
             </button>
           )}
 
-          {/* Tappeto Armonico Binaurale 432Hz in 1 clic */}
           <button
             type="button"
             className={`icon-btn ${binauralEnabled ? 'active' : ''}`}
@@ -1453,7 +1598,6 @@ export default function App() {
             {binauralEnabled ? '🌊 Binaurale ON' : '🌊 Binaurale OFF'}
           </button>
 
-          {/* Campana Tibetana in 1 clic */}
           <button
             type="button"
             className={`icon-btn ${chimeEnabled ? 'active' : ''}`}
@@ -1667,6 +1811,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
+      {/* Modal Targa Murale QR Code A4 con VERO QR CODE SCANSIONABILE e Bollino Firma Medico */}
       <AnimatePresence>
         {showQrModal && (
           <motion.div
@@ -1684,7 +1829,7 @@ export default function App() {
               <div className="executive-header no-print">
                 <div>
                   <span className="completion-badge">Kit Phygital Pausa81 · White-Label</span>
-                  <h2>Generatore Targa Murale QR Code (D.Lgs. 81/2008)</h2>
+                  <h2>Generatore Targa Murale QR Code Reale (D.Lgs. 81/2008)</h2>
                 </div>
                 <button
                   type="button"
@@ -1741,7 +1886,7 @@ export default function App() {
 
                 <div className="plaque-body">
                   <div className="plaque-qr-box">
-                    <DynamicQrSvg text={customWhiteLabelUrl} />
+                    <RealScannableQrCode url={customWhiteLabelUrl} />
                     <span>INQUADRA CON LA FOTOCAMERA</span>
                     <small>Accesso diretto · Zero App da installare</small>
                   </div>
@@ -1770,8 +1915,15 @@ export default function App() {
                     Esente da accordi sindacali ex Art. 4 L. 300/1970 · Misura integrativa INAIL).
                   </p>
                   <div className="plaque-partner-signature">
-                    <span>Presidio fornito in partnership con: <strong>{partnerStudioName}</strong></span>
-                    <span>Sistema: <strong>Pausa81</strong> <em>powered by SvasaOS</em></span>
+                    <span>
+                      Partner: <strong>{partnerStudioName}</strong> · Validazione:{' '}
+                      <strong>
+                        {doctorName} ({doctorAlbo})
+                      </strong>
+                    </span>
+                    <span>
+                      Sistema: <strong>Pausa81</strong> <em>powered by SvasaOS</em>
+                    </span>
                   </div>
                 </div>
               </div>
@@ -1791,12 +1943,246 @@ export default function App() {
                     navigator.clipboard?.writeText(customWhiteLabelUrl);
                   }}
                 >
-                  Copia Link Cliente
+                  Copia Link White-Label
                 </button>
                 <button
                   type="button"
                   className="btn btn-secondary"
                   onClick={() => setShowQrModal(false)}
+                >
+                  Chiudi
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* NUOVO: Modal Tavoletta Firma Medico Competente & Verbale DVR Art. 35 D.Lgs. 81/2008 */}
+      <AnimatePresence>
+        {showMedicalModal && (
+          <motion.div
+            className="modal-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="qr-modal"
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 20, opacity: 0 }}
+            >
+              <div className="executive-header no-print">
+                <div>
+                  <span className="completion-badge">
+                    Validazione Clinica &amp; Allegato Ufficiale DVR / INAIL OT23
+                  </span>
+                  <h2>🩺 Firma Medico Competente &amp; Verbale Adozione (Art. 35 D.Lgs. 81/08)</h2>
+                </div>
+                <button
+                  type="button"
+                  className="close-btn"
+                  onClick={() => setShowMedicalModal(false)}
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Campi dati e Tavolette di Firma Touch (visibili solo a schermo, nascosti in stampa) */}
+              <div className="qr-config-grid no-print">
+                <div>
+                  <label>Azienda Aderente</label>
+                  <input
+                    type="text"
+                    value={clientCompanyName}
+                    onChange={(e) => setClientCompanyName(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label>Medico Competente (Nome e Cognome)</label>
+                  <input
+                    type="text"
+                    value={doctorName}
+                    onChange={(e) => setDoctorName(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label>N. Iscrizione Ordine Medici / Albo</label>
+                  <input
+                    type="text"
+                    value={doctorAlbo}
+                    onChange={(e) => setDoctorAlbo(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label>Datore di Lavoro / RSPP</label>
+                  <input
+                    type="text"
+                    value={rsppName}
+                    onChange={(e) => setRsppName(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div
+                className="no-print"
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                  gap: '0.75rem',
+                  marginBottom: '1rem',
+                }}
+              >
+                <InteractiveSignaturePad
+                  label="Firma Medico Competente"
+                  savedDataUrl={doctorSignatureUrl}
+                  onSave={setDoctorSignatureUrl}
+                  onClear={() => setDoctorSignatureUrl('')}
+                />
+                <InteractiveSignaturePad
+                  label="Firma Datore di Lavoro / RSPP"
+                  savedDataUrl={employerSignatureUrl}
+                  onSave={setEmployerSignatureUrl}
+                  onClear={() => setEmployerSignatureUrl('')}
+                />
+              </div>
+
+              {/* Documento Ufficiale A4 Stampabile con le Firme Incorporate */}
+              <div className="printable-plaque" style={{ padding: '0' }}>
+                <div className="plaque-header">
+                  <span>ATTESTATO DI VALIDAZIONE ERGONOMICA E VERBALE DI ADOZIONE PRESIDIO</span>
+                  <strong>
+                    AI SENSI DEGLI ARTT. 25, 28, 35 E TITOLO VII (ART. 175) DEL D.LGS. 81/2008
+                  </strong>
+                </div>
+
+                <div className="plaque-company-bar">
+                  <div>
+                    <small>RAGIONE SOCIALE AZIENDA</small>
+                    <h3>{clientCompanyName}</h3>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <small>DATA DI VALIDAZIONE</small>
+                    <h4>{todayFormatted}</h4>
+                  </div>
+                </div>
+
+                <div style={{ padding: '1rem 1.2rem', fontSize: '0.78rem', lineHeight: 1.45 }}>
+                  <p style={{ margin: '0 0 0.65rem' }}>
+                    <strong>1. OGGETTO DELLA VALIDAZIONE MEDICO-ERGONOMICA:</strong> Il sottoscritto{' '}
+                    <strong>{doctorName}</strong> ({doctorAlbo}), in qualità di Medico Competente /
+                    Specialista in Medicina del Lavoro, esaminato il protocollo tecnico-organizzativo{' '}
+                    <strong>Pausa81 powered by SvasaOS</strong> articolato in 3 fasi da 20 secondi
+                    (e sessioni dedicate da 60 secondi), attesta che gli esercizi di{' '}
+                    <em>Reset Neuro-Visivo (Liv. 1)</em>,{' '}
+                    <em>Riattivazione Circolatoria del Muscolo Soleo (Liv. 2)</em> e{' '}
+                    <em>Decompressione Posturale Cervicale/Carpale (Liv. 3)</em> sono
+                    biomeccanicamente sicuri, eseguibili in abiti da lavoro (<em>Zero-Sweat</em>),
+                    privi di sovraccarico articolare e idonei alla prevenzione primaria dei Disturbi
+                    Muscolo-Scheletrici (DMS), dell’affaticamento visivo da videoterminale (Art. 175
+                    D.Lgs. 81/08) e del Tecnostress / Stress Lavoro-Correlato (Art. 28 D.Lgs. 81/08).
+                  </p>
+
+                  <p style={{ margin: '0 0 0.65rem' }}>
+                    <strong>2. CONFORMITÀ PRIVACY E STATUTO DEI LAVORATORI:</strong> Si dà atto che
+                    il presidio opera con architettura <strong>100% Client-Side Zero-Tracking</strong>,
+                    senza raccolta di dati personali, biometrici o di monitoraggio emotivo (conforme
+                    ai provvedimenti del Garante Privacy <em>gpdp.it</em> ed esente da accordi
+                    sindacali ex Art. 4 L. 300/1970 secondo le circolari INL). Il presente verbale
+                    costituisce documentazione probatoria valida ai fini della Riunione Periodica
+                    (Art. 35 D.Lgs. 81/08), della riduzione del tasso medio di tariffa{' '}
+                    <strong>INAIL (Modello OT23)</strong> e dei sistemi di gestione{' '}
+                    <strong>ISO 45003 / UNI PdR 125</strong>.
+                  </p>
+
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr',
+                      gap: '1rem',
+                      marginTop: '0.9rem',
+                      paddingTop: '0.75rem',
+                      borderTop: '1px solid #cbd5e1',
+                    }}
+                  >
+                    <div
+                      style={{
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '8px',
+                        padding: '0.55rem',
+                        textAlign: 'center',
+                        minHeight: '88px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                      }}
+                    >
+                      <small style={{ fontSize: '0.64rem', fontWeight: 700, color: '#475569' }}>
+                        IL MEDICO COMPETENTE ({doctorName} · {doctorAlbo})
+                      </small>
+                      {doctorSignatureUrl ? (
+                        <img
+                          src={doctorSignatureUrl}
+                          alt="Firma Medico Competente"
+                          style={{ maxHeight: '52px', margin: '0.2rem auto', objectFit: 'contain' }}
+                        />
+                      ) : (
+                        <span style={{ fontSize: '0.68rem', color: '#94a3b8', margin: '1rem 0' }}>
+                          [Spazio Firma Autografa / Digitale]
+                        </span>
+                      )}
+                      <small style={{ fontSize: '0.6rem', color: '#0f766e' }}>
+                        Validato in data {todayFormatted}
+                      </small>
+                    </div>
+
+                    <div
+                      style={{
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '8px',
+                        padding: '0.55rem',
+                        textAlign: 'center',
+                        minHeight: '88px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                      }}
+                    >
+                      <small style={{ fontSize: '0.64rem', fontWeight: 700, color: '#475569' }}>
+                        IL DATORE DI LAVORO / RSPP ({rsppName})
+                      </small>
+                      {employerSignatureUrl ? (
+                        <img
+                          src={employerSignatureUrl}
+                          alt="Firma Datore / RSPP"
+                          style={{ maxHeight: '52px', margin: '0.2rem auto', objectFit: 'contain' }}
+                        />
+                      ) : (
+                        <span style={{ fontSize: '0.68rem', color: '#94a3b8', margin: '1rem 0' }}>
+                          [Spazio Firma Autografa / Digitale]
+                        </span>
+                      )}
+                      <small style={{ fontSize: '0.6rem', color: '#0f766e' }}>
+                        Studio Partner: {partnerStudioName}
+                      </small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="executive-footer no-print" style={{ marginTop: '1rem' }}>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => window.print()}
+                >
+                  Stampa / Salva Verbale Firmato in PDF (A4)
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setShowMedicalModal(false)}
                 >
                   Chiudi
                 </button>
@@ -1919,10 +2305,20 @@ export default function App() {
                   className="btn btn-primary"
                   onClick={() => {
                     setShowExecutiveModal(false);
+                    setShowMedicalModal(true);
+                  }}
+                >
+                  Apri Firma Medico &amp; Verbale DVR
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => {
+                    setShowExecutiveModal(false);
                     setShowQrModal(true);
                   }}
                 >
-                  Apri Generatore Targa QR Code
+                  Apri Targa QR Code
                 </button>
                 <button
                   type="button"
