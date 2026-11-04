@@ -14,6 +14,7 @@ import { CloudBackground } from './components/CloudBackground';
 export type Phase = 'idle' | 'inspire' | 'hold' | 'expire' | 'pause';
 export type SessionMode = 'all' | 'level1' | 'level2' | 'level3';
 export type VoiceGender = 'female' | 'male' | 'off';
+export type ThemeMode = 'dark' | 'light';
 
 export type PhraseKey =
   | 'level1_inspire'
@@ -25,9 +26,9 @@ export type PhraseKey =
   | 'level3_expire';
 
 /**
- * Coordinate chirurgiche al millisecondo misurate sui frame MPEG di:
- * 1) Serena - Calm & Soothing (Femminile, durata 26.59s)
- * 2) Alessandro - Stoic, Breathy & Steady (Maschile, durata 22.20s)
+ * Coordinate al millisecondo sui frame MPEG di:
+ * - Serena (Voce Femminile, 26.59s)
+ * - Alessandro (Voce Maschile, 22.20s -> riprodotta a 0.90x con 0.30s di respiro iniziale)
  */
 const SERENA_FEMALE_TIMESTAMPS: Record<PhraseKey, [number, number]> = {
   level1_inspire: [0.0, 4.35],
@@ -173,7 +174,7 @@ const STAGES: StageConfig[] = [
     subtitle: 'Petto, Palmi & Collo',
     whenToUse: 'Pausa VDT (2h) o Fine Turno · Prevenzione DMS',
     benefit:
-      'Previene i Disturbi Muscolo-Scheletrici (DMS): decomprime tunnel carpale, rachide cervicale e tratto lombare.',
+      'Previene i Disturbi Muscolo-Scheletrici (DMS, 74,7% delle malattie professionali INAIL): decomprime tunnel carpale, collo e spalle.',
     phrases: {
       inspire: {
         audioKey: 'level3_inspire',
@@ -210,6 +211,317 @@ const PAUSE_SEC = 2;
 const CYCLE_SEC = INSPIRE_SEC + HOLD_SEC + EXPIRE_SEC + PAUSE_SEC; // 20s
 const SESSION_DURATION = 60;
 const LOCAL_STATS_KEY = 'pausa81_local_completed_count';
+
+/**
+ * FOGLIO DI STILE WORLD-CLASS INCORPORATO (Linear / Apple VisionOS Calm Tech)
+ * Garantisce Dark/Light Mode dinamica, Liquid Glass Sphere, Barra Scudo Zero-Tracking
+ * e Dossier Notarile A4 senza dipendere da file CSS esterni.
+ */
+const WORLD_CLASS_STYLES = `
+  :root {
+    --bg-primary: #090d16;
+    --bg-surface: rgba(15, 23, 42, 0.74);
+    --bg-surface-elevated: rgba(15, 23, 42, 0.92);
+    --border-glass: rgba(255, 255, 255, 0.09);
+    --border-highlight: rgba(45, 212, 191, 0.45);
+    --accent-teal: #0d9488;
+    --accent-teal-bright: #14b8a6;
+    --accent-emerald: #10b981;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --shadow-glass: 0 25px 50px -12px rgba(0, 0, 0, 0.62);
+  }
+
+  .app--theme-dark {
+    background: radial-gradient(circle at 50% 18%, #0f293a 0%, #090d16 58%, #05080f 100%) !important;
+    color: var(--text-main) !important;
+  }
+
+  .app--theme-light {
+    background: radial-gradient(circle at 50% 15%, #f0fdfa 0%, #f8fafc 60%, #e2e8f0 100%) !important;
+    color: #0f172a !important;
+  }
+
+  .app--warm-rest {
+    filter: sepia(0.22) saturate(0.9) brightness(0.95);
+    transition: filter 0.5s ease;
+  }
+
+  /* Barra Superiore Glassmorphism */
+  .app--theme-dark .topbar {
+    background: rgba(9, 13, 22, 0.72) !important;
+    backdrop-filter: blur(20px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5) !important;
+  }
+
+  .app--theme-light .topbar {
+    background: rgba(255, 255, 255, 0.78) !important;
+    backdrop-filter: blur(20px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+    border-bottom: 1px solid rgba(203, 213, 225, 0.7) !important;
+  }
+
+  .app--theme-dark .executive-pill,
+  .app--theme-dark .qr-pill-btn,
+  .app--theme-dark .icon-btn {
+    background: rgba(30, 41, 59, 0.65) !important;
+    color: #e2e8f0 !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    backdrop-filter: blur(12px);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .app--theme-dark .icon-btn:hover,
+  .app--theme-dark .qr-pill-btn:hover,
+  .app--theme-dark .executive-pill:hover {
+    border-color: rgba(45, 212, 191, 0.5) !important;
+    transform: translateY(-1px);
+  }
+
+  .app--theme-dark .icon-btn.active,
+  .app--theme-light .icon-btn.active {
+    background: linear-gradient(135deg, #0f766e 0%, #0d9488 100%) !important;
+    color: #ffffff !important;
+    border-color: rgba(45, 212, 191, 0.6) !important;
+    box-shadow: 0 4px 16px rgba(13, 148, 136, 0.4) !important;
+  }
+
+  /* Selettore Protocolli 3 Livelli Vetrificato */
+  .protocol-bar {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(140px, 1fr));
+    gap: 0.6rem;
+    max-width: 780px;
+    width: 100%;
+    margin: 0 auto 0.5rem;
+  }
+
+  .app--theme-dark .protocol-chip {
+    background: rgba(15, 23, 42, 0.72) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    color: #f8fafc !important;
+    border-radius: 14px !important;
+    box-shadow: 0 12px 28px -8px rgba(0, 0, 0, 0.45);
+    transition: all 0.24s ease;
+  }
+
+  .app--theme-dark .protocol-chip .protocol-level-tag {
+    color: #2dd4bf !important;
+  }
+
+  .app--theme-dark .protocol-chip .protocol-chip-title {
+    color: #f8fafc !important;
+  }
+
+  .app--theme-dark .protocol-chip .protocol-chip-sub {
+    color: #94a3b8 !important;
+  }
+
+  .app--theme-dark .protocol-chip.active {
+    background: linear-gradient(180deg, rgba(13, 148, 136, 0.26) 0%, rgba(15, 23, 42, 0.88) 100%) !important;
+    border: 1.5px solid #14b8a6 !important;
+    box-shadow: 0 0 28px rgba(20, 184, 166, 0.28) !important;
+  }
+
+  /* Sfera di Respirazione Liquid Glass con Ombra Multi-Livello */
+  .liquid-sphere-core {
+    position: relative;
+    border-radius: 50%;
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1.5px solid rgba(255, 255, 255, 0.28);
+    transition: box-shadow 1.2s ease, background 1.2s ease;
+  }
+
+  .liquid-sphere-core--idle {
+    box-shadow:
+      0 20px 50px rgba(13, 148, 136, 0.24),
+      0 0 85px rgba(14, 165, 233, 0.14),
+      inset 0 2px 18px rgba(255, 255, 255, 0.42),
+      inset 0 -14px 28px rgba(13, 148, 136, 0.28);
+  }
+
+  .liquid-sphere-core--inspire {
+    box-shadow:
+      0 25px 70px rgba(13, 148, 136, 0.52),
+      0 0 120px rgba(45, 212, 191, 0.34),
+      inset 0 4px 26px rgba(255, 255, 255, 0.65),
+      inset 0 -18px 36px rgba(13, 148, 136, 0.42);
+  }
+
+  .liquid-sphere-core--hold {
+    box-shadow:
+      0 28px 80px rgba(16, 185, 129, 0.56),
+      0 0 135px rgba(56, 189, 248, 0.38),
+      inset 0 6px 30px rgba(255, 255, 255, 0.75),
+      inset 0 -20px 40px rgba(16, 185, 129, 0.45);
+  }
+
+  .liquid-sphere-core--expire {
+    box-shadow:
+      0 14px 38px rgba(13, 148, 136, 0.22),
+      0 0 60px rgba(16, 185, 129, 0.16),
+      inset 0 2px 14px rgba(255, 255, 255, 0.35),
+      inset 0 -12px 24px rgba(15, 23, 42, 0.35);
+  }
+
+  /* Stepper e Testi in Dark Mode */
+  .app--theme-dark .step-badge {
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    color: #94a3b8;
+  }
+
+  .app--theme-dark .step-badge.active {
+    background: linear-gradient(135deg, #0d9488 0%, #10b981 100%);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.25);
+    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.38);
+  }
+
+  .app--theme-dark .when-to-use-pill {
+    background: rgba(13, 148, 136, 0.16) !important;
+    color: #5eead4 !important;
+    border: 1px solid rgba(45, 212, 191, 0.28) !important;
+  }
+
+  .app--theme-dark .phase-text {
+    color: #f8fafc !important;
+    text-shadow: 0 2px 14px rgba(0, 0, 0, 0.45);
+  }
+
+  .app--theme-dark .protocol-benefit,
+  .app--theme-dark .countdown-label,
+  .app--theme-dark .powered-by-sub {
+    color: #94a3b8 !important;
+  }
+
+  .app--theme-dark .countdown-number,
+  .app--theme-dark .svasa-wordmark {
+    color: #f8fafc !important;
+  }
+
+  /* Barra Scudo Permanente Zero-Tracking & Sicurezza Sindacale */
+  .shield-status-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.55rem 1rem;
+    z-index: 20;
+  }
+
+  .shield-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.42rem 0.95rem;
+    border-radius: 999px;
+    font-size: 0.74rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    background: rgba(15, 23, 42, 0.82);
+    border: 1px solid rgba(16, 185, 129, 0.38);
+    color: #f8fafc;
+    box-shadow: 0 10px 25px -6px rgba(0, 0, 0, 0.45);
+  }
+
+  .app--theme-light .shield-status-pill {
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(16, 185, 129, 0.45);
+    color: #0f172a;
+    box-shadow: 0 8px 20px -6px rgba(15, 23, 42, 0.12);
+  }
+
+  .shield-dot-emerald {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 10px #10b981;
+    flex-shrink: 0;
+  }
+
+  /* Fascicolo Digitale Notarile / Corporate A4 */
+  .notarial-dossier {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    border: 2px solid #0f172a;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.18);
+  }
+
+  .notarial-header-bar {
+    background: linear-gradient(135deg, #090d16 0%, #0f172a 60%, #134e4a 100%);
+    color: #ffffff;
+    padding: 0.85rem 1.15rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    border-bottom: 3px solid #0d9488;
+  }
+
+  .notarial-seal-badge {
+    display: inline-block;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #5eead4;
+    background: rgba(13, 148, 136, 0.22);
+    border: 1px solid rgba(94, 234, 212, 0.35);
+    padding: 0.18rem 0.55rem;
+    border-radius: 4px;
+    margin-bottom: 0.28rem;
+  }
+
+  @media (max-width: 720px) {
+    .protocol-bar {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.45rem;
+    }
+    .shield-status-pill {
+      font-size: 0.66rem;
+      padding: 0.36rem 0.7rem;
+      text-align: center;
+    }
+  }
+
+  @media print {
+    @page {
+      size: A4 portrait;
+      margin: 10mm;
+    }
+    .no-print {
+      display: none !important;
+    }
+    body,
+    .app,
+    .modal-backdrop,
+    .qr-modal {
+      background: #ffffff !important;
+      color: #0f172a !important;
+      box-shadow: none !important;
+      position: static !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      overflow: visible !important;
+    }
+    .notarial-dossier,
+    .printable-plaque {
+      border: 2px solid #0f172a !important;
+      box-shadow: none !important;
+      page-break-inside: avoid;
+    }
+  }
+`;
 
 function saveToIdb(key: string, value: unknown): Promise<void> {
   return new Promise((resolve) => {
@@ -398,10 +710,10 @@ function Pausa81Logo({ partnerName }: { partnerName: string }) {
   return (
     <div className="brand-block" aria-hidden="true">
       <span className="svasa-wordmark">
-        Pausa81 <small className="svasa-badge-b2b">{partnerName || 'D.Lgs. 81/08'}</small>
+        Pausa81 <small className="svasa-badge-b2b">{partnerName || 'by SvasaOS'}</small>
       </span>
       <span className="powered-by-sub">
-        powered by <strong>SvasaOS Engine</strong>
+        Presidio Neuro-Ergonomico <strong>D.Lgs. 81/2008</strong>
       </span>
     </div>
   );
@@ -444,21 +756,21 @@ function SacredLotus({ phase }: { phase: Phase }) {
       <defs>
         <radialGradient id="lotus-petal" gradientUnits="userSpaceOnUse" cx="100" cy="130" r="88">
           <stop offset="0%" stopColor="#f8fafc" />
-          <stop offset="50%" stopColor="#cfe8f7" />
-          <stop offset="100%" stopColor="#93c5fd" />
+          <stop offset="50%" stopColor="#ccfbf1" />
+          <stop offset="100%" stopColor="#5eead4" />
         </radialGradient>
         <radialGradient id="lotus-back" gradientUnits="userSpaceOnUse" cx="100" cy="130" r="96">
-          <stop offset="0%" stopColor="#e2f1fb" />
-          <stop offset="65%" stopColor="#93c5fd" />
-          <stop offset="100%" stopColor="#60a5fa" />
+          <stop offset="0%" stopColor="#e0f2fe" />
+          <stop offset="65%" stopColor="#2dd4bf" />
+          <stop offset="100%" stopColor="#0d9488" />
         </radialGradient>
         <radialGradient id="lotus-glow" gradientUnits="userSpaceOnUse" cx="100" cy="140" r="62">
-          <stop offset="0%" stopColor="#e0f2fe" stopOpacity="0.95" />
-          <stop offset="100%" stopColor="#e0f2fe" stopOpacity="0" />
+          <stop offset="0%" stopColor="#5eead4" stopOpacity="0.85" />
+          <stop offset="100%" stopColor="#0d9488" stopOpacity="0" />
         </radialGradient>
         <linearGradient id="water-fill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#93c5fd" stopOpacity="0.42" />
-          <stop offset="100%" stopColor="#dbeafe" stopOpacity="0.08" />
+          <stop offset="0%" stopColor="#2dd4bf" stopOpacity="0.42" />
+          <stop offset="100%" stopColor="#0d9488" stopOpacity="0.08" />
         </linearGradient>
       </defs>
 
@@ -469,7 +781,7 @@ function SacredLotus({ phase }: { phase: Phase }) {
         <ellipse cx="100" cy="172" rx="66" ry="10" opacity="0.7" />
         <ellipse cx="100" cy="182" rx="46" ry="7" opacity="0.5" />
       </g>
-      <g fill="none" stroke="#93c5fd" strokeOpacity="0.45" strokeWidth="1">
+      <g fill="none" stroke="#5eead4" strokeOpacity="0.45" strokeWidth="1">
         <ellipse cx="100" cy="158" rx="76" ry="12" />
         <ellipse cx="100" cy="170" rx="58" ry="9" />
       </g>
@@ -491,7 +803,7 @@ function SacredLotus({ phase }: { phase: Phase }) {
           key={`mid-${idx}`}
           d="M 0 0 C -22 -3 -28 -46 -2.5 -74 C -1 -77 1 -77 2.5 -74 C 28 -46 22 -3 0 0 Z"
           fill="url(#lotus-petal)"
-          opacity="0.88"
+          opacity="0.9"
           style={{
             transform: `translate(100px, 150px) rotate(${a}deg)`,
             transition: 'transform 2.2s ease-in-out',
@@ -499,7 +811,7 @@ function SacredLotus({ phase }: { phase: Phase }) {
         />
       ))}
 
-      <g stroke="#bae6fd" strokeOpacity="0.65" strokeWidth="1" strokeLinecap="round">
+      <g stroke="#99f6e4" strokeOpacity="0.65" strokeWidth="1" strokeLinecap="round">
         {rays.map((r, i) => (
           <line key={`ray-${i}`} x1={r.x1} y1={r.y1} x2={r.x2} y2={r.y2} />
         ))}
@@ -511,7 +823,7 @@ function SacredLotus({ phase }: { phase: Phase }) {
           d="M 0 0 C -20 -3 -26 -44 -2 -72 C -1 -75 1 -75 2 -72 C 26 -44 20 -3 0 0 Z"
           fill="url(#lotus-petal)"
           stroke="#ffffff"
-          strokeOpacity="0.55"
+          strokeOpacity="0.6"
           strokeWidth="0.7"
           style={{
             transform: `translate(100px, 150px) rotate(${a}deg)`,
@@ -524,7 +836,7 @@ function SacredLotus({ phase }: { phase: Phase }) {
         d="M 0 0 C -18 -2 -24 -42 -2 -70 C -1 -73 1 -73 2 -70 C 24 -42 18 -2 0 0 Z"
         fill="url(#lotus-petal)"
         stroke="#ffffff"
-        strokeOpacity="0.6"
+        strokeOpacity="0.65"
         strokeWidth="0.7"
         transform="translate(100 150)"
       />
@@ -540,17 +852,13 @@ function SacredLotus({ phase }: { phase: Phase }) {
       ))}
 
       <circle cx="100" cy="142" r="8" fill="#ffffff" opacity="0.95" />
-      <circle cx="100" cy="142" r="8" fill="none" stroke="#7dd3fc" strokeOpacity="0.7" strokeWidth="1" />
-      <circle cx="100" cy="142" r="2.6" fill="#fde047" />
+      <circle cx="100" cy="142" r="8" fill="none" stroke="#2dd4bf" strokeOpacity="0.7" strokeWidth="1" />
+      <circle cx="100" cy="142" r="2.8" fill="#fde047" />
     </svg>
   );
 }
 
-/**
- * VERO QR CODE ISO/IEC 18004 SCANSIONABILE DA QUALSIASI FOTOCAMERA IPHONE / ANDROID
- * (con fallback SVG se il dispositivo è offline).
- */
-function RealScannableQrCode({ url }: { url: string }) {
+function RealScannableQrCode({ url, sizePx = 110 }: { url: string; sizePx?: number }) {
   const [imgError, setImgError] = useState(false);
   const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&ecc=M&margin=1&data=${encodeURIComponent(
     url
@@ -562,16 +870,27 @@ function RealScannableQrCode({ url }: { url: string }) {
         src={qrApiUrl}
         alt="QR Code Ufficiale Pausa81 Scansionabile"
         className="qr-svg"
-        style={{ borderRadius: '8px', border: '1px solid #e2e8f0' }}
+        style={{
+          width: `${sizePx}px`,
+          height: `${sizePx}px`,
+          borderRadius: '8px',
+          border: '1px solid #cbd5e1',
+          background: '#ffffff',
+          padding: '3px',
+        }}
         onError={() => setImgError(true)}
       />
     );
   }
 
-  // Fallback SVG offline
   const size = 21;
   return (
-    <svg viewBox={`0 0 ${size + 4} ${size + 4}`} className="qr-svg" aria-label="QR Code Pausa81">
+    <svg
+      viewBox={`0 0 ${size + 4} ${size + 4}`}
+      className="qr-svg"
+      style={{ width: `${sizePx}px`, height: `${sizePx}px` }}
+      aria-label="QR Code Pausa81"
+    >
       <rect width={size + 4} height={size + 4} fill="#ffffff" rx="1.5" />
       <text x="50%" y="50%" textAnchor="middle" fontSize="2.2" fill="#0f766e">
         QR PAUSA81
@@ -580,9 +899,6 @@ function RealScannableQrCode({ url }: { url: string }) {
   );
 }
 
-/**
- * TAVOLETTA DI FIRMA DIGITALE TOUCH / MOUSE DIRETTA SULLO SCHERMO DELL'APP
- */
 function InteractiveSignaturePad({
   label,
   savedDataUrl,
@@ -671,7 +987,8 @@ function InteractiveSignaturePad({
         background: '#f8fafc',
         border: '1px solid #cbd5e1',
         borderRadius: '10px',
-        padding: '0.55rem',
+        padding: '0.5rem',
+        color: '#0f172a',
       }}
     >
       <div
@@ -679,19 +996,19 @@ function InteractiveSignaturePad({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '0.3rem',
+          marginBottom: '0.28rem',
         }}
       >
-        <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#0f766e' }}>
-          ✍️ {label} (Firma col dito o col mouse)
+        <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#0f766e' }}>
+          ✍️ {label}
         </span>
         <button
           type="button"
           className="btn-mini"
           onClick={handleClear}
-          style={{ padding: '0.15rem 0.45rem', fontSize: '0.66rem' }}
+          style={{ padding: '0.12rem 0.4rem', fontSize: '0.64rem', color: '#0f172a' }}
         >
-          Cancella Firma
+          Cancella
         </button>
       </div>
 
@@ -699,29 +1016,29 @@ function InteractiveSignaturePad({
         <div
           style={{
             background: '#ffffff',
-            border: '1px dashed #0d9488',
+            border: '1px dashed #10b981',
             borderRadius: '8px',
-            padding: '0.3rem',
+            padding: '0.25rem',
             textAlign: 'center',
           }}
         >
           <img
             src={savedDataUrl}
             alt={label}
-            style={{ maxHeight: '64px', maxWidth: '100%', objectFit: 'contain' }}
+            style={{ maxHeight: '56px', maxWidth: '100%', objectFit: 'contain' }}
           />
-          <small style={{ display: 'block', fontSize: '0.62rem', color: '#0d9488' }}>
-            ✓ Firma acquisita e applicata ai documenti ufficiali
+          <small style={{ display: 'block', fontSize: '0.6rem', color: '#10b981', fontWeight: 600 }}>
+            ✓ Firma autografa certificata nel Fascicolo
           </small>
         </div>
       ) : (
         <canvas
           ref={canvasRef}
-          width={340}
-          height={90}
+          width={320}
+          height={82}
           style={{
             width: '100%',
-            height: '78px',
+            height: '72px',
             background: '#ffffff',
             border: '1px dashed #94a3b8',
             borderRadius: '8px',
@@ -758,6 +1075,18 @@ function Sphere({
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (progress / 100) * circumference;
 
+  const liquidClass =
+    phase === 'inspire'
+      ? 'liquid-sphere-core--inspire'
+      : phase === 'hold'
+      ? 'liquid-sphere-core--hold'
+      : phase === 'expire' || phase === 'pause'
+      ? 'liquid-sphere-core--expire'
+      : 'liquid-sphere-core--idle';
+
+  const ringStrokeColor =
+    phase === 'hold' ? '#10b981' : phase === 'inspire' ? '#14b8a6' : '#0d9488';
+
   return (
     <div className="sphere-wrap">
       <svg className="orbital-ring" viewBox="0 0 340 340" aria-hidden="true">
@@ -766,7 +1095,7 @@ function Sphere({
           cy="170"
           r={radius}
           fill="none"
-          stroke="rgba(148, 163, 184, 0.22)"
+          stroke="rgba(148, 163, 184, 0.16)"
           strokeWidth="2.5"
         />
         <circle
@@ -774,15 +1103,15 @@ function Sphere({
           cy="170"
           r={radius}
           fill="none"
-          stroke="#0d9488"
-          strokeWidth="3.5"
+          stroke={ringStrokeColor}
+          strokeWidth="4"
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
           style={{
             transform: 'rotate(-90deg)',
             transformOrigin: '50% 50%',
-            transition: 'stroke-dashoffset 0.35s linear',
+            transition: 'stroke-dashoffset 0.35s linear, stroke 0.6s ease',
           }}
         />
       </svg>
@@ -790,13 +1119,13 @@ function Sphere({
       <motion.div
         className="sphere-halo"
         initial={false}
-        animate={{ scale }}
+        animate={{ scale: scale * 1.06 }}
         transition={{ duration, ease: 'easeInOut' }}
         aria-hidden="true"
       />
 
       <motion.div
-        className="sphere"
+        className={`sphere liquid-sphere-core ${liquidClass}`}
         initial={false}
         animate={{ scale }}
         transition={{ duration, ease: 'easeInOut' }}
@@ -825,6 +1154,8 @@ export default function App() {
     .replace(/[-_]/g, ' ')
     .trim();
 
+  // Default: Modalità Calm Dark (Linear / Apple style) con switch immediato Light
+  const [themeMode, setThemeMode] = useState<ThemeMode>('dark');
   const [sessionMode, setSessionMode] = useState<SessionMode>('all');
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const [elapsed, setElapsed] = useState<number>(0);
@@ -850,6 +1181,7 @@ export default function App() {
 
   const [vdtReminderMinutes, setVdtReminderMinutes] = useState<number | null>(null);
   const [vdtSecondsLeft, setVdtSecondsLeft] = useState<number>(0);
+  const [vdtAlertActive, setVdtAlertActive] = useState<boolean>(false);
 
   const [localSessionsCount, setLocalSessionsCount] = useState<number>(() => {
     if (typeof window === 'undefined') return 0;
@@ -857,9 +1189,8 @@ export default function App() {
     return saved ? Number(saved) || 0 : 0;
   });
   const [lastAuditCode, setLastAuditCode] = useState<string>('P81-VDT-8108');
-  const [employeesCount, setEmployeesCount] = useState<number>(10);
+  const [employeesCount, setEmployeesCount] = useState<number>(25);
 
-  // Dati e Firme Digitali per Verbale DVR Art. 35 & Validazione Medico Competente
   const [partnerStudioName, setPartnerStudioName] = useState<string>(
     initialPartner || 'Studio Partner RSPP / Sicurezza'
   );
@@ -871,9 +1202,12 @@ export default function App() {
   );
   const [doctorName, setDoctorName] = useState<string>('Dott. [Nome Medico Competente]');
   const [doctorAlbo, setDoctorAlbo] = useState<string>('Ordine Medici n. [XXXX]');
-  const [rsppName, setRsppName] = useState<string>('Ing. / Dott. [Nome RSPP / Datore]');
+  const [rsppName, setRsppName] = useState<string>('Ing. / Dott. [Datore / RSPP]');
+  const [rlsName, setRlsName] = useState<string>('Sig. [Rappresentante Lavoratori RLS]');
+
   const [doctorSignatureUrl, setDoctorSignatureUrl] = useState<string>('');
   const [employerSignatureUrl, setEmployerSignatureUrl] = useState<string>('');
+  const [rlsSignatureUrl, setRlsSignatureUrl] = useState<string>('');
 
   const audioCtxRef: MutableRefObject<AudioContext | null> = useRef<AudioContext | null>(null);
   const chimeOscsRef: MutableRefObject<OscillatorNode[]> = useRef<OscillatorNode[]>([]);
@@ -890,6 +1224,13 @@ export default function App() {
   const phraseTimeoutRef: MutableRefObject<number | null> = useRef<number | null>(null);
   const lastPlayedStepRef = useRef<string>('');
   const wakeLockRef = useRef<{ release: () => Promise<void> } | null>(null);
+
+  // Aggiorna automaticamente il titolo della scheda browser in "Pausa81 by SvasaOS"
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.title = 'Pausa81 by SvasaOS — Presidio Neuro-Ergonomico D.Lgs. 81/2008';
+    }
+  }, []);
 
   const getOrCreateAudioCtx = useCallback((): AudioContext | null => {
     if (typeof window === 'undefined') return null;
@@ -1086,6 +1427,9 @@ export default function App() {
     stopVoiceNow();
   }, [stopChimeNow, stopBinauralNow, stopVoiceNow]);
 
+  /**
+   * SVASA-OS FUTURE ENGINE: Glissando Binaurale Adattivo (14 Hz Beta -> 6 Hz Theta/Alpha)
+   */
   const startBinauralPad = useCallback(() => {
     stopBinauralNow();
     if (!binauralEnabled) return;
@@ -1093,27 +1437,30 @@ export default function App() {
     if (!ctx) return;
 
     try {
+      const now = ctx.currentTime;
       const subOsc = ctx.createOscillator();
       const leftOsc = ctx.createOscillator();
       const rightOsc = ctx.createOscillator();
 
       const lowpass = ctx.createBiquadFilter();
       lowpass.type = 'lowpass';
-      lowpass.frequency.setValueAtTime(620, ctx.currentTime);
+      lowpass.frequency.setValueAtTime(680, now);
+      lowpass.frequency.exponentialRampToValueAtTime(380, now + SESSION_DURATION);
 
       const masterGain = ctx.createGain();
 
       subOsc.type = 'sine';
-      subOsc.frequency.setValueAtTime(216, ctx.currentTime);
+      subOsc.frequency.setValueAtTime(216, now);
 
       leftOsc.type = 'sine';
-      leftOsc.frequency.setValueAtTime(432, ctx.currentTime);
+      leftOsc.frequency.setValueAtTime(432, now);
 
       rightOsc.type = 'sine';
-      rightOsc.frequency.setValueAtTime(438, ctx.currentTime);
+      rightOsc.frequency.setValueAtTime(446, now);
+      rightOsc.frequency.linearRampToValueAtTime(438, now + SESSION_DURATION);
 
-      masterGain.gain.setValueAtTime(0.0001, ctx.currentTime);
-      masterGain.gain.linearRampToValueAtTime(0.018, ctx.currentTime + 1.2);
+      masterGain.gain.setValueAtTime(0.0001, now);
+      masterGain.gain.linearRampToValueAtTime(0.018, now + 1.2);
 
       subOsc.connect(lowpass);
       leftOsc.connect(lowpass);
@@ -1121,9 +1468,9 @@ export default function App() {
       lowpass.connect(masterGain);
       masterGain.connect(ctx.destination);
 
-      subOsc.start();
-      leftOsc.start();
-      rightOsc.start();
+      subOsc.start(now);
+      leftOsc.start(now);
+      rightOsc.start(now);
 
       binauralOscsRef.current = [subOsc, leftOsc, rightOsc];
       binauralGainRef.current = masterGain;
@@ -1181,6 +1528,30 @@ export default function App() {
     [chimeEnabled, getOrCreateAudioCtx, stopChimeNow]
   );
 
+  /**
+   * Feedback Aptico Differenziato per Smartphone (Inspira / Trattieni / Espira)
+   */
+  const triggerHapticFeedback = useCallback((phase: Phase) => {
+    if (typeof navigator === 'undefined' || !navigator.vibrate) return;
+    try {
+      if (phase === 'inspire') {
+        navigator.vibrate([35, 45, 65]);
+      } else if (phase === 'hold') {
+        navigator.vibrate(50);
+      } else if (phase === 'expire') {
+        navigator.vibrate([80, 50, 30]);
+      } else {
+        navigator.vibrate(20);
+      }
+    } catch {
+      // Ignora su dispositivi desktop
+    }
+  }, []);
+
+  /**
+   * Riproduce la frase selezionata con cadenza rallentata e meditativa per l'Uomo (0.90x)
+   * e micro-respiro iniziale di 300ms dopo il tocco della campana tibetana.
+   */
   const speakPhrase = useCallback(
     async (phrase: SpokenPhrase | null, overrideGender?: VoiceGender) => {
       const activeGender = overrideGender !== undefined ? overrideGender : voiceGender;
@@ -1227,21 +1598,33 @@ export default function App() {
 
           if (targetBuffer && sliceCoords) {
             const [startSec, endSec] = sliceCoords;
-            const dur = Math.max(0.4, endSec - startSec);
-            const now = ctx.currentTime;
+            const bufferDur = Math.max(0.4, endSec - startSec);
+
+            // Rallenta la voce maschile a 0.90x per renderla calma, profonda e solenne
+            const playbackRate = activeGender === 'male' ? 0.90 : 0.97;
+            const realPlaybackDur = bufferDur / playbackRate;
+
+            // Micro-respiro prima dell'attacco vocale
+            const onsetDelay = phrase.audioKey === 'level2_hold' ? 0.20 : 0.30;
+            const startTime = ctx.currentTime + onsetDelay;
 
             const src = ctx.createBufferSource();
             src.buffer = targetBuffer;
+            src.playbackRate.setValueAtTime(playbackRate, startTime);
 
             const envGain = ctx.createGain();
-            envGain.gain.setValueAtTime(0.001, now);
-            envGain.gain.linearRampToValueAtTime(1.0, now + 0.06);
-            envGain.gain.setValueAtTime(1.0, now + dur - 0.08);
-            envGain.gain.linearRampToValueAtTime(0.001, now + dur);
+            envGain.gain.setValueAtTime(0.0001, ctx.currentTime);
+            envGain.gain.setValueAtTime(0.001, startTime);
+            envGain.gain.linearRampToValueAtTime(1.0, startTime + 0.08);
+            envGain.gain.setValueAtTime(1.0, startTime + realPlaybackDur - 0.10);
+            envGain.gain.linearRampToValueAtTime(0.0001, startTime + realPlaybackDur);
 
             src.connect(envGain);
             envGain.connect(ctx.destination);
-            src.start(0, startSec, dur);
+
+            src.start(startTime, startSec);
+            src.stop(startTime + realPlaybackDur);
+
             activeBufferSourceRef.current = src;
             return;
           }
@@ -1259,13 +1642,13 @@ export default function App() {
         activeGender
       );
 
-      const baseRate = activeGender === 'female' ? 0.84 : 0.80;
+      const baseRate = activeGender === 'female' ? 0.84 : 0.74;
       const basePitch =
         activeGender === 'female'
           ? 1.02
           : isDedicatedGenderMatch
-          ? 0.88
-          : 0.72;
+          ? 0.86
+          : 0.70;
 
       try {
         if (phrase.part1) {
@@ -1282,11 +1665,11 @@ export default function App() {
               const u2 = new SpeechSynthesisUtterance(phrase.part2);
               u2.lang = 'it-IT';
               if (voice) u2.voice = voice;
-              u2.rate = Math.max(0.74, baseRate - 0.04);
-              u2.pitch = Math.max(0.65, basePitch - 0.05);
+              u2.rate = Math.max(0.70, baseRate - 0.04);
+              u2.pitch = Math.max(0.65, basePitch - 0.04);
               u2.volume = 0.90;
               window.speechSynthesis.speak(u2);
-            }, 520);
+            }, 680);
           };
 
           window.speechSynthesis.speak(u1);
@@ -1328,14 +1711,12 @@ export default function App() {
     if (lastPlayedStepRef.current !== stepId) {
       lastPlayedStepRef.current = stepId;
       triggerSoftChime(snapshot.phase);
-      if (typeof navigator !== 'undefined' && navigator.vibrate) {
-        navigator.vibrate(25);
-      }
+      triggerHapticFeedback(snapshot.phase);
       if (snapshot.spokenPhrase) {
         speakPhrase(snapshot.spokenPhrase);
       }
     }
-  }, [isRunning, snapshot, triggerSoftChime, speakPhrase]);
+  }, [isRunning, snapshot, triggerSoftChime, triggerHapticFeedback, speakPhrase]);
 
   useEffect(() => {
     if (!isRunning) {
@@ -1400,6 +1781,7 @@ export default function App() {
       setVdtSecondsLeft((prev) => {
         if (prev <= 1) {
           triggerSoftChime('inspire');
+          setVdtAlertActive(true);
           return vdtReminderMinutes * 60;
         }
         return prev - 1;
@@ -1421,6 +1803,7 @@ export default function App() {
 
   const startSession = useCallback(async () => {
     stopAllAudio();
+    setVdtAlertActive(false);
 
     const firstSnap = getTimelineSnapshot(0, sessionMode);
     lastPlayedStepRef.current = `${firstSnap.stage.id}_${firstSnap.phase}_${firstSnap.cycleNumber}`;
@@ -1433,6 +1816,7 @@ export default function App() {
       startBinauralPad();
     }
     triggerSoftChime(firstSnap.phase);
+    triggerHapticFeedback(firstSnap.phase);
     if (firstSnap.spokenPhrase) {
       await speakPhrase(firstSnap.spokenPhrase);
     }
@@ -1453,6 +1837,7 @@ export default function App() {
     stopAllAudio,
     startBinauralPad,
     triggerSoftChime,
+    triggerHapticFeedback,
     speakPhrase,
   ]);
 
@@ -1470,6 +1855,7 @@ export default function App() {
   };
 
   const toggleVdtReminder = () => {
+    setVdtAlertActive(false);
     if (vdtReminderMinutes === null) {
       setVdtReminderMinutes(60);
       setVdtSecondsLeft(60 * 60);
@@ -1482,11 +1868,33 @@ export default function App() {
     }
   };
 
-  const sessionRemaining = isRunning ? SESSION_DURATION - elapsed : SESSION_DURATION;
-  const estimatedHoursSavedMonthly = Math.round(employeesCount * 3.2);
-  const estimatedAnnualSavings = (employeesCount * 410).toLocaleString('it-IT');
+  const snoozeVdtAlert5Min = () => {
+    setVdtAlertActive(false);
+    if (vdtReminderMinutes === null) {
+      setVdtReminderMinutes(60);
+    }
+    setVdtSecondsLeft(5 * 60);
+  };
 
-  // Legge automaticamente il dominio attuale (così quando rinomini in pausa81.vercel.app si aggiorna da solo!)
+  const sessionRemaining = isRunning ? SESSION_DURATION - elapsed : SESSION_DURATION;
+
+  // Calcolo Danni Reali INAIL/Burnout (4.484 €/anno = 373,66 €/mese per addetto) e Listino High-Ticket
+  const totalCompanyDamageYearly = (employeesCount * 4484).toLocaleString('it-IT');
+  const totalCompanyDamageMonthly = Math.round((employeesCount * 4484) / 12).toLocaleString('it-IT');
+  const estimatedAnnualSavings = Math.round(employeesCount * 448.4).toLocaleString('it-IT');
+  const inailOt23DiscountPct =
+    employeesCount <= 10 ? '28%' : employeesCount <= 50 ? '18%' : employeesCount <= 200 ? '10%' : '5%';
+  const recommendedPlanPrice =
+    employeesCount <= 15
+      ? '€ 1.200 / anno (+ € 390 Impianto Kit Phygital)'
+      : employeesCount <= 35
+      ? '€ 2.400 / anno (+ € 590 Impianto Kit Phygital)'
+      : employeesCount <= 80
+      ? '€ 3.900 / anno (+ € 890 Impianto Kit Phygital)'
+      : employeesCount <= 200
+      ? '€ 6.900 / anno (+ € 1.490 Impianto Kit Phygital)'
+      : `€ ${(employeesCount * 45).toLocaleString('it-IT')} / anno (+ Impianto su misura)`;
+
   const currentOrigin =
     typeof window !== 'undefined' && window.location.origin
       ? window.location.origin
@@ -1497,6 +1905,9 @@ export default function App() {
   )}&cliente=${encodeURIComponent(clientCompanyName.replace(/\s+/g, '_'))}`;
 
   const todayFormatted = new Date().toLocaleDateString('it-IT');
+  const allThreeSigned = Boolean(
+    doctorSignatureUrl && employerSignatureUrl && rlsSignatureUrl
+  );
 
   const startButtonLabel =
     sessionMode === 'all'
@@ -1504,7 +1915,12 @@ export default function App() {
       : `Avvia Solo ${STAGES[previewStageIdx].name} (60s)`;
 
   return (
-    <div className={`app ${eyeRestMode ? 'app--warm-rest' : ''}`}>
+    <div
+      className={`app app--theme-${themeMode} ${
+        eyeRestMode ? 'app--warm-rest' : ''
+      }`}
+    >
+      <style>{WORLD_CLASS_STYLES}</style>
       <CloudBackground />
 
       <input
@@ -1526,7 +1942,7 @@ export default function App() {
             <span className="pill-dot" />
             {initialPartner || initialClient
               ? `${initialClient || initialPartner} · D.Lgs. 81/08`
-              : 'Direzione · HR · RSPP · Medico'}
+              : 'ROI & Dati INAIL · Direzione'}
           </button>
 
           <button
@@ -1537,18 +1953,17 @@ export default function App() {
             Targa QR
           </button>
 
-          {/* Pulsante Firma Digitale Medico Competente & Verbale DVR Art. 35 */}
           <button
             type="button"
             className="qr-pill-btn"
             style={{
-              background: doctorSignatureUrl ? '#dcfce7' : '#eff6ff',
-              borderColor: doctorSignatureUrl ? '#16a34a' : '#2563eb',
-              color: doctorSignatureUrl ? '#15803d' : '#1d4ed8',
+              background: allThreeSigned ? 'rgba(16, 185, 129, 0.22)' : undefined,
+              borderColor: allThreeSigned ? '#10b981' : '#14b8a6',
+              color: allThreeSigned ? '#10b981' : undefined,
             }}
             onClick={() => setShowMedicalModal(true)}
           >
-            🩺 {doctorSignatureUrl ? 'Verbale Medico Firmato ✓' : 'Firma Medico & Verbale DVR'}
+            📜 {allThreeSigned ? 'Fascicolo DVR Firmato (3/3) ✓' : 'Fascicolo DVR (3 Firme)'}
           </button>
         </div>
 
@@ -1566,7 +1981,7 @@ export default function App() {
             type="button"
             className={`icon-btn ${voiceGender === 'male' ? 'active' : ''}`}
             onClick={() => handleSelectVoiceGender('male')}
-            title="Voce Maschile Alessandro (Stoic, Breathy & Steady)"
+            title="Voce Maschile Alessandro Rallentata 0.90x (Calma & Profonda)"
           >
             👨 Uomo {hasAlessandroLoaded ? '✓' : ''}
           </button>
@@ -1595,7 +2010,7 @@ export default function App() {
             className={`icon-btn ${binauralEnabled ? 'active' : ''}`}
             onClick={() => setBinauralEnabled((v) => !v)}
           >
-            {binauralEnabled ? '🌊 Binaurale ON' : '🌊 Binaurale OFF'}
+            {binauralEnabled ? '🌊 432Hz ON' : '🌊 432Hz OFF'}
           </button>
 
           <button
@@ -1603,7 +2018,17 @@ export default function App() {
             className={`icon-btn ${chimeEnabled ? 'active' : ''}`}
             onClick={() => setChimeEnabled((v) => !v)}
           >
-            {chimeEnabled ? '🔔 Campana ON' : '🔔 Campana OFF'}
+            {chimeEnabled ? '🔔 Campana' : '🔕 Muto'}
+          </button>
+
+          {/* Switch Dinamico Dark / Light Mode (Calm Tech vs Clinical Light) */}
+          <button
+            type="button"
+            className="icon-btn"
+            onClick={() => setThemeMode((t) => (t === 'dark' ? 'light' : 'dark'))}
+            title="Cambia Tema Calm Dark (Linear) / Clinical Light (Apple)"
+          >
+            {themeMode === 'dark' ? '🌙 Calm Dark' : '☀️ Light'}
           </button>
 
           <button
@@ -1625,6 +2050,54 @@ export default function App() {
           </button>
         </div>
       </header>
+
+      {/* Banner Smart-Snooze non intrusivo (+5m) */}
+      <AnimatePresence>
+        {vdtAlertActive && !isRunning && (
+          <motion.div
+            className="no-print"
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -20, opacity: 0 }}
+            style={{
+              position: 'fixed',
+              top: '58px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 45,
+              background: 'rgba(15, 23, 42, 0.94)',
+              backdropFilter: 'blur(16px)',
+              border: '1px solid rgba(20, 184, 166, 0.45)',
+              color: '#f8fafc',
+              padding: '0.55rem 1rem',
+              borderRadius: '999px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.65rem',
+              boxShadow: '0 14px 32px rgba(0, 0, 0, 0.45)',
+              fontSize: '0.76rem',
+            }}
+          >
+            <span>⏰ Pausa Ergonomica VDT consigliata (60s):</span>
+            <button
+              type="button"
+              className="btn-mini"
+              style={{ background: '#10b981', color: '#fff', border: 'none' }}
+              onClick={startSession}
+            >
+              ▶ Inizia Ora (60s)
+            </button>
+            <button
+              type="button"
+              className="btn-mini"
+              style={{ background: '#334155', color: '#e2e8f0', border: 'none' }}
+              onClick={snoozeVdtAlert5Min}
+            >
+              ⏳ Finisco il task (+5 min)
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <main className="app-main no-print">
         <div className="protocol-bar" role="tablist" aria-label="Modalità Pausa81 da 60 secondi">
@@ -1715,6 +2188,7 @@ export default function App() {
                   className="tick-bar-fill"
                   style={{
                     width: `${((SESSION_DURATION - sessionRemaining) / SESSION_DURATION) * 100}%`,
+                    background: 'linear-gradient(90deg, #0d9488 0%, #10b981 100%)',
                   }}
                 />
               </div>
@@ -1737,18 +2211,43 @@ export default function App() {
         <div className="brand">
           <Pausa81Logo partnerName={initialClient || initialPartner} />
           {localSessionsCount > 0 && (
-            <span className="local-counter-pill">
-              ✓ {localSessionsCount} pause D.Lgs. 81/08 completate su questo dispositivo
+            <span
+              className="local-counter-pill"
+              style={{
+                background: 'rgba(16, 185, 129, 0.14)',
+                border: '1px solid rgba(16, 185, 129, 0.35)',
+                color: themeMode === 'dark' ? '#6ee7b7' : '#047857',
+              }}
+            >
+              ✓ {localSessionsCount} sessioni completate · Certificato Locale {lastAuditCode}
             </span>
           )}
         </div>
       </main>
 
-      <footer className="compliance-footer no-print">
-        <span>
-          <strong>Pausa81 · 100% Anonimo &amp; Zero-Tracking:</strong> conforme Garante Privacy ·
-          Esente Art. 4 L. 300/70 · Presidio Art. 28 e Titolo VII D.Lgs. 81/2008.
-        </span>
+      {/* Barra di Stato Permanente "Zero-Tracking & Sicurezza Sindacale" con Scudo Verde Medico */}
+      <footer className="shield-status-footer no-print">
+        <div className="shield-status-pill">
+          <span className="shield-dot-emerald" aria-hidden="true" />
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#10b981"
+            strokeWidth="2.3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            <path d="m9 12 2 2 4-4" />
+          </svg>
+          <span>
+            <strong>✓ 0 Byte Tracciati</strong> · Esente Art. 4 L. 300/70 · Conforme Garante Privacy
+            · <strong>Salva-Pause 15m Art. 175 D.Lgs. 81/08</strong>
+          </span>
+        </div>
       </footer>
 
       <AnimatePresence>
@@ -1764,9 +2263,13 @@ export default function App() {
               initial={{ scale: 0.94, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.94, opacity: 0 }}
+              style={{ color: '#0f172a' }}
             >
-              <span className="completion-badge">
-                Presidio Completato · Codice Verifica {lastAuditCode}
+              <span
+                className="completion-badge"
+                style={{ background: '#d1fae5', color: '#065f46' }}
+              >
+                ✓ Presidio Completato · Sigillo Verifica {lastAuditCode}
               </span>
               <h2>Decompressione Pausa81 Completata (60s)</h2>
               <p>
@@ -1781,20 +2284,19 @@ export default function App() {
 
               <div className="benchmark-grid">
                 <div className="benchmark-item">
-                  <strong>-24%</strong>
-                  <span>Fatica Visiva &amp; Posturale*</span>
+                  <strong style={{ color: '#10b981' }}>0 Byte</strong>
+                  <span>Dati Personali Inviati (Esente Art. 4)</span>
                 </div>
                 <div className="benchmark-item">
-                  <strong>{localSessionsCount} min</strong>
+                  <strong style={{ color: '#0d9488' }}>{localSessionsCount} min</strong>
                   <span>Prevenzione Accumulata (Locale)</span>
                 </div>
               </div>
 
               <p className="legal-note">
-                *Valori medi da letteratura scientifica sulle micro-pause ergonomiche (Art. 175
-                D.Lgs. 81/08). Il contatore è salvato esclusivamente nella memoria locale del tuo
-                dispositivo: nessun dato personale, biometrico o emotivo viene inviato al datore di
-                lavoro, né sostituisce la valutazione ufficiale INAIL dello stress lavoro-correlato.
+                Il presidio da 60s è salvato solo nella memoria locale del dispositivo (Zero-Tracking)
+                e integra — senza mai ridurre — le pause di 15 minuti ogni 120 minuti previste dall’Art.
+                175 comma 3 D.Lgs. 81/2008.
               </p>
 
               <div className="completion-actions">
@@ -1811,7 +2313,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Modal Targa Murale QR Code A4 con VERO QR CODE SCANSIONABILE e Bollino Firma Medico */}
+      {/* Modal Targa Murale QR Code A4 */}
       <AnimatePresence>
         {showQrModal && (
           <motion.div
@@ -1825,6 +2327,7 @@ export default function App() {
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 20, opacity: 0 }}
+              style={{ color: '#0f172a' }}
             >
               <div className="executive-header no-print">
                 <div>
@@ -1886,7 +2389,7 @@ export default function App() {
 
                 <div className="plaque-body">
                   <div className="plaque-qr-box">
-                    <RealScannableQrCode url={customWhiteLabelUrl} />
+                    <RealScannableQrCode url={customWhiteLabelUrl} sizePx={136} />
                     <span>INQUADRA CON LA FOTOCAMERA</span>
                     <small>Accesso diretto · Zero App da installare</small>
                   </div>
@@ -1910,19 +2413,17 @@ export default function App() {
 
                 <div className="plaque-footer">
                   <p>
-                    <strong>GARANZIA PRIVACY E LAVORO:</strong> Strumento 100% anonimo e privo di
-                    login o tracciamento biometrico/emotivo (Conforme Garante Privacy gpdp.it ·
-                    Esente da accordi sindacali ex Art. 4 L. 300/1970 · Misura integrativa INAIL).
+                    <strong>GARANZIA SINDACALE E PRIVACY (0 BYTE TRACCIATI):</strong> Strumento
+                    100% anonimo esente da accordi ex Art. 4 L. 300/1970. Misura integrativa che
+                    non sostituisce né riduce le pause VDT di 15 minuti ex Art. 175 c. 3 D.Lgs. 81/08.
                   </p>
                   <div className="plaque-partner-signature">
                     <span>
-                      Partner: <strong>{partnerStudioName}</strong> · Validazione:{' '}
-                      <strong>
-                        {doctorName} ({doctorAlbo})
-                      </strong>
+                      Partner: <strong>{partnerStudioName}</strong> · Medico:{' '}
+                      <strong>{doctorName}</strong>
                     </span>
                     <span>
-                      Sistema: <strong>Pausa81</strong> <em>powered by SvasaOS</em>
+                      Sistema: <strong>Pausa81</strong> <em>by SvasaOS</em>
                     </span>
                   </div>
                 </div>
@@ -1958,7 +2459,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* NUOVO: Modal Tavoletta Firma Medico Competente & Verbale DVR Art. 35 D.Lgs. 81/2008 */}
+      {/* 4. FASCICOLO DIGITALE INTERATTIVO IN STILE "NOTARILE / CORPORATE" CON QR DINAMICO VERIFICABILE */}
       <AnimatePresence>
         {showMedicalModal && (
           <motion.div
@@ -1972,13 +2473,14 @@ export default function App() {
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 20, opacity: 0 }}
+              style={{ color: '#0f172a' }}
             >
               <div className="executive-header no-print">
                 <div>
                   <span className="completion-badge">
-                    Validazione Clinica &amp; Allegato Ufficiale DVR / INAIL OT23
+                    Fascicolo Digitale Notarile · DVR Art. 35 &amp; Pratica INAIL OT23
                   </span>
-                  <h2>🩺 Firma Medico Competente &amp; Verbale Adozione (Art. 35 D.Lgs. 81/08)</h2>
+                  <h2>📜 Verbale Ufficiale Pre-Verificato (Medico · RSPP · RLS)</h2>
                 </div>
                 <button
                   type="button"
@@ -1989,10 +2491,9 @@ export default function App() {
                 </button>
               </div>
 
-              {/* Campi dati e Tavolette di Firma Touch (visibili solo a schermo, nascosti in stampa) */}
               <div className="qr-config-grid no-print">
                 <div>
-                  <label>Azienda Aderente</label>
+                  <label>Ragione Sociale Azienda</label>
                   <input
                     type="text"
                     value={clientCompanyName}
@@ -2000,19 +2501,15 @@ export default function App() {
                   />
                 </div>
                 <div>
-                  <label>Medico Competente (Nome e Cognome)</label>
+                  <label>Medico Competente (Nome e Albo)</label>
                   <input
                     type="text"
-                    value={doctorName}
-                    onChange={(e) => setDoctorName(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label>N. Iscrizione Ordine Medici / Albo</label>
-                  <input
-                    type="text"
-                    value={doctorAlbo}
-                    onChange={(e) => setDoctorAlbo(e.target.value)}
+                    value={`${doctorName} - ${doctorAlbo}`}
+                    onChange={(e) => {
+                      const parts = e.target.value.split(' - ');
+                      setDoctorName(parts[0] || '');
+                      if (parts[1]) setDoctorAlbo(parts[1]);
+                    }}
                   />
                 </div>
                 <div>
@@ -2023,148 +2520,240 @@ export default function App() {
                     onChange={(e) => setRsppName(e.target.value)}
                   />
                 </div>
+                <div>
+                  <label>Rappresentante Lavoratori (RLS)</label>
+                  <input
+                    type="text"
+                    value={rlsName}
+                    onChange={(e) => setRlsName(e.target.value)}
+                  />
+                </div>
               </div>
 
               <div
                 className="no-print"
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-                  gap: '0.75rem',
-                  marginBottom: '1rem',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
+                  gap: '0.6rem',
+                  marginBottom: '0.9rem',
                 }}
               >
                 <InteractiveSignaturePad
-                  label="Firma Medico Competente"
+                  label="1. Firma Medico Competente"
                   savedDataUrl={doctorSignatureUrl}
                   onSave={setDoctorSignatureUrl}
                   onClear={() => setDoctorSignatureUrl('')}
                 />
                 <InteractiveSignaturePad
-                  label="Firma Datore di Lavoro / RSPP"
+                  label="2. Firma Datore / RSPP"
                   savedDataUrl={employerSignatureUrl}
                   onSave={setEmployerSignatureUrl}
                   onClear={() => setEmployerSignatureUrl('')}
                 />
+                <InteractiveSignaturePad
+                  label="3. Firma Consultazione RLS"
+                  savedDataUrl={rlsSignatureUrl}
+                  onSave={setRlsSignatureUrl}
+                  onClear={() => setRlsSignatureUrl('')}
+                />
               </div>
 
-              {/* Documento Ufficiale A4 Stampabile con le Firme Incorporate */}
-              <div className="printable-plaque" style={{ padding: '0' }}>
-                <div className="plaque-header">
-                  <span>ATTESTATO DI VALIDAZIONE ERGONOMICA E VERBALE DI ADOZIONE PRESIDIO</span>
-                  <strong>
-                    AI SENSI DEGLI ARTT. 25, 28, 35 E TITOLO VII (ART. 175) DEL D.LGS. 81/2008
-                  </strong>
+              {/* Anteprima Documento Ufficiale Stile Notarile / Corporate con QR Verificabile */}
+              <div className="notarial-dossier">
+                <div className="notarial-header-bar">
+                  <div>
+                    <span className="notarial-seal-badge">
+                      ATTO INTERNO DI CONFORMITÀ D.LGS. 81/2008 · PROTOCOLLO VERIFICATO {lastAuditCode}
+                    </span>
+                    <h3 style={{ margin: '0 0 0.2rem', fontSize: '0.95rem', letterSpacing: '0.02em' }}>
+                      VERBALE DI VALIDAZIONE ERGONOMICA E ADOZIONE PRESIDIO (ARTT. 25, 28, 35, 50 E 175)
+                    </h3>
+                    <small style={{ color: '#cbd5e1', fontSize: '0.68rem' }}>
+                      Esenzione Ispettorato Nazionale del Lavoro ex Art. 4 L. 300/1970 · Idoneità Sconto INAIL OT23 ({inailOt23DiscountPct})
+                    </small>
+                  </div>
+
+                  <div style={{ textAlign: 'center', flexShrink: 0 }}>
+                    <RealScannableQrCode url={customWhiteLabelUrl} sizePx={74} />
+                    <small
+                      style={{
+                        display: 'block',
+                        fontSize: '0.55rem',
+                        color: '#5eead4',
+                        marginTop: '2px',
+                        fontWeight: 700,
+                      }}
+                    >
+                      VERIFICA QR PRESIDIO
+                    </small>
+                  </div>
                 </div>
 
-                <div className="plaque-company-bar">
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    background: '#f1f5f9',
+                    padding: '0.6rem 1.1rem',
+                    borderBottom: '1px solid #cbd5e1',
+                    fontSize: '0.76rem',
+                  }}
+                >
                   <div>
-                    <small>RAGIONE SOCIALE AZIENDA</small>
-                    <h3>{clientCompanyName}</h3>
+                    <small style={{ color: '#64748b', display: 'block', fontSize: '0.62rem' }}>
+                      SOGGETTO GIURIDICO / AZIENDA ADERENTE
+                    </small>
+                    <strong>{clientCompanyName}</strong> ({departmentName})
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <small>DATA DI VALIDAZIONE</small>
-                    <h4>{todayFormatted}</h4>
+                    <small style={{ color: '#64748b', display: 'block', fontSize: '0.62rem' }}>
+                      DATA DI SOTTOSCRIZIONE E STUDIO PARTNER
+                    </small>
+                    <strong>{todayFormatted}</strong> · {partnerStudioName}
                   </div>
                 </div>
 
-                <div style={{ padding: '1rem 1.2rem', fontSize: '0.78rem', lineHeight: 1.45 }}>
-                  <p style={{ margin: '0 0 0.65rem' }}>
-                    <strong>1. OGGETTO DELLA VALIDAZIONE MEDICO-ERGONOMICA:</strong> Il sottoscritto{' '}
-                    <strong>{doctorName}</strong> ({doctorAlbo}), in qualità di Medico Competente /
-                    Specialista in Medicina del Lavoro, esaminato il protocollo tecnico-organizzativo{' '}
-                    <strong>Pausa81 powered by SvasaOS</strong> articolato in 3 fasi da 20 secondi
-                    (e sessioni dedicate da 60 secondi), attesta che gli esercizi di{' '}
-                    <em>Reset Neuro-Visivo (Liv. 1)</em>,{' '}
-                    <em>Riattivazione Circolatoria del Muscolo Soleo (Liv. 2)</em> e{' '}
-                    <em>Decompressione Posturale Cervicale/Carpale (Liv. 3)</em> sono
-                    biomeccanicamente sicuri, eseguibili in abiti da lavoro (<em>Zero-Sweat</em>),
-                    privi di sovraccarico articolare e idonei alla prevenzione primaria dei Disturbi
-                    Muscolo-Scheletrici (DMS), dell’affaticamento visivo da videoterminale (Art. 175
-                    D.Lgs. 81/08) e del Tecnostress / Stress Lavoro-Correlato (Art. 28 D.Lgs. 81/08).
+                <div style={{ padding: '0.9rem 1.15rem', fontSize: '0.74rem', lineHeight: 1.44 }}>
+                  <p style={{ margin: '0 0 0.55rem' }}>
+                    <strong>ART. 1 — VALIDAZIONE CLINICO-ERGONOMICA (ART. 25 E TITOLO VII D.LGS. 81/2008):</strong>{' '}
+                    Il Medico Competente <strong>{doctorName}</strong> ({doctorAlbo}), in ottemperanza
+                    agli obblighi di collaborazione attiva alla prevenzione primaria ex Art. 25 c. 1
+                    lett. a) D.Lgs. 81/08 e nel pieno rispetto dell’Art. 30 del Codice di Deontologia
+                    Medica FNOMCeO, attesta che il protocollo tecnico-organizzativo{' '}
+                    <strong>Pausa81 by SvasaOS</strong> (3 fasi da 20s / 60s eseguibili in abiti da
+                    lavoro: <em>Reset Neuro-Visivo</em>, <em>Pompa Ematica del Soleo</em>,{' '}
+                    <em>Decompressione Posturale DMS</em>) è biomeccanicamente sicuro e idoneo a
+                    mitigare l’astenopia da VDT (Art. 175), i Disturbi Muscolo-Scheletrici (74,7% delle
+                    tecnopatie INAIL) e lo Stress Lavoro-Correlato (Art. 28 D.Lgs. 81/08 e Art. 2087 c.c.).
                   </p>
 
-                  <p style={{ margin: '0 0 0.65rem' }}>
-                    <strong>2. CONFORMITÀ PRIVACY E STATUTO DEI LAVORATORI:</strong> Si dà atto che
-                    il presidio opera con architettura <strong>100% Client-Side Zero-Tracking</strong>,
-                    senza raccolta di dati personali, biometrici o di monitoraggio emotivo (conforme
-                    ai provvedimenti del Garante Privacy <em>gpdp.it</em> ed esente da accordi
-                    sindacali ex Art. 4 L. 300/1970 secondo le circolari INL). Il presente verbale
-                    costituisce documentazione probatoria valida ai fini della Riunione Periodica
-                    (Art. 35 D.Lgs. 81/08), della riduzione del tasso medio di tariffa{' '}
-                    <strong>INAIL (Modello OT23)</strong> e dei sistemi di gestione{' '}
-                    <strong>ISO 45003 / UNI PdR 125</strong>.
+                  <p style={{ margin: '0 0 0.55rem' }}>
+                    <strong>ART. 2 — CLAUSOLA DI SALVAGUARDIA SINDACALE RLS (ART. 50 E ART. 175 C. 3 D.LGS. 81/08):</strong>{' '}
+                    Con la sottoscrizione per consultazione del Rappresentante dei Lavoratori per la
+                    Sicurezza (<strong>{rlsName}</strong>) ex Art. 29 c. 2 e Art. 50 D.Lgs. 81/08, le
+                    parti certificano che le micro-pause da 60 secondi (dotate di funzione{' '}
+                    <em>Snooze +5 min</em> per non interrompere l’operatività) rivestono carattere{' '}
+                    <strong>esclusivamente integrativo e volontario</strong> e{' '}
+                    <strong>non sostituiscono né riducono di un solo secondo</strong> il diritto ai 15
+                    minuti di pausa ogni 120 minuti di applicazione continuativa al videoterminale (Art.
+                    175 c. 3 D.Lgs. 81/08).
+                  </p>
+
+                  <p style={{ margin: '0 0 0.55rem' }}>
+                    <strong>ART. 3 — ARCHITETTURA "0 BYTE TRACCIATI" ED ESENZIONE ART. 4 L. 300/1970:</strong>{' '}
+                    Si attesta che l’infrastruttura opera in modalità{' '}
+                    <strong>100% Client-Side Stateless (0 Byte inviati su rete esterna)</strong>, senza
+                    login nominativi, profilazione o raccolta di dati personali/biometrici (Art. 9
+                    GDPR), risultando conforme ai provvedimenti del Garante Privacy ed esente da
+                    autorizzazione INL ex Art. 4 L. 300/1970. Il presente fascicolo ha valore
+                    probatorio per la Riunione Periodica (Art. 35) e per l’istanza di riduzione del
+                    premio <strong>INAIL Modello OT23 (fascia sconto {inailOt23DiscountPct})</strong>.
                   </p>
 
                   <div
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: '1fr 1fr',
-                      gap: '1rem',
-                      marginTop: '0.9rem',
-                      paddingTop: '0.75rem',
-                      borderTop: '1px solid #cbd5e1',
+                      gridTemplateColumns: '1fr 1fr 1fr',
+                      gap: '0.7rem',
+                      marginTop: '0.8rem',
+                      paddingTop: '0.7rem',
+                      borderTop: '2px solid #0f172a',
                     }}
                   >
                     <div
                       style={{
-                        border: '1px solid #cbd5e1',
-                        borderRadius: '8px',
-                        padding: '0.55rem',
+                        border: '1px solid #94a3b8',
+                        borderRadius: '6px',
+                        padding: '0.45rem',
                         textAlign: 'center',
-                        minHeight: '88px',
+                        minHeight: '82px',
                         display: 'flex',
                         flexDirection: 'column',
                         justifyContent: 'space-between',
+                        background: '#f8fafc',
                       }}
                     >
-                      <small style={{ fontSize: '0.64rem', fontWeight: 700, color: '#475569' }}>
-                        IL MEDICO COMPETENTE ({doctorName} · {doctorAlbo})
+                      <small style={{ fontSize: '0.58rem', fontWeight: 800, color: '#0f172a' }}>
+                        1. IL MEDICO COMPETENTE ({doctorName})
                       </small>
                       {doctorSignatureUrl ? (
                         <img
                           src={doctorSignatureUrl}
-                          alt="Firma Medico Competente"
-                          style={{ maxHeight: '52px', margin: '0.2rem auto', objectFit: 'contain' }}
+                          alt="Firma Medico"
+                          style={{ maxHeight: '46px', margin: '0.15rem auto', objectFit: 'contain' }}
                         />
                       ) : (
-                        <span style={{ fontSize: '0.68rem', color: '#94a3b8', margin: '1rem 0' }}>
-                          [Spazio Firma Autografa / Digitale]
+                        <span style={{ fontSize: '0.62rem', color: '#94a3b8', margin: '0.8rem 0' }}>
+                          [Spazio Firma Autografa / PAdES]
                         </span>
                       )}
-                      <small style={{ fontSize: '0.6rem', color: '#0f766e' }}>
-                        Validato in data {todayFormatted}
+                      <small style={{ fontSize: '0.56rem', color: '#0f766e', fontWeight: 700 }}>
+                        {doctorAlbo} · Art. 25 D.Lgs. 81/08
                       </small>
                     </div>
 
                     <div
                       style={{
-                        border: '1px solid #cbd5e1',
-                        borderRadius: '8px',
-                        padding: '0.55rem',
+                        border: '1px solid #94a3b8',
+                        borderRadius: '6px',
+                        padding: '0.45rem',
                         textAlign: 'center',
-                        minHeight: '88px',
+                        minHeight: '82px',
                         display: 'flex',
                         flexDirection: 'column',
                         justifyContent: 'space-between',
+                        background: '#f8fafc',
                       }}
                     >
-                      <small style={{ fontSize: '0.64rem', fontWeight: 700, color: '#475569' }}>
-                        IL DATORE DI LAVORO / RSPP ({rsppName})
+                      <small style={{ fontSize: '0.58rem', fontWeight: 800, color: '#0f172a' }}>
+                        2. DATORE DI LAVORO / RSPP ({rsppName})
                       </small>
                       {employerSignatureUrl ? (
                         <img
                           src={employerSignatureUrl}
-                          alt="Firma Datore / RSPP"
-                          style={{ maxHeight: '52px', margin: '0.2rem auto', objectFit: 'contain' }}
+                          alt="Firma Datore"
+                          style={{ maxHeight: '46px', margin: '0.15rem auto', objectFit: 'contain' }}
                         />
                       ) : (
-                        <span style={{ fontSize: '0.68rem', color: '#94a3b8', margin: '1rem 0' }}>
-                          [Spazio Firma Autografa / Digitale]
+                        <span style={{ fontSize: '0.62rem', color: '#94a3b8', margin: '0.8rem 0' }}>
+                          [Spazio Firma Autografa / PAdES]
                         </span>
                       )}
-                      <small style={{ fontSize: '0.6rem', color: '#0f766e' }}>
-                        Studio Partner: {partnerStudioName}
+                      <small style={{ fontSize: '0.56rem', color: '#0f766e', fontWeight: 700 }}>
+                        Art. 18 e Art. 35 D.Lgs. 81/08
+                      </small>
+                    </div>
+
+                    <div
+                      style={{
+                        border: '1px solid #94a3b8',
+                        borderRadius: '6px',
+                        padding: '0.45rem',
+                        textAlign: 'center',
+                        minHeight: '82px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        background: '#f8fafc',
+                      }}
+                    >
+                      <small style={{ fontSize: '0.58rem', fontWeight: 800, color: '#0f172a' }}>
+                        3. PER CONSULTAZIONE RLS ({rlsName})
+                      </small>
+                      {rlsSignatureUrl ? (
+                        <img
+                          src={rlsSignatureUrl}
+                          alt="Firma RLS"
+                          style={{ maxHeight: '46px', margin: '0.15rem auto', objectFit: 'contain' }}
+                        />
+                      ) : (
+                        <span style={{ fontSize: '0.62rem', color: '#94a3b8', margin: '0.8rem 0' }}>
+                          [Spazio Firma Consultazione RLS]
+                        </span>
+                      )}
+                      <small style={{ fontSize: '0.56rem', color: '#0f766e', fontWeight: 700 }}>
+                        Ex Art. 50 D.Lgs. 81/2008
                       </small>
                     </div>
                   </div>
@@ -2177,7 +2766,7 @@ export default function App() {
                   className="btn btn-primary"
                   onClick={() => window.print()}
                 >
-                  Stampa / Salva Verbale Firmato in PDF (A4)
+                  🖨️ Esporta / Stampa Fascicolo Notarile in PDF (A4)
                 </button>
                 <button
                   type="button"
@@ -2192,6 +2781,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
+      {/* Scheda Direzione & Calcolatore Costi INAIL / Burnout / OT23 */}
       <AnimatePresence>
         {showExecutiveModal && (
           <motion.div
@@ -2205,16 +2795,14 @@ export default function App() {
               initial={{ y: 24, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 24, opacity: 0 }}
+              style={{ color: '#0f172a' }}
             >
               <div className="executive-header">
                 <div>
                   <span className="completion-badge">
-                    Presentazione Direzione · HR · RSPP · Medico Competente
+                    Analisi Economica &amp; Conformità D.Lgs. 81/2008 (Dati Ufficiali INAIL / UE)
                   </span>
-                  <h2>Pausa81 — Sistema a 3 Livelli Anti-Tecnostress &amp; DMS</h2>
-                  <small style={{ color: '#64748b', fontSize: '0.76rem' }}>
-                    powered by <strong>SvasaOS Engine</strong> · Presidio Art. 28 e Titolo VII D.Lgs. 81/2008
-                  </small>
+                  <h2>Pausa81 — Calcolatore Costo Non-Prevenzione &amp; Sconto INAIL OT23</h2>
                 </div>
                 <button
                   type="button"
@@ -2228,15 +2816,17 @@ export default function App() {
               <div className="roi-box">
                 <div className="roi-slider-head">
                   <label htmlFor="emp-slider">
-                    Numero Lavoratori / Videoterminalisti: <strong>{employeesCount}</strong>
+                    Numero Dipendenti Azienda: <strong>{employeesCount}</strong>
                   </label>
-                  <span>Minimo 10 lavoratori · 3 pause da 60s/giorno</span>
+                  <span>
+                    Investimento Pausa81: <strong>{recommendedPlanPrice}</strong>
+                  </span>
                 </div>
                 <input
                   id="emp-slider"
                   type="range"
                   min={10}
-                  max={1000}
+                  max={500}
                   step={5}
                   value={employeesCount}
                   onChange={(e) => setEmployeesCount(Number(e.target.value))}
@@ -2244,57 +2834,58 @@ export default function App() {
                 />
                 <div className="roi-metrics">
                   <div>
-                    <small>Ore di Lucidità Recuperate / Mese</small>
-                    <strong>+{estimatedHoursSavedMonthly} h</strong>
+                    <small>Danno Non-Prevenzione (Annuo / Mensile)*</small>
+                    <strong style={{ color: '#dc2626' }}>
+                      - € {totalCompanyDamageYearly}/a (€ {totalCompanyDamageMonthly}/m)
+                    </strong>
                   </div>
                   <div>
-                    <small>Riduzione Assenteismo, Burnout &amp; DMS / Anno</small>
-                    <strong>€ {estimatedAnnualSavings}</strong>
+                    <small>Recupero Produttività &amp; Assenze (10%)</small>
+                    <strong style={{ color: '#10b981' }}>+ € {estimatedAnnualSavings} / anno</strong>
                   </div>
                   <div>
-                    <small>Adempimenti Art. 4 Statuto Lavoratori</small>
-                    <strong>Zero (100% Anonimo)</strong>
+                    <small>Fascia Sconto Premio INAIL (Modello OT23)</small>
+                    <strong style={{ color: '#0d9488' }}>-{inailOt23DiscountPct} sul premio</strong>
                   </div>
                 </div>
               </div>
 
               <h3 className="compliance-section-title">
-                Quadro di Conformità Normativa Italiana Pausa81 (Audit DPO / RSPP / Medico Competente)
+                I 4 Indicatori di Rischio Economico e Penale Azzerati da Pausa81
               </h3>
               <div className="compliance-grid">
                 <div className="compliance-card">
-                  <h4>1. Garante Privacy (gpdp.it — Zero-Tracking)</h4>
+                  <h4>1. Malattie Professionali DMS (74,7% Totale INAIL)</h4>
                   <p>
-                    Conforme ai provvedimenti del Garante Privacy sul lavoro: <strong>Pausa81</strong> non usa
-                    algoritmi di monitoraggio emotivo, webcam o braccialetti biometrici. Nessun dato
-                    personale o sanitario viene raccolto (Art. 9 GDPR e Art. 8 L. 300/1970).
+                    Secondo i dati ufficiali INAIL, i Disturbi Muscolo-Scheletrici (collo, spalle,
+                    tunnel carpale) rappresentano il <strong>74,7% delle malattie professionali</strong>{' '}
+                    (+21,6%), generando in media 4,8 giorni di assenza breve/anno (€ 905/dipendente).
                   </p>
                 </div>
 
                 <div className="compliance-card">
-                  <h4>2. Linee Guida INAIL &amp; Prevenzione DMS</h4>
+                  <h4>2. Burnout &amp; Presenteismo (88,5 Miliardi €/anno in Italia)</h4>
                   <p>
-                    <strong>Pausa81</strong> si integra con i criteri della piattaforma INAIL sullo Stress
-                    Lavoro-Correlato senza sostituirla (Art. 28 D.Lgs. 81/08) e supporta la
-                    prevenzione dei Disturbi Muscolo-Scheletrici e dell’affaticamento visivo (Titolo VII).
+                    Il calo di lucidità al videoterminale e il burnout colpiscono il 69% dei
+                    lavoratori italiani, causando una perdita invisibile di resa pari a{' '}
+                    <strong>€ 2.282/anno per addetto</strong> (€ 4.484/anno totali, pari a € 373,66/mese).
                   </p>
                 </div>
 
                 <div className="compliance-card">
-                  <h4>3. Ispettorato Nazionale del Lavoro (INL — Art. 4)</h4>
+                  <h4>3. Scudo Sanzioni Penali Art. 55/178 D.Lgs. 81/08 &amp; Art. 2087 c.c.</h4>
                   <p>
-                    L’assenza totale di login nominativi o tracciamento orario esclude qualsiasi
-                    controllo a distanza dei lavoratori: <strong>Pausa81</strong> non richiede accordo
-                    sindacale preventivo né autorizzazione dell’Ispettorato Nazionale del Lavoro.
+                    Protegge il Datore di Lavoro dalle ammende penali ex Art. 55 e Art. 178 D.Lgs.
+                    81/08 (da <strong>€ 2.847 a € 9.112</strong> rivalutate del +15,9%) e dalle cause
+                    civili per ambiente stressogeno ex Art. 2087 c.c.
                   </p>
                 </div>
 
                 <div className="compliance-card">
-                  <h4>4. Cassazione Lavoro (Prevenzione Tecnostress)</h4>
+                  <h4>4. Zero-Tracking (0 Byte) &amp; Garanzia Sindacale RLS</h4>
                   <p>
-                    Rispetta i limiti della giurisprudenza di Cassazione sui dispositivi digitali:
-                    fruizione libera via browser o Targa QR Code di reparto, zero installazioni
-                    forzate sui telefoni personali, tutela attiva ex Art. 2087 Codice Civile.
+                    Esente da accordi ex Art. 4 L. 300/1970 (nessun dato raccolto) e conforme
+                    all’Art. 175 c. 3 D.Lgs. 81/08 (integra senza mai ridurre i 15 minuti di pausa VDT).
                   </p>
                 </div>
               </div>
@@ -2308,7 +2899,7 @@ export default function App() {
                     setShowMedicalModal(true);
                   }}
                 >
-                  Apri Firma Medico &amp; Verbale DVR
+                  Apri Fascicolo Notarile DVR (3 Firme)
                 </button>
                 <button
                   type="button"
@@ -2318,14 +2909,14 @@ export default function App() {
                     setShowQrModal(true);
                   }}
                 >
-                  Apri Targa QR Code
+                  Stampa Targa QR Reparto
                 </button>
                 <button
                   type="button"
                   className="btn btn-secondary"
                   onClick={() => setShowExecutiveModal(false)}
                 >
-                  Chiudi Scheda
+                  Chiudi
                 </button>
               </div>
             </motion.div>
