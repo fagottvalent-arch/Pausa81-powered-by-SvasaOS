@@ -1,7 +1,7 @@
 {
-  "name": "sama-vritti-pranayama",
+  "name": "pausa81-by-svasaos",
   "private": true,
-  "version": "1.0.0",
+  "version": "2.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
