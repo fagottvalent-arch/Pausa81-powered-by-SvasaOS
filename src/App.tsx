@@ -26,10 +26,15 @@ export type PhraseKey =
   | 'level3_expire';
 
 /**
- * Coordinate al millisecondo sui frame MPEG di:
- * - Serena (Voce Femminile, 26.59s)
- * - Alessandro (Voce Maschile, 22.20s -> riprodotta a 0.90x con 0.30s di respiro iniziale)
+ * Fisica Apple iOS Spring pura su GPU (60/120fps, zero lag)
  */
+const IOS_MODAL_SPRING = {
+  type: 'spring' as const,
+  stiffness: 410,
+  damping: 32,
+  mass: 0.78,
+};
+
 const SERENA_FEMALE_TIMESTAMPS: Record<PhraseKey, [number, number]> = {
   level1_inspire: [0.0, 4.35],
   level1_expire: [4.45, 8.55],
@@ -211,317 +216,6 @@ const PAUSE_SEC = 2;
 const CYCLE_SEC = INSPIRE_SEC + HOLD_SEC + EXPIRE_SEC + PAUSE_SEC; // 20s
 const SESSION_DURATION = 60;
 const LOCAL_STATS_KEY = 'pausa81_local_completed_count';
-
-/**
- * FOGLIO DI STILE WORLD-CLASS INCORPORATO (Linear / Apple VisionOS Calm Tech)
- * Garantisce Dark/Light Mode dinamica, Liquid Glass Sphere, Barra Scudo Zero-Tracking
- * e Dossier Notarile A4 senza dipendere da file CSS esterni.
- */
-const WORLD_CLASS_STYLES = `
-  :root {
-    --bg-primary: #090d16;
-    --bg-surface: rgba(15, 23, 42, 0.74);
-    --bg-surface-elevated: rgba(15, 23, 42, 0.92);
-    --border-glass: rgba(255, 255, 255, 0.09);
-    --border-highlight: rgba(45, 212, 191, 0.45);
-    --accent-teal: #0d9488;
-    --accent-teal-bright: #14b8a6;
-    --accent-emerald: #10b981;
-    --text-main: #f8fafc;
-    --text-muted: #94a3b8;
-    --shadow-glass: 0 25px 50px -12px rgba(0, 0, 0, 0.62);
-  }
-
-  .app--theme-dark {
-    background: radial-gradient(circle at 50% 18%, #0f293a 0%, #090d16 58%, #05080f 100%) !important;
-    color: var(--text-main) !important;
-  }
-
-  .app--theme-light {
-    background: radial-gradient(circle at 50% 15%, #f0fdfa 0%, #f8fafc 60%, #e2e8f0 100%) !important;
-    color: #0f172a !important;
-  }
-
-  .app--warm-rest {
-    filter: sepia(0.22) saturate(0.9) brightness(0.95);
-    transition: filter 0.5s ease;
-  }
-
-  /* Barra Superiore Glassmorphism */
-  .app--theme-dark .topbar {
-    background: rgba(9, 13, 22, 0.72) !important;
-    backdrop-filter: blur(20px) saturate(180%) !important;
-    -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
-    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5) !important;
-  }
-
-  .app--theme-light .topbar {
-    background: rgba(255, 255, 255, 0.78) !important;
-    backdrop-filter: blur(20px) saturate(180%) !important;
-    -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
-    border-bottom: 1px solid rgba(203, 213, 225, 0.7) !important;
-  }
-
-  .app--theme-dark .executive-pill,
-  .app--theme-dark .qr-pill-btn,
-  .app--theme-dark .icon-btn {
-    background: rgba(30, 41, 59, 0.65) !important;
-    color: #e2e8f0 !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    backdrop-filter: blur(12px);
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  .app--theme-dark .icon-btn:hover,
-  .app--theme-dark .qr-pill-btn:hover,
-  .app--theme-dark .executive-pill:hover {
-    border-color: rgba(45, 212, 191, 0.5) !important;
-    transform: translateY(-1px);
-  }
-
-  .app--theme-dark .icon-btn.active,
-  .app--theme-light .icon-btn.active {
-    background: linear-gradient(135deg, #0f766e 0%, #0d9488 100%) !important;
-    color: #ffffff !important;
-    border-color: rgba(45, 212, 191, 0.6) !important;
-    box-shadow: 0 4px 16px rgba(13, 148, 136, 0.4) !important;
-  }
-
-  /* Selettore Protocolli 3 Livelli Vetrificato */
-  .protocol-bar {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(140px, 1fr));
-    gap: 0.6rem;
-    max-width: 780px;
-    width: 100%;
-    margin: 0 auto 0.5rem;
-  }
-
-  .app--theme-dark .protocol-chip {
-    background: rgba(15, 23, 42, 0.72) !important;
-    backdrop-filter: blur(16px) !important;
-    -webkit-backdrop-filter: blur(16px) !important;
-    border: 1px solid rgba(255, 255, 255, 0.08) !important;
-    color: #f8fafc !important;
-    border-radius: 14px !important;
-    box-shadow: 0 12px 28px -8px rgba(0, 0, 0, 0.45);
-    transition: all 0.24s ease;
-  }
-
-  .app--theme-dark .protocol-chip .protocol-level-tag {
-    color: #2dd4bf !important;
-  }
-
-  .app--theme-dark .protocol-chip .protocol-chip-title {
-    color: #f8fafc !important;
-  }
-
-  .app--theme-dark .protocol-chip .protocol-chip-sub {
-    color: #94a3b8 !important;
-  }
-
-  .app--theme-dark .protocol-chip.active {
-    background: linear-gradient(180deg, rgba(13, 148, 136, 0.26) 0%, rgba(15, 23, 42, 0.88) 100%) !important;
-    border: 1.5px solid #14b8a6 !important;
-    box-shadow: 0 0 28px rgba(20, 184, 166, 0.28) !important;
-  }
-
-  /* Sfera di Respirazione Liquid Glass con Ombra Multi-Livello */
-  .liquid-sphere-core {
-    position: relative;
-    border-radius: 50%;
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-    border: 1.5px solid rgba(255, 255, 255, 0.28);
-    transition: box-shadow 1.2s ease, background 1.2s ease;
-  }
-
-  .liquid-sphere-core--idle {
-    box-shadow:
-      0 20px 50px rgba(13, 148, 136, 0.24),
-      0 0 85px rgba(14, 165, 233, 0.14),
-      inset 0 2px 18px rgba(255, 255, 255, 0.42),
-      inset 0 -14px 28px rgba(13, 148, 136, 0.28);
-  }
-
-  .liquid-sphere-core--inspire {
-    box-shadow:
-      0 25px 70px rgba(13, 148, 136, 0.52),
-      0 0 120px rgba(45, 212, 191, 0.34),
-      inset 0 4px 26px rgba(255, 255, 255, 0.65),
-      inset 0 -18px 36px rgba(13, 148, 136, 0.42);
-  }
-
-  .liquid-sphere-core--hold {
-    box-shadow:
-      0 28px 80px rgba(16, 185, 129, 0.56),
-      0 0 135px rgba(56, 189, 248, 0.38),
-      inset 0 6px 30px rgba(255, 255, 255, 0.75),
-      inset 0 -20px 40px rgba(16, 185, 129, 0.45);
-  }
-
-  .liquid-sphere-core--expire {
-    box-shadow:
-      0 14px 38px rgba(13, 148, 136, 0.22),
-      0 0 60px rgba(16, 185, 129, 0.16),
-      inset 0 2px 14px rgba(255, 255, 255, 0.35),
-      inset 0 -12px 24px rgba(15, 23, 42, 0.35);
-  }
-
-  /* Stepper e Testi in Dark Mode */
-  .app--theme-dark .step-badge {
-    background: rgba(15, 23, 42, 0.75);
-    border: 1px solid rgba(255, 255, 255, 0.09);
-    color: #94a3b8;
-  }
-
-  .app--theme-dark .step-badge.active {
-    background: linear-gradient(135deg, #0d9488 0%, #10b981 100%);
-    color: #ffffff;
-    border-color: rgba(255, 255, 255, 0.25);
-    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.38);
-  }
-
-  .app--theme-dark .when-to-use-pill {
-    background: rgba(13, 148, 136, 0.16) !important;
-    color: #5eead4 !important;
-    border: 1px solid rgba(45, 212, 191, 0.28) !important;
-  }
-
-  .app--theme-dark .phase-text {
-    color: #f8fafc !important;
-    text-shadow: 0 2px 14px rgba(0, 0, 0, 0.45);
-  }
-
-  .app--theme-dark .protocol-benefit,
-  .app--theme-dark .countdown-label,
-  .app--theme-dark .powered-by-sub {
-    color: #94a3b8 !important;
-  }
-
-  .app--theme-dark .countdown-number,
-  .app--theme-dark .svasa-wordmark {
-    color: #f8fafc !important;
-  }
-
-  /* Barra Scudo Permanente Zero-Tracking & Sicurezza Sindacale */
-  .shield-status-footer {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.55rem 1rem;
-    z-index: 20;
-  }
-
-  .shield-status-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.55rem;
-    padding: 0.42rem 0.95rem;
-    border-radius: 999px;
-    font-size: 0.74rem;
-    font-weight: 600;
-    letter-spacing: -0.01em;
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    background: rgba(15, 23, 42, 0.82);
-    border: 1px solid rgba(16, 185, 129, 0.38);
-    color: #f8fafc;
-    box-shadow: 0 10px 25px -6px rgba(0, 0, 0, 0.45);
-  }
-
-  .app--theme-light .shield-status-pill {
-    background: rgba(255, 255, 255, 0.92);
-    border: 1px solid rgba(16, 185, 129, 0.45);
-    color: #0f172a;
-    box-shadow: 0 8px 20px -6px rgba(15, 23, 42, 0.12);
-  }
-
-  .shield-dot-emerald {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #10b981;
-    box-shadow: 0 0 10px #10b981;
-    flex-shrink: 0;
-  }
-
-  /* Fascicolo Digitale Notarile / Corporate A4 */
-  .notarial-dossier {
-    background: #ffffff !important;
-    color: #0f172a !important;
-    border: 2px solid #0f172a;
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.18);
-  }
-
-  .notarial-header-bar {
-    background: linear-gradient(135deg, #090d16 0%, #0f172a 60%, #134e4a 100%);
-    color: #ffffff;
-    padding: 0.85rem 1.15rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1rem;
-    border-bottom: 3px solid #0d9488;
-  }
-
-  .notarial-seal-badge {
-    display: inline-block;
-    font-size: 0.62rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: #5eead4;
-    background: rgba(13, 148, 136, 0.22);
-    border: 1px solid rgba(94, 234, 212, 0.35);
-    padding: 0.18rem 0.55rem;
-    border-radius: 4px;
-    margin-bottom: 0.28rem;
-  }
-
-  @media (max-width: 720px) {
-    .protocol-bar {
-      grid-template-columns: repeat(2, 1fr);
-      gap: 0.45rem;
-    }
-    .shield-status-pill {
-      font-size: 0.66rem;
-      padding: 0.36rem 0.7rem;
-      text-align: center;
-    }
-  }
-
-  @media print {
-    @page {
-      size: A4 portrait;
-      margin: 10mm;
-    }
-    .no-print {
-      display: none !important;
-    }
-    body,
-    .app,
-    .modal-backdrop,
-    .qr-modal {
-      background: #ffffff !important;
-      color: #0f172a !important;
-      box-shadow: none !important;
-      position: static !important;
-      padding: 0 !important;
-      margin: 0 !important;
-      overflow: visible !important;
-    }
-    .notarial-dossier,
-    .printable-plaque {
-      border: 2px solid #0f172a !important;
-      box-shadow: none !important;
-      page-break-inside: avoid;
-    }
-  }
-`;
 
 function saveToIdb(key: string, value: unknown): Promise<void> {
   return new Promise((resolve) => {
@@ -1154,7 +848,6 @@ export default function App() {
     .replace(/[-_]/g, ' ')
     .trim();
 
-  // Default: Modalità Calm Dark (Linear / Apple style) con switch immediato Light
   const [themeMode, setThemeMode] = useState<ThemeMode>('dark');
   const [sessionMode, setSessionMode] = useState<SessionMode>('all');
   const [isRunning, setIsRunning] = useState<boolean>(false);
@@ -1225,7 +918,6 @@ export default function App() {
   const lastPlayedStepRef = useRef<string>('');
   const wakeLockRef = useRef<{ release: () => Promise<void> } | null>(null);
 
-  // Aggiorna automaticamente il titolo della scheda browser in "Pausa81 by SvasaOS"
   useEffect(() => {
     if (typeof document !== 'undefined') {
       document.title = 'Pausa81 by SvasaOS — Presidio Neuro-Ergonomico D.Lgs. 81/2008';
@@ -1405,7 +1097,8 @@ export default function App() {
     }
     if (activeBufferSourceRef.current) {
       try {
-        activeBufferSourceRef.current.stop();
+        activeBufferSourceRef.current.onended = null;
+        activeBufferSourceRef.current.stop(0);
         activeBufferSourceRef.current.disconnect();
       } catch {
         // Ignora
@@ -1427,9 +1120,53 @@ export default function App() {
     stopVoiceNow();
   }, [stopChimeNow, stopBinauralNow, stopVoiceNow]);
 
+  const stopSession = useCallback(() => {
+    stopAllAudio();
+    setIsRunning(false);
+    setElapsed(0);
+    lastPlayedStepRef.current = '';
+    if (wakeLockRef.current) {
+      wakeLockRef.current.release().catch(() => {});
+      wakeLockRef.current = null;
+    }
+  }, [stopAllAudio]);
+
   /**
-   * SVASA-OS FUTURE ENGINE: Glissando Binaurale Adattivo (14 Hz Beta -> 6 Hz Theta/Alpha)
+   * PUNTO 3: KILL-SWITCH IMMEDIATO QUANDO CHIUDI / METTI IN BACKGROUND L'APP
+   * Interrompe all'istante voci (Serena/Alessandro/TTS), binaurale e campana
+   * appena l'utente cambia scheda, preme Home sul telefono o chiude la finestra.
    */
+  useEffect(() => {
+    const handleVisibilityOrExit = () => {
+      if (document.visibilityState === 'hidden' || document.hidden) {
+        stopSession();
+        if (audioCtxRef.current && audioCtxRef.current.state === 'running') {
+          audioCtxRef.current.suspend().catch(() => {});
+        }
+      }
+    };
+
+    const handleForceStop = () => {
+      stopSession();
+      if (audioCtxRef.current && audioCtxRef.current.state === 'running') {
+        audioCtxRef.current.suspend().catch(() => {});
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityOrExit);
+    window.addEventListener('pagehide', handleForceStop);
+    window.addEventListener('beforeunload', handleForceStop);
+    window.addEventListener('blur', handleVisibilityOrExit);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityOrExit);
+      window.removeEventListener('pagehide', handleForceStop);
+      window.removeEventListener('beforeunload', handleForceStop);
+      window.removeEventListener('blur', handleVisibilityOrExit);
+      stopAllAudio();
+    };
+  }, [stopSession, stopAllAudio]);
+
   const startBinauralPad = useCallback(() => {
     stopBinauralNow();
     if (!binauralEnabled) return;
@@ -1528,9 +1265,6 @@ export default function App() {
     [chimeEnabled, getOrCreateAudioCtx, stopChimeNow]
   );
 
-  /**
-   * Feedback Aptico Differenziato per Smartphone (Inspira / Trattieni / Espira)
-   */
   const triggerHapticFeedback = useCallback((phase: Phase) => {
     if (typeof navigator === 'undefined' || !navigator.vibrate) return;
     try {
@@ -1544,19 +1278,22 @@ export default function App() {
         navigator.vibrate(20);
       }
     } catch {
-      // Ignora su dispositivi desktop
+      // Ignora
     }
   }, []);
 
-  /**
-   * Riproduce la frase selezionata con cadenza rallentata e meditativa per l'Uomo (0.90x)
-   * e micro-respiro iniziale di 300ms dopo il tocco della campana tibetana.
-   */
   const speakPhrase = useCallback(
     async (phrase: SpokenPhrase | null, overrideGender?: VoiceGender) => {
       const activeGender = overrideGender !== undefined ? overrideGender : voiceGender;
       stopVoiceNow();
-      if (activeGender === 'off' || !phrase || typeof window === 'undefined') return;
+      if (
+        activeGender === 'off' ||
+        !phrase ||
+        typeof window === 'undefined' ||
+        (typeof document !== 'undefined' && document.hidden)
+      ) {
+        return;
+      }
 
       if (phrase.audioKey) {
         const ctx = getOrCreateAudioCtx();
@@ -1600,11 +1337,10 @@ export default function App() {
             const [startSec, endSec] = sliceCoords;
             const bufferDur = Math.max(0.4, endSec - startSec);
 
-            // Rallenta la voce maschile a 0.90x per renderla calma, profonda e solenne
+            // Alessandro rallentato a 0.90x per dare calma profonda
             const playbackRate = activeGender === 'male' ? 0.90 : 0.97;
             const realPlaybackDur = bufferDur / playbackRate;
 
-            // Micro-respiro prima dell'attacco vocale
             const onsetDelay = phrase.audioKey === 'level2_hold' ? 0.20 : 0.30;
             const startTime = ctx.currentTime + onsetDelay;
 
@@ -1660,8 +1396,9 @@ export default function App() {
           u1.volume = 0.95;
 
           u1.onend = () => {
-            if (!phrase.part2) return;
+            if (!phrase.part2 || (typeof document !== 'undefined' && document.hidden)) return;
             phraseTimeoutRef.current = window.setTimeout(() => {
+              if (typeof document !== 'undefined' && document.hidden) return;
               const u2 = new SpeechSynthesisUtterance(phrase.part2);
               u2.lang = 'it-IT';
               if (voice) u2.voice = voice;
@@ -1790,17 +1527,6 @@ export default function App() {
     return () => window.clearInterval(t);
   }, [vdtReminderMinutes, vdtSecondsLeft, triggerSoftChime]);
 
-  const stopSession = useCallback(() => {
-    stopAllAudio();
-    setIsRunning(false);
-    setElapsed(0);
-    lastPlayedStepRef.current = '';
-    if (wakeLockRef.current) {
-      wakeLockRef.current.release().catch(() => {});
-      wakeLockRef.current = null;
-    }
-  }, [stopAllAudio]);
-
   const startSession = useCallback(async () => {
     stopAllAudio();
     setVdtAlertActive(false);
@@ -1878,7 +1604,6 @@ export default function App() {
 
   const sessionRemaining = isRunning ? SESSION_DURATION - elapsed : SESSION_DURATION;
 
-  // Calcolo Danni Reali INAIL/Burnout (4.484 €/anno = 373,66 €/mese per addetto) e Listino High-Ticket
   const totalCompanyDamageYearly = (employeesCount * 4484).toLocaleString('it-IT');
   const totalCompanyDamageMonthly = Math.round((employeesCount * 4484) / 12).toLocaleString('it-IT');
   const estimatedAnnualSavings = Math.round(employeesCount * 448.4).toLocaleString('it-IT');
@@ -1893,7 +1618,7 @@ export default function App() {
       ? '€ 3.900 / anno (+ € 890 Impianto Kit Phygital)'
       : employeesCount <= 200
       ? '€ 6.900 / anno (+ € 1.490 Impianto Kit Phygital)'
-      : `€ ${(employeesCount * 45).toLocaleString('it-IT')} / anno (+ Impianto su misura)`;
+      : `€ ${(employeesCount * 45).toLocaleString('it-IT')} / anno (+ € 2.490 Impianto Kit Phygital)`;
 
   const currentOrigin =
     typeof window !== 'undefined' && window.location.origin
@@ -1920,7 +1645,6 @@ export default function App() {
         eyeRestMode ? 'app--warm-rest' : ''
       }`}
     >
-      <style>{WORLD_CLASS_STYLES}</style>
       <CloudBackground />
 
       <input
@@ -1937,7 +1661,10 @@ export default function App() {
           <button
             type="button"
             className="executive-pill"
-            onClick={() => setShowExecutiveModal(true)}
+            onClick={() => {
+              stopVoiceNow();
+              setShowExecutiveModal(true);
+            }}
           >
             <span className="pill-dot" />
             {initialPartner || initialClient
@@ -1948,7 +1675,10 @@ export default function App() {
           <button
             type="button"
             className="qr-pill-btn"
-            onClick={() => setShowQrModal(true)}
+            onClick={() => {
+              stopVoiceNow();
+              setShowQrModal(true);
+            }}
           >
             Targa QR
           </button>
@@ -1961,7 +1691,10 @@ export default function App() {
               borderColor: allThreeSigned ? '#10b981' : '#14b8a6',
               color: allThreeSigned ? '#10b981' : undefined,
             }}
-            onClick={() => setShowMedicalModal(true)}
+            onClick={() => {
+              stopVoiceNow();
+              setShowMedicalModal(true);
+            }}
           >
             📜 {allThreeSigned ? 'Fascicolo DVR Firmato (3/3) ✓' : 'Fascicolo DVR (3 Firme)'}
           </button>
@@ -2021,12 +1754,10 @@ export default function App() {
             {chimeEnabled ? '🔔 Campana' : '🔕 Muto'}
           </button>
 
-          {/* Switch Dinamico Dark / Light Mode (Calm Tech vs Clinical Light) */}
           <button
             type="button"
             className="icon-btn"
             onClick={() => setThemeMode((t) => (t === 'dark' ? 'light' : 'dark'))}
-            title="Cambia Tema Calm Dark (Linear) / Clinical Light (Apple)"
           >
             {themeMode === 'dark' ? '🌙 Calm Dark' : '☀️ Light'}
           </button>
@@ -2051,23 +1782,22 @@ export default function App() {
         </div>
       </header>
 
-      {/* Banner Smart-Snooze non intrusivo (+5m) */}
       <AnimatePresence>
         {vdtAlertActive && !isRunning && (
           <motion.div
             className="no-print"
-            initial={{ y: -20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -20, opacity: 0 }}
+            initial={{ y: -24, opacity: 0, scale: 0.92 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={{ y: -24, opacity: 0, scale: 0.92 }}
+            transition={IOS_MODAL_SPRING}
             style={{
               position: 'fixed',
               top: '58px',
               left: '50%',
               transform: 'translateX(-50%)',
               zIndex: 45,
-              background: 'rgba(15, 23, 42, 0.94)',
-              backdropFilter: 'blur(16px)',
-              border: '1px solid rgba(20, 184, 166, 0.45)',
+              background: 'rgba(15, 23, 42, 0.95)',
+              border: '1px solid rgba(20, 184, 166, 0.5)',
               color: '#f8fafc',
               padding: '0.55rem 1rem',
               borderRadius: '999px',
@@ -2225,7 +1955,6 @@ export default function App() {
         </div>
       </main>
 
-      {/* Barra di Stato Permanente "Zero-Tracking & Sicurezza Sindacale" con Scudo Verde Medico */}
       <footer className="shield-status-footer no-print">
         <div className="shield-status-pill">
           <span className="shield-dot-emerald" aria-hidden="true" />
@@ -2257,13 +1986,14 @@ export default function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
           >
             <motion.div
               className="completion-card"
-              initial={{ scale: 0.94, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.94, opacity: 0 }}
-              style={{ color: '#0f172a' }}
+              initial={{ scale: 0.86, opacity: 0, y: 16 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 12 }}
+              transition={IOS_MODAL_SPRING}
             >
               <span
                 className="completion-badge"
@@ -2313,7 +2043,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Modal Targa Murale QR Code A4 */}
+      {/* Modal Targa Murale QR Code A4 con apertura Spring iOS 60fps */}
       <AnimatePresence>
         {showQrModal && (
           <motion.div
@@ -2321,18 +2051,19 @@ export default function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.16 }}
           >
             <motion.div
               className="qr-modal"
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 20, opacity: 0 }}
-              style={{ color: '#0f172a' }}
+              initial={{ scale: 0.84, opacity: 0, y: -18 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.88, opacity: 0, y: -12 }}
+              transition={IOS_MODAL_SPRING}
             >
               <div className="executive-header no-print">
                 <div>
                   <span className="completion-badge">Kit Phygital Pausa81 · White-Label</span>
-                  <h2>Generatore Targa Murale QR Code Reale (D.Lgs. 81/2008)</h2>
+                  <h2>Generatore Targa Murale QR Code ISO/IEC 18004 (D.Lgs. 81/2008)</h2>
                 </div>
                 <button
                   type="button"
@@ -2459,7 +2190,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* 4. FASCICOLO DIGITALE INTERATTIVO IN STILE "NOTARILE / CORPORATE" CON QR DINAMICO VERIFICABILE */}
+      {/* Fascicolo Digitale Notarile DVR Art. 35 a 3 Firme con apertura Spring iOS 60fps */}
       <AnimatePresence>
         {showMedicalModal && (
           <motion.div
@@ -2467,13 +2198,14 @@ export default function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.16 }}
           >
             <motion.div
               className="qr-modal"
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 20, opacity: 0 }}
-              style={{ color: '#0f172a' }}
+              initial={{ scale: 0.84, opacity: 0, y: -18 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.88, opacity: 0, y: -12 }}
+              transition={IOS_MODAL_SPRING}
             >
               <div className="executive-header no-print">
                 <div>
@@ -2559,7 +2291,6 @@ export default function App() {
                 />
               </div>
 
-              {/* Anteprima Documento Ufficiale Stile Notarile / Corporate con QR Verificabile */}
               <div className="notarial-dossier">
                 <div className="notarial-header-bar">
                   <div>
@@ -2629,7 +2360,7 @@ export default function App() {
                   </p>
 
                   <p style={{ margin: '0 0 0.55rem' }}>
-                    <strong>ART. 2 — CLAUSOLA DI SALVAGUARDIA SINDACALE RLS (ART. 50 E ART. 175 C. 3 D.LGS. 81/08):</strong>{' '}
+                    <strong>ART. 2 — CLAUSOLA DI SALVAGUARDIA SINDACALE RLS (ART. 50 E ART. 175 C. 3 D.LGS. 81/2008):</strong>{' '}
                     Con la sottoscrizione per consultazione del Rappresentante dei Lavoratori per la
                     Sicurezza (<strong>{rlsName}</strong>) ex Art. 29 c. 2 e Art. 50 D.Lgs. 81/08, le
                     parti certificano che le micro-pause da 60 secondi (dotate di funzione{' '}
@@ -2781,7 +2512,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Scheda Direzione & Calcolatore Costi INAIL / Burnout / OT23 */}
+      {/* Calcolatore Economico High-Ticket Direzione con apertura Spring iOS 60fps */}
       <AnimatePresence>
         {showExecutiveModal && (
           <motion.div
@@ -2789,13 +2520,14 @@ export default function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.16 }}
           >
             <motion.div
               className="executive-modal"
-              initial={{ y: 24, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 24, opacity: 0 }}
-              style={{ color: '#0f172a' }}
+              initial={{ scale: 0.84, opacity: 0, y: -18 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.88, opacity: 0, y: -12 }}
+              transition={IOS_MODAL_SPRING}
             >
               <div className="executive-header">
                 <div>
