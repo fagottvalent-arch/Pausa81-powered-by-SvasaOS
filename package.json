@@ -1,17 +1,16 @@
 {
   "name": "pausa81-by-svasaos",
   "private": true,
-  "version": "2.0.0",
+  "version": "3.5.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview",
-    "icons": "node scripts/generate-icons.mjs"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@rive-app/react-canvas": "^4.37.0",
-    "framer-motion": "^14.4.0",
+    "framer-motion": "^11.15.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
@@ -20,9 +19,11 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.4.1",
+    "javascript-obfuscator": "^4.1.1",
     "tailwindcss": "^4.0.0",
     "typescript": "~5.7.2",
     "vite": "^6.0.0",
+    "vite-plugin-javascript-obfuscator": "^3.1.0",
     "vite-plugin-pwa": "^1.0.0"
   }
 }
