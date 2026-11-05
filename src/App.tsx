@@ -26,8 +26,12 @@ export type PhraseKey =
   | 'level3_expire';
 
 /**
- * Fisica Apple iOS Spring pura su GPU (60/120fps, zero lag)
+ * Versione Build Unificata: forza Samsung Internet, Chrome e Safari
+ * a cancellare eventuali vecchie cache di "Pranayama" al primo avvio.
  */
+const APP_BUILD_VERSION = 'pausa81-v3.2-natural-voice';
+const VERSION_STORAGE_KEY = 'pausa81_active_build_version';
+
 const IOS_MODAL_SPRING = {
   type: 'spring' as const,
   stiffness: 410,
@@ -918,9 +922,48 @@ export default function App() {
   const lastPlayedStepRef = useRef<string>('');
   const wakeLockRef = useRef<{ release: () => Promise<void> } | null>(null);
 
+  /**
+   * GUARDIA MULTI-BROWSER (Samsung Internet / Chrome / Safari):
+   * Forza l'allineamento immediato eliminando vecchie cache Service Worker di Pranayama
+   * e blocca l'inversione colori automatica di Samsung Browser.
+   */
   useEffect(() => {
     if (typeof document !== 'undefined') {
       document.title = 'Pausa81 by SvasaOS — Presidio Neuro-Ergonomico D.Lgs. 81/2008';
+      let metaColorScheme = document.querySelector('meta[name="color-scheme"]');
+      if (!metaColorScheme) {
+        metaColorScheme = document.createElement('meta');
+        metaColorScheme.setAttribute('name', 'color-scheme');
+        document.head.appendChild(metaColorScheme);
+      }
+      metaColorScheme.setAttribute('content', 'dark light');
+    }
+
+    if (typeof window !== 'undefined') {
+      try {
+        const storedVer = window.localStorage.getItem(VERSION_STORAGE_KEY);
+        if (storedVer !== APP_BUILD_VERSION) {
+          window.localStorage.setItem(VERSION_STORAGE_KEY, APP_BUILD_VERSION);
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then((regs) => {
+              for (const reg of regs) {
+                reg.update().catch(() => {});
+              }
+            });
+          }
+          if ('caches' in window) {
+            caches.keys().then((keys) => {
+              for (const k of keys) {
+                if (!k.includes('pausa81_serena_alessandro')) {
+                  caches.delete(k).catch(() => {});
+                }
+              }
+            });
+          }
+        }
+      } catch {
+        // Ignora
+      }
     }
   }, []);
 
@@ -1131,11 +1174,6 @@ export default function App() {
     }
   }, [stopAllAudio]);
 
-  /**
-   * PUNTO 3: KILL-SWITCH IMMEDIATO QUANDO CHIUDI / METTI IN BACKGROUND L'APP
-   * Interrompe all'istante voci (Serena/Alessandro/TTS), binaurale e campana
-   * appena l'utente cambia scheda, preme Home sul telefono o chiude la finestra.
-   */
   useEffect(() => {
     const handleVisibilityOrExit = () => {
       if (document.visibilityState === 'hidden' || document.hidden) {
@@ -1282,6 +1320,11 @@ export default function App() {
     }
   }, []);
 
+  /**
+   * PUNTO 3: VOCE 100% TONO NATURALE (playbackRate = 1.0, ZERO effetto cupo/robotico)
+   * con scansione respiratoria calma (0.65s di respiro dopo la campana prima della voce,
+   * lasciando quasi 3 secondi di silenzio meditativo a fine frase).
+   */
   const speakPhrase = useCallback(
     async (phrase: SpokenPhrase | null, overrideGender?: VoiceGender) => {
       const activeGender = overrideGender !== undefined ? overrideGender : voiceGender;
@@ -1337,11 +1380,21 @@ export default function App() {
             const [startSec, endSec] = sliceCoords;
             const bufferDur = Math.max(0.4, endSec - startSec);
 
-            // Alessandro rallentato a 0.90x per dare calma profonda
-            const playbackRate = activeGender === 'male' ? 0.90 : 0.97;
+            // Tono 100% naturale (1.0x) senza alterazione di pitch né robotizzazione
+            const playbackRate = 1.0;
             const realPlaybackDur = bufferDur / playbackRate;
 
-            const onsetDelay = phrase.audioKey === 'level2_hold' ? 0.20 : 0.30;
+            // Pausa di scansione calma dopo il rintocco della campana tibetana:
+            // 0.65s su Inspira/Espira (7s) e 0.32s su Trattieni (4s)
+            const onsetDelay =
+              activeGender === 'male'
+                ? phrase.audioKey === 'level2_hold'
+                  ? 0.32
+                  : 0.65
+                : phrase.audioKey === 'level2_hold'
+                ? 0.22
+                : 0.40;
+
             const startTime = ctx.currentTime + onsetDelay;
 
             const src = ctx.createBufferSource();
@@ -1351,8 +1404,8 @@ export default function App() {
             const envGain = ctx.createGain();
             envGain.gain.setValueAtTime(0.0001, ctx.currentTime);
             envGain.gain.setValueAtTime(0.001, startTime);
-            envGain.gain.linearRampToValueAtTime(1.0, startTime + 0.08);
-            envGain.gain.setValueAtTime(1.0, startTime + realPlaybackDur - 0.10);
+            envGain.gain.linearRampToValueAtTime(1.0, startTime + 0.06);
+            envGain.gain.setValueAtTime(1.0, startTime + realPlaybackDur - 0.08);
             envGain.gain.linearRampToValueAtTime(0.0001, startTime + realPlaybackDur);
 
             src.connect(envGain);
@@ -1367,24 +1420,17 @@ export default function App() {
         }
       }
 
+      // Fallback vocale di sistema: Tono 100% naturale (pitch = 1.0) e pausa calma tra le 2 parti
       if (!('speechSynthesis' in window)) return;
       const voices =
         availableVoicesRef.current.length > 0
           ? availableVoicesRef.current
           : window.speechSynthesis.getVoices();
 
-      const { voice, isDedicatedGenderMatch } = pickItalianSystemVoice(
-        voices,
-        activeGender
-      );
+      const { voice } = pickItalianSystemVoice(voices, activeGender);
 
-      const baseRate = activeGender === 'female' ? 0.84 : 0.74;
-      const basePitch =
-        activeGender === 'female'
-          ? 1.02
-          : isDedicatedGenderMatch
-          ? 0.86
-          : 0.70;
+      const baseRate = activeGender === 'female' ? 0.88 : 0.86;
+      const naturalPitch = 1.0;
 
       try {
         if (phrase.part1) {
@@ -1392,7 +1438,7 @@ export default function App() {
           u1.lang = 'it-IT';
           if (voice) u1.voice = voice;
           u1.rate = baseRate;
-          u1.pitch = basePitch;
+          u1.pitch = naturalPitch;
           u1.volume = 0.95;
 
           u1.onend = () => {
@@ -1402,11 +1448,11 @@ export default function App() {
               const u2 = new SpeechSynthesisUtterance(phrase.part2);
               u2.lang = 'it-IT';
               if (voice) u2.voice = voice;
-              u2.rate = Math.max(0.70, baseRate - 0.04);
-              u2.pitch = Math.max(0.65, basePitch - 0.04);
-              u2.volume = 0.90;
+              u2.rate = baseRate;
+              u2.pitch = naturalPitch;
+              u2.volume = 0.92;
               window.speechSynthesis.speak(u2);
-            }, 680);
+            }, 850);
           };
 
           window.speechSynthesis.speak(u1);
@@ -1625,9 +1671,10 @@ export default function App() {
       ? window.location.origin
       : 'https://pausa81.vercel.app';
 
+  // Include parametro anti-cache v=3.2 così Samsung Internet e ogni altro browser aprono sempre l'ultima versione
   const customWhiteLabelUrl = `${currentOrigin}/?partner=${encodeURIComponent(
     partnerStudioName.replace(/\s+/g, '_')
-  )}&cliente=${encodeURIComponent(clientCompanyName.replace(/\s+/g, '_'))}`;
+  )}&cliente=${encodeURIComponent(clientCompanyName.replace(/\s+/g, '_'))}&v=3.2`;
 
   const todayFormatted = new Date().toLocaleDateString('it-IT');
   const allThreeSigned = Boolean(
@@ -1714,7 +1761,7 @@ export default function App() {
             type="button"
             className={`icon-btn ${voiceGender === 'male' ? 'active' : ''}`}
             onClick={() => handleSelectVoiceGender('male')}
-            title="Voce Maschile Alessandro Rallentata 0.90x (Calma & Profonda)"
+            title="Voce Maschile Alessandro Tono Naturale con Pausa Calma"
           >
             👨 Uomo {hasAlessandroLoaded ? '✓' : ''}
           </button>
@@ -2043,7 +2090,6 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Modal Targa Murale QR Code A4 con apertura Spring iOS 60fps */}
       <AnimatePresence>
         {showQrModal && (
           <motion.div
@@ -2122,7 +2168,7 @@ export default function App() {
                   <div className="plaque-qr-box">
                     <RealScannableQrCode url={customWhiteLabelUrl} sizePx={136} />
                     <span>INQUADRA CON LA FOTOCAMERA</span>
-                    <small>Accesso diretto · Zero App da installare</small>
+                    <small>Versione Unificata Multi-Browser v3.2</small>
                   </div>
 
                   <div className="plaque-levels">
@@ -2190,7 +2236,6 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Fascicolo Digitale Notarile DVR Art. 35 a 3 Firme con apertura Spring iOS 60fps */}
       <AnimatePresence>
         {showMedicalModal && (
           <motion.div
@@ -2512,7 +2557,6 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Calcolatore Economico High-Ticket Direzione con apertura Spring iOS 60fps */}
       <AnimatePresence>
         {showExecutiveModal && (
           <motion.div
