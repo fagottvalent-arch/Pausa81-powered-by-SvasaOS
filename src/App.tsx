@@ -59,20 +59,27 @@ const ALESSANDRO_MALE_TIMESTAMPS: Record<PhraseKey, [number, number]> = {
   level3_expire: [19.1, 22.2],
 };
 
+/**
+ * Genera l'URL protetto da token matematico a 30 secondi verso il Cloudflare Worker R2
+ */
+function getSignedR2AudioUrl(fileName: string): string {
+  const ts = Math.floor(Date.now() / 1000);
+  const sig = ((ts * 8108) ^ 432146).toString(36);
+  return `https://audio.pausa81.it/${fileName}?ts=${ts}&sig=${sig}`;
+}
+
 const FEMALE_MP3_CANDIDATE_URLS = [
+  getSignedR2AudioUrl('serena.mp3'),
   '/ElevenLabs_2026-10-29T16_48_52_Serena - Calm & Soothing_pvc_sp100_s50_sb75_v4.mp3',
-  '/ElevenLabs_2026-10-29T16_48_52_Serena%20-%20Calm%20%26%20Soothing_pvc_sp100_s50_sb75_v4.mp3',
   '/donna.mp3',
   '/serena.mp3',
-  '/female.mp3',
 ];
 
 const MALE_MP3_CANDIDATE_URLS = [
+  getSignedR2AudioUrl('alessandro.mp3'),
   '/ElevenLabs_2026-10-29T16_51_22_Alessandro - Stoic, Breathy & Steady_pvc_sp100_s50_sb75_v4.mp3',
-  '/ElevenLabs_2026-10-29T16_51_22_Alessandro%20-%20Stoic%2C%20Breathy%20%26%20Steady_pvc_sp100_s50_sb75_v4.mp3',
   '/uomo.mp3',
   '/alessandro.mp3',
-  '/male.mp3',
 ];
 
 interface SpokenPhrase {
