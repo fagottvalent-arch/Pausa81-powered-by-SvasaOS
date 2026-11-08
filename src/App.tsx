@@ -24,7 +24,7 @@ export type PhraseKey =
   | 'level3_inspire'
   | 'level3_expire';
 
-const APP_BUILD_VERSION = 'pausa81-v3.4-r2-single-screen';
+const APP_BUILD_VERSION = 'pausa81-v3.5-mobile-r2-official';
 const VERSION_STORAGE_KEY = 'pausa81_active_build_version';
 
 const IOS_MODAL_SPRING = {
@@ -55,7 +55,8 @@ const ALESSANDRO_MALE_TIMESTAMPS: Record<PhraseKey, [number, number]> = {
 };
 
 /**
- * Genera al millisecondo l'URL firmato per il Cloudflare Worker R2 (audio.pausa81.it)
+ * Genera al momento della chiamata gli URL firmati verso Cloudflare R2 (audio.pausa81.it)
+ * più i fallback diretti per garantire il caricamento su qualsiasi smartphone e PWA.
  */
 function buildFreshR2CandidateUrls(gender: 'female' | 'male'): string[] {
   const ts = Math.floor(Date.now() / 1000);
@@ -284,37 +285,6 @@ function loadFromIdb<T>(key: string): Promise<T | null> {
       resolve(null);
     }
   });
-}
-
-function pickItalianSystemVoice(
-  voices: SpeechSynthesisVoice[],
-  gender: 'female' | 'male'
-): { voice: SpeechSynthesisVoice | null } {
-  const itVoices = voices.filter(
-    (v) =>
-      v.lang.toLowerCase().startsWith('it') ||
-      v.name.toLowerCase().includes('ital')
-  );
-  if (itVoices.length === 0) return { voice: null };
-
-  const femaleKeywords = ['elsa', 'isabella', 'alice', 'federica', 'fabiola', 'google italiano', 'female', 'donna'];
-  const maleKeywords = ['diego', 'cosimo', 'luca', 'giuseppe', 'giorgio', 'male', 'uomo'];
-
-  if (gender === 'female') {
-    const matchF = itVoices.find((v) =>
-      femaleKeywords.some((k) => v.name.toLowerCase().includes(k))
-    );
-    if (matchF) return { voice: matchF };
-    const nonMale = itVoices.find(
-      (v) => !maleKeywords.some((k) => v.name.toLowerCase().includes(k))
-    );
-    return { voice: nonMale || itVoices[0] };
-  }
-
-  const matchM = itVoices.find((v) =>
-    maleKeywords.some((k) => v.name.toLowerCase().includes(k))
-  );
-  return { voice: matchM || itVoices[0] };
 }
 
 interface TimelineSnapshot {
@@ -566,7 +536,7 @@ function SacredLotus({ phase }: { phase: Phase }) {
 
 function RealScannableQrCode({ url, sizePx = 110 }: { url: string; sizePx?: number }) {
   const [imgError, setImgError] = useState(false);
-  const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&ecc=M&margin=1&data=${encodeURIComponent(
+  const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=320x320&ecc=M&margin=1&data=${encodeURIComponent(
     url
   )}`;
 
@@ -574,7 +544,7 @@ function RealScannableQrCode({ url, sizePx = 110 }: { url: string; sizePx?: numb
     return (
       <img
         src={qrApiUrl}
-        alt="QR Code Ufficiale Pausa81 Scansionabile"
+        alt="QR Code Ufficiale Pausa81 v3.5 Scansionabile"
         className="qr-svg"
         style={{
           width: `${sizePx}px`,
@@ -599,7 +569,7 @@ function RealScannableQrCode({ url, sizePx = 110 }: { url: string; sizePx?: numb
     >
       <rect width={size + 4} height={size + 4} fill="#ffffff" rx="1.5" />
       <text x="50%" y="50%" textAnchor="middle" fontSize="2.2" fill="#0f766e">
-        QR PAUSA81
+        PAUSA81 v3.5
       </text>
     </svg>
   );
@@ -879,6 +849,8 @@ export default function App() {
   const alessandroBytesRef: MutableRefObject<ArrayBuffer | null> = useRef<ArrayBuffer | null>(null);
   const serenaBufferRef: MutableRefObject<AudioBuffer | null> = useRef<AudioBuffer | null>(null);
   const alessandroBufferRef: MutableRefObject<AudioBuffer | null> = useRef<AudioBuffer | null>(null);
+  const femaleLoadingPromiseRef = useRef<Promise<ArrayBuffer | null> | null>(null);
+  const maleLoadingPromiseRef = useRef<Promise<ArrayBuffer | null> | null>(null);
 
   const [vdtReminderMinutes, setVdtReminderMinutes] = useState<number | null>(null);
   const [vdtSecondsLeft, setVdtSecondsLeft] = useState<number>(0);
@@ -919,13 +891,11 @@ export default function App() {
 
   const activeBufferSourceRef: MutableRefObject<AudioBufferSourceNode | null> =
     useRef<AudioBufferSourceNode | null>(null);
-  const availableVoicesRef: MutableRefObject<SpeechSynthesisVoice[]> = useRef<
-    SpeechSynthesisVoice[]
-  >([]);
   const phraseTimeoutRef: MutableRefObject<number | null> = useRef<number | null>(null);
   const lastPlayedStepRef = useRef<string>('');
   const wakeLockRef = useRef<{ release: () => Promise<void> } | null>(null);
 
+  // Svuotamento automatico vecchia cache PWA su Smartphone al cambio versione v3.5
   useEffect(() => {
     if (typeof document !== 'undefined') {
       document.title = 'Pausa81 by SvasaOS — Presidio Neuro-Ergonomico D.Lgs. 81/2008';
@@ -943,6 +913,13 @@ export default function App() {
         const storedVer = window.localStorage.getItem(VERSION_STORAGE_KEY);
         if (storedVer !== APP_BUILD_VERSION) {
           window.localStorage.setItem(VERSION_STORAGE_KEY, APP_BUILD_VERSION);
+          if ('caches' in window) {
+            window.caches.keys().then((keys) => {
+              for (const k of keys) {
+                window.caches.delete(k).catch(() => {});
+              }
+            });
+          }
           if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistrations().then((regs) => {
               for (const reg of regs) {
@@ -973,64 +950,150 @@ export default function App() {
   }, []);
 
   /**
-   * Scarica l'audio dal Cloudflare Worker R2 (audio.pausa81.it) generando
-   * un token fresco al momento esatto della richiesta e salvandolo in cache locale.
+   * Scarica e memorizza le voci ufficiali da Cloudflare R2 (audio.pausa81.it)
+   * condividendo la stessa Promise se è già in corso il download su rete mobile.
    */
   const fetchVoiceFromCloudflareR2 = useCallback(
-    async (gender: 'female' | 'male'): Promise<ArrayBuffer | null> => {
-      const idbKey = gender === 'female' ? 'serena_mp3_bytes' : 'alessandro_mp3_bytes';
-      const cached = await loadFromIdb<ArrayBuffer>(idbKey);
-      if (cached && cached.byteLength > 20000) {
-        return cached;
+    (gender: 'female' | 'male'): Promise<ArrayBuffer | null> => {
+      if (gender === 'female' && serenaBytesRef.current) {
+        return Promise.resolve(serenaBytesRef.current);
+      }
+      if (gender === 'male' && alessandroBytesRef.current) {
+        return Promise.resolve(alessandroBytesRef.current);
       }
 
-      const urls = buildFreshR2CandidateUrls(gender);
-      for (const url of urls) {
-        try {
-          const res = await fetch(url, { mode: 'cors' });
-          if (!res.ok) continue;
-          const ct = res.headers.get('content-type') || '';
-          if (ct.includes('text/html')) continue;
-          const buf = await res.arrayBuffer();
-          if (buf.byteLength > 20000) {
-            await saveToIdb(idbKey, buf);
-            return buf;
-          }
-        } catch {
-          // Prova il candidato successivo
-        }
+      const activePromiseRef =
+        gender === 'female' ? femaleLoadingPromiseRef : maleLoadingPromiseRef;
+      if (activePromiseRef.current) {
+        return activePromiseRef.current;
       }
-      return null;
+
+      const promise = (async (): Promise<ArrayBuffer | null> => {
+        const idbKey = gender === 'female' ? 'serena_mp3_bytes' : 'alessandro_mp3_bytes';
+        const cached = await loadFromIdb<ArrayBuffer>(idbKey);
+        if (cached && cached.byteLength > 20000) {
+          if (gender === 'female') serenaBytesRef.current = cached;
+          else alessandroBytesRef.current = cached;
+          return cached;
+        }
+
+        const urls = buildFreshR2CandidateUrls(gender);
+        for (const url of urls) {
+          try {
+            const res = await fetch(url, { mode: 'cors', cache: 'no-cache' });
+            if (!res.ok) continue;
+            const ct = (res.headers.get('content-type') || '').toLowerCase();
+            if (ct.includes('text/html') || ct.includes('text/plain')) continue;
+            const buf = await res.arrayBuffer();
+            if (buf.byteLength > 20000) {
+              if (gender === 'female') serenaBytesRef.current = buf;
+              else alessandroBytesRef.current = buf;
+              await saveToIdb(idbKey, buf);
+              return buf;
+            }
+          } catch {
+            // Passa al candidato successivo
+          }
+        }
+        return null;
+      })();
+
+      activePromiseRef.current = promise;
+      promise.finally(() => {
+        activePromiseRef.current = null;
+      });
+
+      return promise;
     },
     []
   );
 
-  useEffect(() => {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      const updateVoices = () => {
-        const v = window.speechSynthesis.getVoices();
-        if (v.length > 0) availableVoicesRef.current = v;
-      };
-      updateVoices();
-      window.speechSynthesis.onvoiceschanged = updateVoices;
-    }
+  /**
+   * Decodifica in AudioBuffer gli MP3 ufficiali su smartphone iOS/Android
+   */
+  const ensureDecodedVoiceBuffer = useCallback(
+    async (gender: 'female' | 'male'): Promise<AudioBuffer | null> => {
+      const ctx = getOrCreateAudioCtx();
+      if (!ctx) return null;
 
+      if (ctx.state === 'suspended') {
+        try {
+          await ctx.resume();
+        } catch {
+          // Ignora
+        }
+      }
+
+      if (gender === 'female' && serenaBufferRef.current) {
+        return serenaBufferRef.current;
+      }
+      if (gender === 'male' && alessandroBufferRef.current) {
+        return alessandroBufferRef.current;
+      }
+
+      const rawBytes = await fetchVoiceFromCloudflareR2(gender);
+      if (!rawBytes) return null;
+
+      try {
+        const decoded = await new Promise<AudioBuffer>((resolve, reject) => {
+          const copy = rawBytes.slice(0);
+          const p = ctx.decodeAudioData(
+            copy,
+            (buf) => resolve(buf),
+            (err) => reject(err)
+          );
+          if (p && typeof p.then === 'function') {
+            p.then(resolve).catch(reject);
+          }
+        });
+
+        if (gender === 'female') {
+          serenaBufferRef.current = decoded;
+        } else {
+          alessandroBufferRef.current = decoded;
+        }
+        return decoded;
+      } catch {
+        return null;
+      }
+    },
+    [getOrCreateAudioCtx, fetchVoiceFromCloudflareR2]
+  );
+
+  // Precaricamento immediato da Cloudflare R2 + Sblocco WebAudio al primo tocco su Smartphone
+  useEffect(() => {
     let mounted = true;
-    async function preloadVoicesFromR2() {
-      const fBuf = await fetchVoiceFromCloudflareR2('female');
-      if (mounted && fBuf) {
-        serenaBytesRef.current = fBuf;
+    fetchVoiceFromCloudflareR2('female').then((b) => {
+      if (mounted && b) serenaBytesRef.current = b;
+    });
+    fetchVoiceFromCloudflareR2('male').then((b) => {
+      if (mounted && b) alessandroBytesRef.current = b;
+    });
+
+    const unlockMobileAudioOnFirstTouch = () => {
+      const ctx = getOrCreateAudioCtx();
+      if (ctx && ctx.state === 'suspended') {
+        ctx.resume().catch(() => {});
       }
-      const mBuf = await fetchVoiceFromCloudflareR2('male');
-      if (mounted && mBuf) {
-        alessandroBytesRef.current = mBuf;
-      }
-    }
-    preloadVoicesFromR2();
+      ensureDecodedVoiceBuffer('female').catch(() => {});
+      ensureDecodedVoiceBuffer('male').catch(() => {});
+    };
+
+    window.addEventListener('touchstart', unlockMobileAudioOnFirstTouch, {
+      passive: true,
+      once: true,
+    });
+    window.addEventListener('pointerdown', unlockMobileAudioOnFirstTouch, {
+      passive: true,
+      once: true,
+    });
+
     return () => {
       mounted = false;
+      window.removeEventListener('touchstart', unlockMobileAudioOnFirstTouch);
+      window.removeEventListener('pointerdown', unlockMobileAudioOnFirstTouch);
     };
-  }, [fetchVoiceFromCloudflareR2]);
+  }, [fetchVoiceFromCloudflareR2, getOrCreateAudioCtx, ensureDecodedVoiceBuffer]);
 
   const stopChimeNow = useCallback(() => {
     if (chimeGainRef.current && audioCtxRef.current) {
@@ -1260,6 +1323,10 @@ export default function App() {
     }
   }, []);
 
+  /**
+   * Riproduce SEMPRE le voci ufficiali neurali di Serena e Alessandro (Cloudflare R2)
+   * anche su smartphone e PWA installata, evitando il fallback alle voci robotiche.
+   */
   const speakPhrase = useCallback(
     async (phrase: SpokenPhrase | null, overrideGender?: VoiceGender) => {
       const activeGender = overrideGender !== undefined ? overrideGender : voiceGender;
@@ -1267,138 +1334,70 @@ export default function App() {
       if (
         activeGender === 'off' ||
         !phrase ||
+        !phrase.audioKey ||
         typeof window === 'undefined' ||
         (typeof document !== 'undefined' && document.hidden)
       ) {
         return;
       }
 
-      if (phrase.audioKey) {
-        const ctx = getOrCreateAudioCtx();
-        if (ctx) {
-          if (activeGender === 'female' && !serenaBytesRef.current) {
-            serenaBytesRef.current = await fetchVoiceFromCloudflareR2('female');
-          }
-          if (activeGender === 'male' && !alessandroBytesRef.current) {
-            alessandroBytesRef.current = await fetchVoiceFromCloudflareR2('male');
-          }
+      const ctx = getOrCreateAudioCtx();
+      if (!ctx) return;
 
-          if (activeGender === 'female' && !serenaBufferRef.current && serenaBytesRef.current) {
-            try {
-              serenaBufferRef.current = await ctx.decodeAudioData(
-                serenaBytesRef.current.slice(0)
-              );
-            } catch {
-              // Ignora
-            }
-          }
-          if (
-            activeGender === 'male' &&
-            !alessandroBufferRef.current &&
-            alessandroBytesRef.current
-          ) {
-            try {
-              alessandroBufferRef.current = await ctx.decodeAudioData(
-                alessandroBytesRef.current.slice(0)
-              );
-            } catch {
-              // Ignora
-            }
-          }
+      const targetBuffer = await ensureDecodedVoiceBuffer(activeGender);
+      const timestampsTable =
+        activeGender === 'female'
+          ? SERENA_FEMALE_TIMESTAMPS
+          : ALESSANDRO_MALE_TIMESTAMPS;
 
-          const targetBuffer =
-            activeGender === 'female'
-              ? serenaBufferRef.current
-              : alessandroBufferRef.current;
+      const sliceCoords = timestampsTable[phrase.audioKey];
 
-          const timestampsTable =
-            activeGender === 'female'
-              ? SERENA_FEMALE_TIMESTAMPS
-              : ALESSANDRO_MALE_TIMESTAMPS;
-
-          const sliceCoords = timestampsTable[phrase.audioKey];
-
-          if (targetBuffer && sliceCoords) {
-            const [startSec, endSec] = sliceCoords;
-            const bufferDur = Math.max(0.4, endSec - startSec);
-
-            const playbackRate = 1.0;
-            const realPlaybackDur = bufferDur / playbackRate;
-
-            const onsetDelay =
-              activeGender === 'male'
-                ? phrase.audioKey === 'level2_hold'
-                  ? 0.32
-                  : 0.65
-                : phrase.audioKey === 'level2_hold'
-                ? 0.22
-                : 0.40;
-
-            const startTime = ctx.currentTime + onsetDelay;
-
-            const src = ctx.createBufferSource();
-            src.buffer = targetBuffer;
-            src.playbackRate.setValueAtTime(playbackRate, startTime);
-
-            const envGain = ctx.createGain();
-            envGain.gain.setValueAtTime(0.0001, ctx.currentTime);
-            envGain.gain.setValueAtTime(0.001, startTime);
-            envGain.gain.linearRampToValueAtTime(1.0, startTime + 0.06);
-            envGain.gain.setValueAtTime(1.0, startTime + realPlaybackDur - 0.08);
-            envGain.gain.linearRampToValueAtTime(0.0001, startTime + realPlaybackDur);
-
-            src.connect(envGain);
-            envGain.connect(ctx.destination);
-
-            src.start(startTime, startSec);
-            src.stop(startTime + realPlaybackDur);
-
-            activeBufferSourceRef.current = src;
-            return;
+      if (targetBuffer && sliceCoords) {
+        if (ctx.state === 'suspended') {
+          try {
+            await ctx.resume();
+          } catch {
+            // Ignora
           }
         }
-      }
 
-      if (!('speechSynthesis' in window)) return;
-      const voices =
-        availableVoicesRef.current.length > 0
-          ? availableVoicesRef.current
-          : window.speechSynthesis.getVoices();
+        const [startSec, endSec] = sliceCoords;
+        const bufferDur = Math.max(0.4, endSec - startSec);
+        const playbackRate = 1.0;
+        const realPlaybackDur = bufferDur / playbackRate;
 
-      const { voice } = pickItalianSystemVoice(voices, activeGender);
-      const baseRate = activeGender === 'female' ? 0.88 : 0.86;
-      const naturalPitch = 1.0;
+        const onsetDelay =
+          activeGender === 'male'
+            ? phrase.audioKey === 'level2_hold'
+              ? 0.28
+              : 0.48
+            : phrase.audioKey === 'level2_hold'
+            ? 0.20
+            : 0.32;
 
-      try {
-        if (phrase.part1) {
-          const u1 = new SpeechSynthesisUtterance(phrase.part1);
-          u1.lang = 'it-IT';
-          if (voice) u1.voice = voice;
-          u1.rate = baseRate;
-          u1.pitch = naturalPitch;
-          u1.volume = 0.95;
+        const startTime = ctx.currentTime + onsetDelay;
 
-          u1.onend = () => {
-            if (!phrase.part2 || (typeof document !== 'undefined' && document.hidden)) return;
-            phraseTimeoutRef.current = window.setTimeout(() => {
-              if (typeof document !== 'undefined' && document.hidden) return;
-              const u2 = new SpeechSynthesisUtterance(phrase.part2);
-              u2.lang = 'it-IT';
-              if (voice) u2.voice = voice;
-              u2.rate = baseRate;
-              u2.pitch = naturalPitch;
-              u2.volume = 0.92;
-              window.speechSynthesis.speak(u2);
-            }, 850);
-          };
+        const src = ctx.createBufferSource();
+        src.buffer = targetBuffer;
+        src.playbackRate.setValueAtTime(playbackRate, startTime);
 
-          window.speechSynthesis.speak(u1);
-        }
-      } catch {
-        // Silenzioso
+        const envGain = ctx.createGain();
+        envGain.gain.setValueAtTime(0.0001, ctx.currentTime);
+        envGain.gain.setValueAtTime(0.001, startTime);
+        envGain.gain.linearRampToValueAtTime(1.0, startTime + 0.06);
+        envGain.gain.setValueAtTime(1.0, startTime + realPlaybackDur - 0.08);
+        envGain.gain.linearRampToValueAtTime(0.0001, startTime + realPlaybackDur);
+
+        src.connect(envGain);
+        envGain.connect(ctx.destination);
+
+        src.start(startTime, startSec);
+        src.stop(startTime + realPlaybackDur);
+
+        activeBufferSourceRef.current = src;
       }
     },
-    [voiceGender, stopVoiceNow, getOrCreateAudioCtx, fetchVoiceFromCloudflareR2]
+    [voiceGender, stopVoiceNow, getOrCreateAudioCtx, ensureDecodedVoiceBuffer]
   );
 
   const previewStageIdx =
@@ -1514,6 +1513,15 @@ export default function App() {
     stopAllAudio();
     setVdtAlertActive(false);
 
+    const ctx = getOrCreateAudioCtx();
+    if (ctx && ctx.state === 'suspended') {
+      try {
+        await ctx.resume();
+      } catch {
+        // Ignora
+      }
+    }
+
     const firstSnap = getTimelineSnapshot(0, sessionMode);
     lastPlayedStepRef.current = `${firstSnap.stage.id}_${firstSnap.phase}_${firstSnap.cycleNumber}`;
 
@@ -1544,6 +1552,7 @@ export default function App() {
     sessionMode,
     binauralEnabled,
     stopAllAudio,
+    getOrCreateAudioCtx,
     startBinauralPad,
     triggerSoftChime,
     triggerHapticFeedback,
@@ -1555,6 +1564,10 @@ export default function App() {
     if (newGender === 'off') {
       stopVoiceNow();
       return;
+    }
+    const ctx = getOrCreateAudioCtx();
+    if (ctx && ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
     }
     if (!isRunning) {
       speakPhrase(STAGES[0].phrases.inspire, newGender);
@@ -1603,14 +1616,16 @@ export default function App() {
       ? '€ 6.900 / anno (+ € 1.490 Impianto Kit Phygital)'
       : `€ ${(employeesCount * 45).toLocaleString('it-IT')} / anno (+ € 2.490 Impianto Kit Phygital)`;
 
-  const currentOrigin =
-    typeof window !== 'undefined' && window.location.origin
+  const officialBaseOrigin =
+    typeof window !== 'undefined' &&
+    window.location.origin &&
+    !window.location.origin.includes('localhost')
       ? window.location.origin
-      : 'https://pausa81.it';
+      : 'https://app.pausa81.it';
 
-  const customWhiteLabelUrl = `${currentOrigin}/?partner=${encodeURIComponent(
+  const customWhiteLabelUrl = `${officialBaseOrigin}/?partner=${encodeURIComponent(
     partnerStudioName.replace(/\s+/g, '_')
-  )}&cliente=${encodeURIComponent(clientCompanyName.replace(/\s+/g, '_'))}&v=3.4`;
+  )}&cliente=${encodeURIComponent(clientCompanyName.replace(/\s+/g, '_'))}&v=3.5`;
 
   const todayFormatted = new Date().toLocaleDateString('it-IT');
   const allThreeSigned = Boolean(
@@ -1679,7 +1694,7 @@ export default function App() {
             type="button"
             className={`icon-btn ${voiceGender === 'female' ? 'active' : ''}`}
             onClick={() => handleSelectVoiceGender('female')}
-            title="Voce Femminile Serena (Cloudflare R2)"
+            title="Voce Ufficiale Serena (Cloudflare R2)"
           >
             👩 Donna
           </button>
@@ -1688,7 +1703,7 @@ export default function App() {
             type="button"
             className={`icon-btn ${voiceGender === 'male' ? 'active' : ''}`}
             onClick={() => handleSelectVoiceGender('male')}
-            title="Voce Maschile Alessandro (Cloudflare R2)"
+            title="Voce Ufficiale Alessandro (Cloudflare R2)"
           >
             👨 Uomo
           </button>
@@ -2024,7 +2039,7 @@ export default function App() {
             >
               <div className="executive-header no-print">
                 <div>
-                  <span className="completion-badge">Kit Phygital Pausa81 · White-Label</span>
+                  <span className="completion-badge">Kit Phygital Pausa81 · White-Label v3.5</span>
                   <h2>Generatore Targa Murale QR Code ISO/IEC 18004 (D.Lgs. 81/2008)</h2>
                 </div>
                 <button
@@ -2084,7 +2099,7 @@ export default function App() {
                   <div className="plaque-qr-box">
                     <RealScannableQrCode url={customWhiteLabelUrl} sizePx={136} />
                     <span>INQUADRA CON LA FOTOCAMERA</span>
-                    <small>Versione Unificata Multi-Browser v3.4</small>
+                    <small>Versione Ufficiale Voci R2 v3.5</small>
                   </div>
 
                   <div className="plaque-levels">
@@ -2137,7 +2152,7 @@ export default function App() {
                     navigator.clipboard?.writeText(customWhiteLabelUrl);
                   }}
                 >
-                  Copia Link White-Label
+                  Copia Link White-Label v3.5
                 </button>
                 <button
                   type="button"
@@ -2277,7 +2292,7 @@ export default function App() {
                         fontWeight: 700,
                       }}
                     >
-                      VERIFICA QR PRESIDIO
+                      VERIFICA QR v3.5
                     </small>
                   </div>
                 </div>
