@@ -24,7 +24,7 @@ export type PhraseKey =
   | 'level3_inspire'
   | 'level3_expire';
 
-const APP_BUILD_VERSION = 'pausa81-v3.5-mobile-r2-official';
+const APP_BUILD_VERSION = 'pausa81-v3.6-lumora-monochrome-glass';
 const VERSION_STORAGE_KEY = 'pausa81_active_build_version';
 
 const IOS_MODAL_SPRING = {
@@ -54,10 +54,6 @@ const ALESSANDRO_MALE_TIMESTAMPS: Record<PhraseKey, [number, number]> = {
   level3_expire: [19.1, 22.2],
 };
 
-/**
- * Genera al momento della chiamata gli URL firmati verso Cloudflare R2 (audio.pausa81.it)
- * più i fallback diretti per garantire il caricamento su qualsiasi smartphone e PWA.
- */
 function buildFreshR2CandidateUrls(gender: 'female' | 'male'): string[] {
   const ts = Math.floor(Date.now() / 1000);
   const sig = ((ts * 8108) ^ 432146).toString(36);
@@ -544,7 +540,7 @@ function RealScannableQrCode({ url, sizePx = 110 }: { url: string; sizePx?: numb
     return (
       <img
         src={qrApiUrl}
-        alt="QR Code Ufficiale Pausa81 v3.5 Scansionabile"
+        alt="QR Code Ufficiale Pausa81 v3.6 Scansionabile"
         className="qr-svg"
         style={{
           width: `${sizePx}px`,
@@ -568,8 +564,8 @@ function RealScannableQrCode({ url, sizePx = 110 }: { url: string; sizePx?: numb
       aria-label="QR Code Pausa81"
     >
       <rect width={size + 4} height={size + 4} fill="#ffffff" rx="1.5" />
-      <text x="50%" y="50%" textAnchor="middle" fontSize="2.2" fill="#0f766e">
-        PAUSA81 v3.5
+      <text x="50%" y="50%" textAnchor="middle" fontSize="2.2" fill="#0f172a">
+        PAUSA81 v3.6
       </text>
     </svg>
   );
@@ -675,8 +671,8 @@ function InteractiveSignaturePad({
           marginBottom: '0.28rem',
         }}
       >
-        <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#0f766e' }}>
-          ✍️ {label}
+        <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#0f172a' }}>
+          {label}
         </span>
         <button
           type="button"
@@ -692,7 +688,7 @@ function InteractiveSignaturePad({
         <div
           style={{
             background: '#ffffff',
-            border: '1px dashed #10b981',
+            border: '1px dashed #0f172a',
             borderRadius: '8px',
             padding: '0.25rem',
             textAlign: 'center',
@@ -703,7 +699,7 @@ function InteractiveSignaturePad({
             alt={label}
             style={{ maxHeight: '56px', maxWidth: '100%', objectFit: 'contain' }}
           />
-          <small style={{ display: 'block', fontSize: '0.6rem', color: '#10b981', fontWeight: 600 }}>
+          <small style={{ display: 'block', fontSize: '0.6rem', color: '#0f172a', fontWeight: 600 }}>
             ✓ Firma autografa certificata nel Fascicolo
           </small>
         </div>
@@ -761,7 +757,7 @@ function Sphere({
       : 'liquid-sphere-core--idle';
 
   const ringStrokeColor =
-    phase === 'hold' ? '#10b981' : phase === 'inspire' ? '#14b8a6' : '#0d9488';
+    phase === 'hold' ? '#f8fafc' : phase === 'inspire' ? '#e2e8f0' : 'rgba(255, 255, 255, 0.65)';
 
   return (
     <div className="sphere-wrap">
@@ -771,8 +767,8 @@ function Sphere({
           cy="170"
           r={radius}
           fill="none"
-          stroke="rgba(148, 163, 184, 0.16)"
-          strokeWidth="2.5"
+          stroke="rgba(255, 255, 255, 0.12)"
+          strokeWidth="2"
         />
         <circle
           cx="170"
@@ -780,7 +776,7 @@ function Sphere({
           r={radius}
           fill="none"
           stroke={ringStrokeColor}
-          strokeWidth="4"
+          strokeWidth="3.5"
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
@@ -895,17 +891,39 @@ export default function App() {
   const lastPlayedStepRef = useRef<string>('');
   const wakeLockRef = useRef<{ release: () => Promise<void> } | null>(null);
 
-  // Svuotamento automatico vecchia cache PWA su Smartphone al cambio versione v3.5
+  // Iniezione automatica Metadati SEO per Google (Risolve l'avviso su Pausa81.it) + Cache Busting v3.6
   useEffect(() => {
     if (typeof document !== 'undefined') {
       document.title = 'Pausa81 by SvasaOS — Presidio Neuro-Ergonomico D.Lgs. 81/2008';
-      let metaColorScheme = document.querySelector('meta[name="color-scheme"]');
-      if (!metaColorScheme) {
-        metaColorScheme = document.createElement('meta');
-        metaColorScheme.setAttribute('name', 'color-scheme');
-        document.head.appendChild(metaColorScheme);
-      }
-      metaColorScheme.setAttribute('content', 'dark light');
+
+      const setOrUpdateMeta = (attr: 'name' | 'property', key: string, content: string) => {
+        let el = document.querySelector(`meta[${attr}="${key}"]`);
+        if (!el) {
+          el = document.createElement('meta');
+          el.setAttribute(attr, key);
+          document.head.appendChild(el);
+        }
+        el.setAttribute('content', content);
+      };
+
+      setOrUpdateMeta('name', 'color-scheme', 'dark light');
+      setOrUpdateMeta(
+        'name',
+        'description',
+        'Pausa81 by SvasaOS è il presidio neuro-ergonomico aziendale da 60 secondi conforme al D.Lgs. 81/2008 (Art. 28 Stress Lavoro-Correlato e Titolo VII Videoterminali) a 0 Byte Tracciati, esente Art. 4 L. 300/1970 e idoneo per lo sconto INAIL OT23.'
+      );
+      setOrUpdateMeta('name', 'robots', 'index, follow');
+      setOrUpdateMeta(
+        'property',
+        'og:title',
+        'Pausa81 by SvasaOS — Presidio Neuro-Ergonomico D.Lgs. 81/2008'
+      );
+      setOrUpdateMeta(
+        'property',
+        'og:description',
+        'Protocollo ergonomico da 60 secondi per Videoterminali (Art. 175) e Stress Lavoro-Correlato (Art. 28 D.Lgs. 81/08) con Fascicolo Notarile DVR a 3 firme.'
+      );
+      setOrUpdateMeta('property', 'og:url', 'https://pausa81.it');
     }
 
     if (typeof window !== 'undefined') {
@@ -949,10 +967,6 @@ export default function App() {
     return audioCtxRef.current;
   }, []);
 
-  /**
-   * Scarica e memorizza le voci ufficiali da Cloudflare R2 (audio.pausa81.it)
-   * condividendo la stessa Promise se è già in corso il download su rete mobile.
-   */
   const fetchVoiceFromCloudflareR2 = useCallback(
     (gender: 'female' | 'male'): Promise<ArrayBuffer | null> => {
       if (gender === 'female' && serenaBytesRef.current) {
@@ -1008,9 +1022,6 @@ export default function App() {
     []
   );
 
-  /**
-   * Decodifica in AudioBuffer gli MP3 ufficiali su smartphone iOS/Android
-   */
   const ensureDecodedVoiceBuffer = useCallback(
     async (gender: 'female' | 'male'): Promise<AudioBuffer | null> => {
       const ctx = getOrCreateAudioCtx();
@@ -1060,7 +1071,6 @@ export default function App() {
     [getOrCreateAudioCtx, fetchVoiceFromCloudflareR2]
   );
 
-  // Precaricamento immediato da Cloudflare R2 + Sblocco WebAudio al primo tocco su Smartphone
   useEffect(() => {
     let mounted = true;
     fetchVoiceFromCloudflareR2('female').then((b) => {
@@ -1323,10 +1333,6 @@ export default function App() {
     }
   }, []);
 
-  /**
-   * Riproduce SEMPRE le voci ufficiali neurali di Serena e Alessandro (Cloudflare R2)
-   * anche su smartphone e PWA installata, evitando il fallback alle voci robotiche.
-   */
   const speakPhrase = useCallback(
     async (phrase: SpokenPhrase | null, overrideGender?: VoiceGender) => {
       const activeGender = overrideGender !== undefined ? overrideGender : voiceGender;
@@ -1625,7 +1631,7 @@ export default function App() {
 
   const customWhiteLabelUrl = `${officialBaseOrigin}/?partner=${encodeURIComponent(
     partnerStudioName.replace(/\s+/g, '_')
-  )}&cliente=${encodeURIComponent(clientCompanyName.replace(/\s+/g, '_'))}&v=3.5`;
+  )}&cliente=${encodeURIComponent(clientCompanyName.replace(/\s+/g, '_'))}&v=3.6`;
 
   const todayFormatted = new Date().toLocaleDateString('it-IT');
   const allThreeSigned = Boolean(
@@ -1669,23 +1675,30 @@ export default function App() {
               setShowQrModal(true);
             }}
           >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="3" y="3" width="7" height="7" rx="1" />
+              <rect x="14" y="3" width="7" height="7" rx="1" />
+              <rect x="3" y="14" width="7" height="7" rx="1" />
+              <path d="M14 14h3v3h-3zM18 18h3v3h-3zM14 19h2M19 14v2" />
+            </svg>
             Targa QR
           </button>
 
           <button
             type="button"
             className="qr-pill-btn"
-            style={{
-              background: allThreeSigned ? 'rgba(16, 185, 129, 0.22)' : undefined,
-              borderColor: allThreeSigned ? '#10b981' : '#14b8a6',
-              color: allThreeSigned ? '#10b981' : undefined,
-            }}
             onClick={() => {
               stopVoiceNow();
               setShowMedicalModal(true);
             }}
           >
-            📜 {allThreeSigned ? 'Fascicolo DVR Firmato (3/3) ✓' : 'Fascicolo DVR (3 Firme)'}
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="8" y1="13" x2="16" y2="13" />
+              <line x1="8" y1="17" x2="13" y2="17" />
+            </svg>
+            {allThreeSigned ? 'Fascicolo DVR (3/3) ✓' : 'Fascicolo DVR (3 Firme)'}
           </button>
         </div>
 
@@ -1694,18 +1707,26 @@ export default function App() {
             type="button"
             className={`icon-btn ${voiceGender === 'female' ? 'active' : ''}`}
             onClick={() => handleSelectVoiceGender('female')}
-            title="Voce Ufficiale Serena (Cloudflare R2)"
+            title="Voce Ufficiale Serena"
           >
-            👩 Donna
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="8" r="4" />
+              <path d="M5 20c1.5-3.5 4-5 7-5s5.5 1.5 7 5" />
+            </svg>
+            Donna
           </button>
 
           <button
             type="button"
             className={`icon-btn ${voiceGender === 'male' ? 'active' : ''}`}
             onClick={() => handleSelectVoiceGender('male')}
-            title="Voce Ufficiale Alessandro (Cloudflare R2)"
+            title="Voce Ufficiale Alessandro"
           >
-            👨 Uomo
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="7.5" r="4" />
+              <path d="M4.5 20.5c1.2-4 4-6 7.5-6s6.3 2 7.5 6" />
+            </svg>
+            Uomo
           </button>
 
           <button
@@ -1713,7 +1734,12 @@ export default function App() {
             className={`icon-btn ${voiceGender === 'off' ? 'active' : ''}`}
             onClick={() => handleSelectVoiceGender('off')}
           >
-            🔇 OFF
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+              <line x1="23" y1="9" x2="17" y2="15" />
+              <line x1="17" y1="9" x2="23" y2="15" />
+            </svg>
+            OFF
           </button>
 
           <button
@@ -1721,7 +1747,10 @@ export default function App() {
             className={`icon-btn ${binauralEnabled ? 'active' : ''}`}
             onClick={() => setBinauralEnabled((v) => !v)}
           >
-            {binauralEnabled ? '🌊 432Hz ON' : '🌊 432Hz OFF'}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M2 12c2.5-4 5-4 7.5 0s5 4 7.5 0 3.5-2 5 0" />
+            </svg>
+            {binauralEnabled ? '432Hz ON' : '432Hz OFF'}
           </button>
 
           <button
@@ -1729,7 +1758,11 @@ export default function App() {
             className={`icon-btn ${chimeEnabled ? 'active' : ''}`}
             onClick={() => setChimeEnabled((v) => !v)}
           >
-            {chimeEnabled ? '🔔 Campana' : '🔕 Muto'}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+            </svg>
+            {chimeEnabled ? 'Campana' : 'Muto'}
           </button>
 
           <button
@@ -1737,7 +1770,18 @@ export default function App() {
             className="icon-btn"
             onClick={() => setThemeMode((t) => (t === 'dark' ? 'light' : 'dark'))}
           >
-            {themeMode === 'dark' ? '🌙 Calm Dark' : '☀️ Light'}
+            {themeMode === 'dark' ? (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="5" />
+                <line x1="12" y1="1" x2="12" y2="3" />
+                <line x1="12" y1="21" x2="12" y2="23" />
+              </svg>
+            )}
+            {themeMode === 'dark' ? 'Calm Dark' : 'Light'}
           </button>
 
           <button
@@ -1745,6 +1789,10 @@ export default function App() {
             className={`icon-btn ${eyeRestMode ? 'active' : ''}`}
             onClick={() => setEyeRestMode((v) => !v)}
           >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
             {eyeRestMode ? 'Filtro ON' : 'Vista'}
           </button>
 
@@ -1753,9 +1801,13 @@ export default function App() {
             className={`icon-btn ${vdtReminderMinutes !== null ? 'active' : ''}`}
             onClick={toggleVdtReminder}
           >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="9" />
+              <polyline points="12 7 12 12 15 14" />
+            </svg>
             {vdtReminderMinutes === null
-              ? '⏰ VDT'
-              : `⏰ ${Math.ceil(vdtSecondsLeft / 60)}m`}
+              ? 'VDT'
+              : `${Math.ceil(vdtSecondsLeft / 60)}m`}
           </button>
         </div>
       </header>
@@ -1774,8 +1826,9 @@ export default function App() {
               left: '50%',
               transform: 'translateX(-50%)',
               zIndex: 45,
-              background: 'rgba(15, 23, 42, 0.95)',
-              border: '1px solid rgba(20, 184, 166, 0.5)',
+              background: 'rgba(15, 23, 42, 0.92)',
+              backdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255, 255, 255, 0.35)',
               color: '#f8fafc',
               padding: '0.55rem 1rem',
               borderRadius: '999px',
@@ -1786,22 +1839,22 @@ export default function App() {
               fontSize: '0.76rem',
             }}
           >
-            <span>⏰ Pausa Ergonomica VDT consigliata (60s):</span>
+            <span>Pausa Ergonomica VDT consigliata (60s):</span>
             <button
               type="button"
               className="btn-mini"
-              style={{ background: '#10b981', color: '#fff', border: 'none' }}
+              style={{ background: '#ffffff', color: '#0f172a', border: 'none' }}
               onClick={startSession}
             >
-              ▶ Inizia Ora (60s)
+              Inizia Ora (60s)
             </button>
             <button
               type="button"
               className="btn-mini"
-              style={{ background: '#334155', color: '#e2e8f0', border: 'none' }}
+              style={{ background: 'rgba(255,255,255,0.12)', color: '#e2e8f0' }}
               onClick={snoozeVdtAlert5Min}
             >
-              ⏳ Finisco il task (+5 min)
+              +5 min
             </button>
           </motion.div>
         )}
@@ -1896,7 +1949,7 @@ export default function App() {
                   className="tick-bar-fill"
                   style={{
                     width: `${((SESSION_DURATION - sessionRemaining) / SESSION_DURATION) * 100}%`,
-                    background: 'linear-gradient(90deg, #0d9488 0%, #10b981 100%)',
+                    background: 'linear-gradient(90deg, rgba(255,255,255,0.6) 0%, #ffffff 100%)',
                   }}
                 />
               </div>
@@ -1922,9 +1975,9 @@ export default function App() {
             <span
               className="local-counter-pill"
               style={{
-                background: 'rgba(16, 185, 129, 0.14)',
-                border: '1px solid rgba(16, 185, 129, 0.35)',
-                color: themeMode === 'dark' ? '#6ee7b7' : '#047857',
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.22)',
+                color: themeMode === 'dark' ? '#f8fafc' : '#0f172a',
               }}
             >
               ✓ {localSessionsCount} sessioni completate · Certificato Locale {lastAuditCode}
@@ -1937,12 +1990,12 @@ export default function App() {
         <div className="shield-status-pill">
           <span className="shield-dot-emerald" aria-hidden="true" />
           <svg
-            width="15"
-            height="15"
+            width="14"
+            height="14"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="#10b981"
-            strokeWidth="2.3"
+            stroke="currentColor"
+            strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
             aria-hidden="true"
@@ -1973,10 +2026,7 @@ export default function App() {
               exit={{ scale: 0.9, opacity: 0, y: 12 }}
               transition={IOS_MODAL_SPRING}
             >
-              <span
-                className="completion-badge"
-                style={{ background: '#d1fae5', color: '#065f46' }}
-              >
+              <span className="completion-badge">
                 ✓ Presidio Completato · Sigillo Verifica {lastAuditCode}
               </span>
               <h2>Decompressione Pausa81 Completata (60s)</h2>
@@ -1992,11 +2042,11 @@ export default function App() {
 
               <div className="benchmark-grid">
                 <div className="benchmark-item">
-                  <strong style={{ color: '#10b981' }}>0 Byte</strong>
+                  <strong style={{ color: '#0f172a' }}>0 Byte</strong>
                   <span>Dati Personali Inviati (Esente Art. 4)</span>
                 </div>
                 <div className="benchmark-item">
-                  <strong style={{ color: '#0d9488' }}>{localSessionsCount} min</strong>
+                  <strong style={{ color: '#0f172a' }}>{localSessionsCount} min</strong>
                   <span>Prevenzione Accumulata (Locale)</span>
                 </div>
               </div>
@@ -2039,7 +2089,7 @@ export default function App() {
             >
               <div className="executive-header no-print">
                 <div>
-                  <span className="completion-badge">Kit Phygital Pausa81 · White-Label v3.5</span>
+                  <span className="completion-badge">Kit Phygital Pausa81 · White-Label v3.6</span>
                   <h2>Generatore Targa Murale QR Code ISO/IEC 18004 (D.Lgs. 81/2008)</h2>
                 </div>
                 <button
@@ -2099,7 +2149,7 @@ export default function App() {
                   <div className="plaque-qr-box">
                     <RealScannableQrCode url={customWhiteLabelUrl} sizePx={136} />
                     <span>INQUADRA CON LA FOTOCAMERA</span>
-                    <small>Versione Ufficiale Voci R2 v3.5</small>
+                    <small>Edizione Lumora Glass v3.6</small>
                   </div>
 
                   <div className="plaque-levels">
@@ -2152,7 +2202,7 @@ export default function App() {
                     navigator.clipboard?.writeText(customWhiteLabelUrl);
                   }}
                 >
-                  Copia Link White-Label v3.5
+                  Copia Link White-Label v3.6
                 </button>
                 <button
                   type="button"
@@ -2188,7 +2238,7 @@ export default function App() {
                   <span className="completion-badge">
                     Fascicolo Digitale Notarile · DVR Art. 35 &amp; Pratica INAIL OT23
                   </span>
-                  <h2>📜 Verbale Ufficiale Pre-Verificato (Medico · RSPP · RLS)</h2>
+                  <h2>Verbale Ufficiale Pre-Verificato (Medico · RSPP · RLS)</h2>
                 </div>
                 <button
                   type="button"
@@ -2287,12 +2337,12 @@ export default function App() {
                       style={{
                         display: 'block',
                         fontSize: '0.55rem',
-                        color: '#5eead4',
+                        color: '#f8fafc',
                         marginTop: '2px',
                         fontWeight: 700,
                       }}
                     >
-                      VERIFICA QR v3.5
+                      VERIFICA QR v3.6
                     </small>
                   </div>
                 </div>
@@ -2395,7 +2445,7 @@ export default function App() {
                           [Spazio Firma Autografa / PAdES]
                         </span>
                       )}
-                      <small style={{ fontSize: '0.56rem', color: '#0f766e', fontWeight: 700 }}>
+                      <small style={{ fontSize: '0.56rem', color: '#0f172a', fontWeight: 700 }}>
                         {doctorAlbo} · Art. 25 D.Lgs. 81/08
                       </small>
                     </div>
@@ -2427,7 +2477,7 @@ export default function App() {
                           [Spazio Firma Autografa / PAdES]
                         </span>
                       )}
-                      <small style={{ fontSize: '0.56rem', color: '#0f766e', fontWeight: 700 }}>
+                      <small style={{ fontSize: '0.56rem', color: '#0f172a', fontWeight: 700 }}>
                         Art. 18 e Art. 35 D.Lgs. 81/08
                       </small>
                     </div>
@@ -2459,7 +2509,7 @@ export default function App() {
                           [Spazio Firma Consultazione RLS]
                         </span>
                       )}
-                      <small style={{ fontSize: '0.56rem', color: '#0f766e', fontWeight: 700 }}>
+                      <small style={{ fontSize: '0.56rem', color: '#0f172a', fontWeight: 700 }}>
                         Ex Art. 50 D.Lgs. 81/2008
                       </small>
                     </div>
@@ -2473,7 +2523,7 @@ export default function App() {
                   className="btn btn-primary"
                   onClick={() => window.print()}
                 >
-                  🖨️ Esporta / Stampa Fascicolo Notarile in PDF (A4)
+                  Esporta / Stampa Fascicolo Notarile in PDF (A4)
                 </button>
                 <button
                   type="button"
@@ -2548,11 +2598,11 @@ export default function App() {
                   </div>
                   <div>
                     <small>Recupero Produttività &amp; Assenze (10%)</small>
-                    <strong style={{ color: '#10b981' }}>+ € {estimatedAnnualSavings} / anno</strong>
+                    <strong style={{ color: '#0f172a' }}>+ € {estimatedAnnualSavings} / anno</strong>
                   </div>
                   <div>
                     <small>Fascia Sconto Premio INAIL (Modello OT23)</small>
-                    <strong style={{ color: '#0d9488' }}>-{inailOt23DiscountPct} sul premio</strong>
+                    <strong style={{ color: '#0f172a' }}>-{inailOt23DiscountPct} sul premio</strong>
                   </div>
                 </div>
               </div>
