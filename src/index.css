@@ -1,6 +1,6 @@
 /* ==========================================================================
-   PAUSA81 BY SVASAOS — S.V.A.S.A. BI-METALLIC LUXURY EDITION (src/index.css)
-   Carbon Obsidian + Brushed Titanium + Bioluminescent Emerald & Champagne Gold
+   PAUSA81 BY S.V.A.S.A. OS — MASTER STYLESHEET v3.9 (src/index.css)
+   Zero-Overlap Mobile & Desktop + Locked Grid (Zero Layout Shift Dark/Light)
    ========================================================================== */
 
 @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
@@ -20,23 +20,25 @@
 
   /* Palette Ufficiale Stemma S.V.A.S.A. OS Orchestra */
   --svasa-carbon: #070a11;
-  --svasa-titanium: rgba(20, 27, 41, 0.72);
   --svasa-emerald: #2dd4bf;
   --svasa-emerald-deep: #10b981;
   --svasa-gold: #d4af37;
   --svasa-gold-light: #f3d98b;
-  --svasa-gold-border: rgba(212, 175, 55, 0.58);
+  --svasa-gold-border: rgba(212, 175, 55, 0.62);
 
-  --glass-bg: linear-gradient(135deg, rgba(30, 41, 59, 0.58) 0%, rgba(15, 23, 42, 0.38) 100%);
-  --glass-bg-hover: linear-gradient(135deg, rgba(45, 212, 191, 0.14) 0%, rgba(212, 175, 55, 0.14) 100%);
-  --glass-active-bimetallic: linear-gradient(
+  /* Gradiente Bi-Metallico Unificato (Smeraldo -> Titanio -> Oro Champagne) */
+  --bimetallic-active-dark: linear-gradient(
     90deg,
-    rgba(16, 185, 129, 0.32) 0%,
-    rgba(30, 41, 59, 0.78) 48%,
-    rgba(212, 175, 55, 0.34) 100%
+    rgba(16, 185, 129, 0.38) 0%,
+    rgba(20, 30, 48, 0.84) 48%,
+    rgba(212, 175, 55, 0.40) 100%
   );
-  --glass-border: rgba(255, 255, 255, 0.15);
-  --glass-inner-glow: inset 0 1px 1px rgba(243, 217, 139, 0.25);
+  --bimetallic-active-light: linear-gradient(
+    90deg,
+    #0d9488 0%,
+    #115e59 48%,
+    #b48a2e 100%
+  );
 }
 
 html,
@@ -74,7 +76,7 @@ body {
 }
 
 /* ==========================================================================
-   1. CONTENITORE PRINCIPALE & SFONDI BI-METALLICI (DARK & LIGHT)
+   1. CONTENITORE PRINCIPALE & SFONDI UNIFICATI (OSSIDIANA & DIURNO)
    ========================================================================== */
 
 .app {
@@ -92,28 +94,26 @@ body {
   padding-right: env(safe-area-inset-right, 0px);
   overflow: hidden !important;
   isolation: isolate;
-  transition: background 0.6s var(--ios-spring), color 0.35s ease;
+  transition: background 0.45s ease, color 0.3s ease;
 }
 
-/* Dark Mode: Carbonio Ossidiana + Riflesso Smeraldo a sinistra e Oro Champagne a destra */
 .app--theme-dark {
   background:
-    radial-gradient(circle at 36% 34%, rgba(16, 185, 129, 0.14) 0%, rgba(15, 23, 42, 0) 55%),
-    radial-gradient(circle at 64% 34%, rgba(212, 175, 55, 0.11) 0%, rgba(15, 23, 42, 0) 55%),
+    radial-gradient(circle at 36% 36%, rgba(16, 185, 129, 0.14) 0%, rgba(15, 23, 42, 0) 55%),
+    radial-gradient(circle at 64% 36%, rgba(212, 175, 55, 0.12) 0%, rgba(15, 23, 42, 0) 55%),
     radial-gradient(ellipse at 50% 0%, #141d2e 0%, #090d16 58%, #05070c 100%);
   color: #f8fafc;
 }
 
-/* Light Mode: Platino Satinato + Smeraldo Acqua e Champagne Chiaro */
 .app--theme-light {
   background:
-    radial-gradient(circle at 36% 32%, rgba(45, 212, 191, 0.15) 0%, rgba(248, 250, 252, 0) 58%),
-    radial-gradient(circle at 64% 32%, rgba(212, 175, 55, 0.13) 0%, rgba(248, 250, 252, 0) 58%),
-    radial-gradient(ellipse at 50% 0%, #fbfaf6 0%, #f1f5f9 64%, #e2e8f0 100%);
+    radial-gradient(circle at 36% 36%, rgba(20, 184, 166, 0.16) 0%, rgba(248, 250, 252, 0) 58%),
+    radial-gradient(circle at 64% 36%, rgba(212, 175, 55, 0.15) 0%, rgba(248, 250, 252, 0) 58%),
+    radial-gradient(ellipse at 50% 0%, #f4fbf9 0%, #eef2f6 62%, #e2e8f0 100%);
   color: #0f172a;
 }
 
-/* Filtro ON anti-luce blu su livello fisso indipendente (Zero Scrollbar) */
+/* Filtro Ambra su livello fisso indipendente (Zero Scrollbar e Zero Shift) */
 .app--warm-rest::after {
   content: "";
   position: fixed;
@@ -140,7 +140,7 @@ body {
 }
 
 /* ==========================================================================
-   2. TOPBAR & BOTTONI IN TITANIO SATINATO + GHIERA ORO/SMERALDO
+   2. TOPBAR A GEOMETRIA BLOCCATA (ZERO SHIFT TRA OSSIDIANA E DIURNO)
    ========================================================================== */
 
 .topbar {
@@ -151,41 +151,36 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 0.55rem;
-  padding: 0.6rem 1.25rem;
+  gap: 0.45rem;
+  padding: 0.45rem 1rem;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.22);
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
 }
 
 .app--theme-dark .topbar {
-  background: rgba(9, 13, 22, 0.68);
-  backdrop-filter: blur(24px) saturate(140%);
-  -webkit-backdrop-filter: blur(24px) saturate(140%);
-  border-bottom: 1px solid rgba(212, 175, 55, 0.18);
+  background: rgba(9, 13, 22, 0.72);
 }
 
 .app--theme-light .topbar {
-  background: rgba(255, 255, 255, 0.78);
-  backdrop-filter: blur(24px) saturate(140%);
-  -webkit-backdrop-filter: blur(24px) saturate(140%);
-  border-bottom: 1px solid rgba(180, 138, 46, 0.22);
+  background: rgba(255, 255, 255, 0.82);
 }
 
 .topbar-left {
   display: inline-flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 0.42rem;
-  padding: 0.26rem;
+  gap: 0.36rem;
+  padding: 0.22rem;
   border-radius: 999px;
+  border: 1px solid rgba(212, 175, 55, 0.28);
+}
+
+.app--theme-dark .topbar-left {
   background: rgba(15, 23, 42, 0.55);
-  border: 1px solid rgba(212, 175, 55, 0.26);
-  box-shadow: inset 0 1px 1px rgba(243, 217, 139, 0.16);
 }
 
 .app--theme-light .topbar-left {
-  background: rgba(15, 23, 42, 0.04);
-  border: 1px solid rgba(180, 138, 46, 0.28);
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.9);
+  background: rgba(241, 245, 249, 0.9);
 }
 
 .executive-pill,
@@ -193,66 +188,44 @@ body {
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 0.42rem;
-  padding: 0.44rem 0.92rem;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.38rem 0.78rem;
   border-radius: 999px;
   font-family: var(--font-sans);
-  font-size: 0.73rem;
+  font-size: 0.71rem;
   font-weight: 600;
   letter-spacing: -0.01em;
+  white-space: nowrap;
   cursor: pointer;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
   transform: translateZ(0);
-  transition:
-    transform 0.22s var(--ios-spring),
-    border-color 0.22s ease,
-    background 0.22s ease,
-    box-shadow 0.22s ease;
+  transition: transform 0.2s var(--ios-spring), border-color 0.2s ease, background 0.2s ease;
 }
 
 .app--theme-dark .executive-pill {
-  background: var(--glass-active-bimetallic);
+  background: var(--bimetallic-active-dark);
   color: #ffffff;
   border: 1px solid var(--svasa-gold-border);
-  box-shadow:
-    inset 0 1px 1.5px rgba(243, 217, 139, 0.55),
-    0 6px 18px rgba(0, 0, 0, 0.38);
+  box-shadow: inset 0 1px 1.5px rgba(243, 217, 139, 0.5);
 }
 
 .app--theme-light .executive-pill {
-  background: linear-gradient(90deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
-  color: #f3d98b;
-  border: 1px solid #b48a2e;
-  box-shadow:
-    inset 0 1px 1px rgba(243, 217, 139, 0.4),
-    0 6px 16px rgba(15, 23, 42, 0.16);
+  background: var(--bimetallic-active-light);
+  color: #ffffff;
+  border: 1px solid #d4af37;
+  box-shadow: inset 0 1px 1.5px rgba(255, 255, 255, 0.45);
 }
 
 .app--theme-dark .qr-pill-btn {
-  background: var(--glass-bg);
+  background: rgba(30, 41, 59, 0.62);
   color: rgba(248, 250, 252, 0.92);
   border: 1px solid rgba(255, 255, 255, 0.16);
-  box-shadow: var(--glass-inner-glow);
 }
 
 .app--theme-light .qr-pill-btn {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(248, 250, 252, 0.75) 100%);
+  background: #ffffff;
   color: #0f172a;
-  border: 1px solid rgba(180, 138, 46, 0.28);
-  box-shadow: inset 0 1px 1px #ffffff, 0 2px 8px rgba(15, 23, 42, 0.05);
-}
-
-.executive-pill:hover,
-.qr-pill-btn:hover {
-  transform: translate3d(0, -1px, 0);
-  border-color: var(--svasa-gold-light);
-}
-
-.executive-pill:active,
-.qr-pill-btn:active {
-  transform: scale(0.95) !important;
-  transition-duration: 0.06s !important;
+  border: 1px solid rgba(180, 138, 46, 0.32);
 }
 
 .pill-dot {
@@ -260,130 +233,95 @@ body {
   height: 7px;
   border-radius: 50%;
   background: var(--svasa-emerald);
-  box-shadow: 0 0 9px var(--svasa-emerald);
+  box-shadow: 0 0 8px var(--svasa-emerald);
+  flex-shrink: 0;
 }
 
+/* Griglia Controlli Bloccata: larghezza costante su Desktop e Mobile */
 .topbar-actions {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 0.38rem;
-  padding: 0.26rem;
+  display: grid;
+  grid-template-columns: repeat(8, minmax(96px, auto));
+  gap: 0.32rem;
+  padding: 0.22rem;
   border-radius: 999px;
-  background: rgba(15, 23, 42, 0.52);
-  border: 1px solid rgba(212, 175, 55, 0.22);
+  border: 1px solid rgba(212, 175, 55, 0.24);
+}
+
+.app--theme-dark .topbar-actions {
+  background: rgba(15, 23, 42, 0.55);
 }
 
 .app--theme-light .topbar-actions {
-  background: rgba(15, 23, 42, 0.04);
-  border: 1px solid rgba(180, 138, 46, 0.24);
+  background: rgba(241, 245, 249, 0.9);
 }
 
 .icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.36rem;
-  padding: 0.42rem 0.82rem;
+  gap: 0.3rem;
+  padding: 0.38rem 0.55rem;
   border-radius: 999px;
   font-family: var(--font-sans);
-  font-size: 0.72rem;
+  font-size: 0.69rem;
   font-weight: 600;
   letter-spacing: -0.01em;
+  white-space: nowrap;
   cursor: pointer;
-  background: var(--glass-bg);
-  color: rgba(241, 245, 249, 0.82);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  box-shadow:
-    inset 0 1px 1px rgba(255, 255, 255, 0.15),
-    0 4px 12px rgba(0, 0, 0, 0.22);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
   transform: translateZ(0);
-  transition:
-    transform 0.2s var(--ios-spring),
-    background 0.22s ease,
-    border-color 0.22s ease,
-    color 0.2s ease,
-    box-shadow 0.22s ease;
+  transition: transform 0.2s var(--ios-spring), background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.app--theme-dark .icon-btn {
+  background: rgba(30, 41, 59, 0.58);
+  color: rgba(241, 245, 249, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.14);
 }
 
 .app--theme-light .icon-btn {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.88) 0%, rgba(241, 245, 249, 0.68) 100%);
+  background: #ffffff;
   color: #334155;
-  border: 1px solid rgba(15, 23, 42, 0.13);
-  box-shadow: inset 0 1px 1px #ffffff, 0 2px 6px rgba(15, 23, 42, 0.04);
+  border: 1px solid rgba(15, 23, 42, 0.14);
 }
 
 .icon-btn svg {
-  width: 13px;
-  height: 13px;
-  stroke-width: 1.85;
-  opacity: 0.88;
+  width: 12px;
+  height: 12px;
+  stroke-width: 1.9;
   flex-shrink: 0;
 }
 
-.icon-btn:hover {
-  transform: translate3d(0, -1px, 0);
-  background: var(--glass-bg-hover);
-  border-color: rgba(212, 175, 55, 0.48);
-  color: #ffffff;
-}
-
-.app--theme-light .icon-btn:hover {
-  background: #ffffff;
-  border-color: #b48a2e;
-  color: #0f172a;
-}
-
-.icon-btn:active {
-  transform: scale(0.93);
-  transition-duration: 0.06s;
-}
-
-/* STATO ATTIVO S.V.A.S.A. BI-METALLIC: Smeraldo + Oro Champagne */
-.icon-btn.active {
-  background: var(--glass-active-bimetallic) !important;
+/* Stato Attivo Unificato Bi-Metallico (Identico in Ossidiana e Diurno) */
+.app--theme-dark .icon-btn.active {
+  background: var(--bimetallic-active-dark) !important;
   color: #ffffff !important;
   border-color: var(--svasa-gold-light) !important;
-  box-shadow:
-    inset 0 1px 2px rgba(243, 217, 139, 0.68),
-    0 6px 18px rgba(16, 185, 129, 0.16),
-    0 4px 12px rgba(0, 0, 0, 0.38) !important;
+  box-shadow: inset 0 1px 1.5px rgba(243, 217, 139, 0.6) !important;
 }
 
 .app--theme-light .icon-btn.active {
-  background: linear-gradient(90deg, #0f293a 0%, #0f172a 50%, #2a2112 100%) !important;
-  color: #f3d98b !important;
-  border-color: #b48a2e !important;
-  box-shadow:
-    inset 0 1px 1.5px rgba(243, 217, 139, 0.45),
-    0 6px 16px rgba(15, 23, 42, 0.18) !important;
+  background: var(--bimetallic-active-light) !important;
+  color: #ffffff !important;
+  border-color: #d4af37 !important;
+  box-shadow: inset 0 1px 1.5px rgba(255, 255, 255, 0.45) !important;
 }
 
 .icon-btn.active svg {
-  opacity: 1;
-  stroke: #f3d98b;
+  stroke: var(--svasa-gold-light);
 }
 
 .btn-mini {
-  padding: 0.34rem 0.75rem;
+  padding: 0.32rem 0.7rem;
   border-radius: 999px;
   font-family: var(--font-sans);
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 600;
   cursor: pointer;
   border: 1px solid rgba(212, 175, 55, 0.35);
-  transition: transform 0.18s var(--ios-spring);
-}
-
-.btn-mini:active {
-  transform: scale(0.92);
 }
 
 /* ==========================================================================
-   3. PALCO CENTRALE & CARD PROTOCOLLI CON GHIERA ORO-SMERALDO
+   3. PALCO CENTRALE ELASTICO (MAI TAGLIATO IN ALTO, MAI SOVRAPPOSTO IN BASSO)
    ========================================================================== */
 
 .app-main {
@@ -392,25 +330,26 @@ body {
   flex: 1;
   min-height: 0;
   width: 100%;
-  max-width: 840px;
-  margin-left: auto !important;
-  margin-right: auto !important;
-  padding: 0.25rem 1rem;
+  max-width: 820px;
+  margin: 0 auto !important;
+  padding: 0.35rem 0.9rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: space-evenly;
   text-align: center;
-  gap: clamp(0.28rem, 1.15vh, 0.58rem);
+  gap: clamp(0.18rem, 0.8dvh, 0.45rem);
+  overflow: hidden;
 }
 
 .protocol-bar {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.52rem;
+  gap: 0.45rem;
   width: 100%;
   max-width: 760px;
   margin: 0 auto;
+  flex-shrink: 0;
 }
 
 .protocol-chip {
@@ -419,112 +358,81 @@ body {
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: clamp(0.42rem, 0.85vh, 0.6rem) 0.65rem;
-  border-radius: 18px;
+  padding: clamp(0.32rem, 0.75dvh, 0.55rem) 0.5rem;
+  border-radius: 16px;
   cursor: pointer;
-  background: linear-gradient(145deg, rgba(24, 33, 50, 0.68) 0%, rgba(11, 15, 25, 0.52) 100%);
-  backdrop-filter: blur(22px) saturate(135%);
-  -webkit-backdrop-filter: blur(22px) saturate(135%);
-  border: 1px solid rgba(255, 255, 255, 0.13);
-  box-shadow:
-    inset 0 1px 1px rgba(255, 255, 255, 0.16),
-    0 8px 24px rgba(0, 0, 0, 0.26);
-  color: rgba(248, 250, 252, 0.9);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
   transform: translateZ(0);
-  transition:
-    transform 0.22s var(--ios-spring),
-    border-color 0.22s ease,
-    background 0.22s ease,
-    box-shadow 0.22s ease;
+  transition: transform 0.2s var(--ios-spring), border-color 0.2s ease, background 0.2s ease;
+}
+
+.app--theme-dark .protocol-chip {
+  background: linear-gradient(145deg, rgba(24, 33, 50, 0.68) 0%, rgba(11, 15, 25, 0.54) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  color: rgba(248, 250, 252, 0.92);
 }
 
 .app--theme-light .protocol-chip {
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.88) 0%, rgba(241, 245, 249, 0.68) 100%);
-  border: 1px solid rgba(15, 23, 42, 0.12);
-  box-shadow: inset 0 1px 1px #ffffff, 0 6px 18px rgba(15, 23, 42, 0.05);
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(15, 23, 42, 0.14);
   color: #0f172a;
 }
 
-.protocol-chip:hover {
-  transform: translate3d(0, -1.5px, 0);
-  border-color: rgba(212, 175, 55, 0.45);
-}
-
-.protocol-chip:active {
-  transform: scale(0.96);
-  transition-duration: 0.06s;
-}
-
-.protocol-chip.active {
-  background: linear-gradient(
-    135deg,
-    rgba(16, 185, 129, 0.24) 0%,
-    rgba(18, 25, 38, 0.86) 50%,
-    rgba(212, 175, 55, 0.24) 100%
-  );
-  border: 1px solid rgba(243, 217, 139, 0.68);
-  box-shadow:
-    inset 0 1px 2px rgba(243, 217, 139, 0.55),
-    0 10px 28px rgba(0, 0, 0, 0.4);
+.app--theme-dark .protocol-chip.active {
+  background: var(--bimetallic-active-dark);
+  border: 1px solid var(--svasa-gold-light);
+  box-shadow: inset 0 1px 2px rgba(243, 217, 139, 0.5), 0 8px 20px rgba(0, 0, 0, 0.32);
   color: #ffffff;
 }
 
 .app--theme-light .protocol-chip.active {
-  background: linear-gradient(135deg, #0f293a 0%, #0f172a 55%, #2b2212 100%);
-  border: 1px solid #b48a2e;
-  box-shadow:
-    inset 0 1px 1.5px rgba(243, 217, 139, 0.42),
-    0 10px 24px rgba(15, 23, 42, 0.16);
+  background: var(--bimetallic-active-light);
+  border: 1px solid #d4af37;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.45), 0 8px 18px rgba(13, 148, 136, 0.18);
   color: #ffffff;
 }
 
 .protocol-level-tag {
-  font-size: 0.56rem;
+  font-size: 0.54rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
   color: var(--svasa-emerald);
-  margin-bottom: 0.12rem;
-}
-
-.protocol-chip.active .protocol-level-tag {
-  color: var(--svasa-gold-light);
+  margin-bottom: 0.08rem;
 }
 
 .app--theme-light .protocol-level-tag {
   color: #0f766e;
 }
 
-.app--theme-light .protocol-chip.active .protocol-level-tag {
-  color: #f3d98b;
+.protocol-chip.active .protocol-level-tag {
+  color: var(--svasa-gold-light) !important;
 }
 
 .protocol-chip-title {
-  font-size: 0.79rem;
+  font-size: 0.76rem;
   font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.2;
+  letter-spacing: -0.015em;
+  line-height: 1.18;
 }
 
 .protocol-chip-sub {
-  font-size: 0.64rem;
-  color: rgba(203, 213, 225, 0.74);
-  margin-top: 0.1rem;
+  font-size: 0.61rem;
+  opacity: 0.78;
+  margin-top: 0.06rem;
 }
 
-.app--theme-light .protocol-chip-sub {
-  color: #64748b;
+.protocol-chip.active .protocol-chip-sub {
+  color: rgba(254, 243, 199, 0.92);
+  opacity: 1;
 }
 
-.app--theme-light .protocol-chip.active .protocol-chip-sub {
-  color: rgba(243, 217, 139, 0.85);
-}
-
-/* SFERA DI RESPIRAZIONE CON GHIERA S.V.A.S.A. */
+/* SFERA PROPORZIONATA IN BASE ALL'ALTEZZA DELLO SCHERMO (dvh) */
 .sphere-wrap {
   position: relative;
-  width: clamp(198px, 30.5vh, 260px);
-  height: clamp(198px, 30.5vh, 260px);
+  width: clamp(148px, 24dvh, 232px);
+  height: clamp(148px, 24dvh, 232px);
   margin: 0 auto;
   display: flex;
   align-items: center;
@@ -571,39 +479,36 @@ body {
 }
 
 .liquid-sphere-core {
-  border: 1.5px solid rgba(243, 217, 139, 0.52);
+  border: 1.5px solid rgba(243, 217, 139, 0.55);
   transition: box-shadow 1s ease;
 }
 
 .liquid-sphere-core--idle {
   box-shadow:
-    0 18px 45px rgba(13, 148, 136, 0.24),
-    0 0 28px rgba(212, 175, 55, 0.16),
-    inset 0 2px 18px rgba(243, 217, 139, 0.45),
-    inset 0 -12px 24px rgba(13, 148, 136, 0.3);
+    0 14px 36px rgba(13, 148, 136, 0.24),
+    inset 0 2px 16px rgba(243, 217, 139, 0.45),
+    inset 0 -10px 20px rgba(13, 148, 136, 0.28);
 }
 
 .liquid-sphere-core--inspire {
   box-shadow:
-    0 22px 60px rgba(45, 212, 191, 0.36),
-    0 0 36px rgba(212, 175, 55, 0.25),
-    inset 0 4px 26px rgba(243, 217, 139, 0.68),
-    inset 0 -16px 32px rgba(13, 148, 136, 0.45);
+    0 18px 48px rgba(45, 212, 191, 0.36),
+    inset 0 4px 22px rgba(243, 217, 139, 0.68),
+    inset 0 -14px 28px rgba(13, 148, 136, 0.42);
 }
 
 .liquid-sphere-core--hold {
   box-shadow:
-    0 24px 68px rgba(212, 175, 55, 0.38),
-    0 0 42px rgba(16, 185, 129, 0.32),
-    inset 0 6px 28px rgba(255, 255, 255, 0.8),
-    inset 0 -18px 36px rgba(16, 185, 129, 0.45);
+    0 20px 54px rgba(212, 175, 55, 0.38),
+    inset 0 6px 24px rgba(255, 255, 255, 0.8),
+    inset 0 -16px 32px rgba(16, 185, 129, 0.45);
 }
 
 .liquid-sphere-core--expire {
   box-shadow:
-    0 12px 32px rgba(13, 148, 136, 0.2),
-    inset 0 2px 14px rgba(243, 217, 139, 0.35),
-    inset 0 -10px 20px rgba(15, 23, 42, 0.38);
+    0 10px 28px rgba(13, 148, 136, 0.2),
+    inset 0 2px 12px rgba(243, 217, 139, 0.35),
+    inset 0 -8px 18px rgba(15, 23, 42, 0.35);
 }
 
 .sphere-gradient {
@@ -649,96 +554,104 @@ body {
 }
 
 /* ==========================================================================
-   4. STEPPER, TIPOGRAFIA & BOTTONE PRINCIPALE BI-METALLICO
+   4. STEPPER, TESTI, BOTTONE E BRAND SENZA SOVRAPPOSIZIONI
    ========================================================================== */
 
 .breath-phases-stepper {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(4, auto);
   justify-content: center;
-  gap: 0.4rem;
+  gap: 0.32rem;
   margin: 0 auto;
+  flex-shrink: 0;
 }
 
 .step-badge {
-  font-size: 0.69rem;
+  font-size: 0.65rem;
   font-weight: 600;
-  padding: 0.24rem 0.72rem;
+  padding: 0.2rem 0.6rem;
   border-radius: 999px;
-  background: rgba(15, 23, 42, 0.62);
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.app--theme-dark .step-badge {
+  background: rgba(15, 23, 42, 0.65);
   border: 1px solid rgba(255, 255, 255, 0.14);
-  color: rgba(226, 232, 240, 0.75);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  transition: all 0.22s var(--ios-spring);
+  color: rgba(226, 232, 240, 0.78);
 }
 
 .app--theme-light .step-badge {
-  background: rgba(255, 255, 255, 0.82);
-  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(15, 23, 42, 0.14);
   color: #475569;
 }
 
-.step-badge.active {
-  background: var(--glass-active-bimetallic);
+.app--theme-dark .step-badge.active {
+  background: var(--bimetallic-active-dark);
   color: #ffffff;
   border-color: var(--svasa-gold-light);
-  box-shadow: inset 0 1px 1.5px rgba(243, 217, 139, 0.7);
-  transform: scale(1.04);
 }
 
 .app--theme-light .step-badge.active {
-  background: linear-gradient(90deg, #0f293a 0%, #0f172a 100%);
-  color: #f3d98b;
-  border-color: #b48a2e;
+  background: var(--bimetallic-active-light);
+  color: #ffffff;
+  border-color: #d4af37;
 }
 
 .status {
   text-align: center;
-  max-width: 650px;
+  max-width: 640px;
   width: 100%;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.22rem;
+  gap: 0.16rem;
+  flex-shrink: 0;
 }
 
 .when-to-use-pill {
   display: inline-block;
-  font-size: 0.61rem;
+  font-size: 0.58rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  padding: 0.22rem 0.84rem;
+  padding: 0.18rem 0.72rem;
   border-radius: 999px;
-  background: rgba(15, 23, 42, 0.65);
+}
+
+.app--theme-dark .when-to-use-pill {
+  background: rgba(15, 23, 42, 0.68);
   color: var(--svasa-gold-light);
   border: 1px solid rgba(212, 175, 55, 0.42);
 }
 
 .app--theme-light .when-to-use-pill {
-  background: rgba(15, 23, 42, 0.06);
-  color: #0f172a;
-  border-color: rgba(180, 138, 46, 0.38);
+  background: rgba(255, 255, 255, 0.9);
+  color: #0f766e;
+  border: 1px solid rgba(180, 138, 46, 0.42);
 }
 
 .phase-text {
   font-family: var(--font-sans);
-  font-size: clamp(1.05rem, 2.15vh, 1.26rem);
+  font-size: clamp(0.92rem, 1.9dvh, 1.18rem);
   font-weight: 700;
-  line-height: 1.26;
-  letter-spacing: -0.025em;
-  margin: 0.05rem 0;
+  line-height: 1.22;
+  letter-spacing: -0.02em;
+  margin: 0.02rem 0;
 }
 
 .protocol-benefit {
-  font-size: 0.77rem;
+  font-size: clamp(0.68rem, 1.35dvh, 0.76rem);
   font-weight: 500;
-  color: rgba(203, 213, 225, 0.78);
-  line-height: 1.42;
-  max-width: 560px;
+  line-height: 1.32;
+  max-width: 540px;
   margin: 0 auto;
+}
+
+.app--theme-dark .protocol-benefit {
+  color: rgba(203, 213, 225, 0.8);
 }
 
 .app--theme-light .protocol-benefit {
@@ -747,12 +660,12 @@ body {
 
 .countdown {
   width: 100%;
-  max-width: 340px;
+  max-width: 320px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.22rem;
+  gap: 0.18rem;
 }
 
 .countdown-row {
@@ -763,25 +676,25 @@ body {
 }
 
 .countdown-number {
-  font-size: 1.24rem;
+  font-size: 1.15rem;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   color: var(--svasa-gold-light);
 }
 
 .app--theme-light .countdown-number {
-  color: #0f172a;
+  color: #0f766e;
 }
 
 .countdown-label {
-  font-size: 0.75rem;
-  color: rgba(203, 213, 225, 0.75);
+  font-size: 0.72rem;
+  opacity: 0.8;
 }
 
 .tick-bar {
   width: 100%;
   height: 5px;
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(148, 163, 184, 0.25);
   border-radius: 999px;
   overflow: hidden;
 }
@@ -793,79 +706,49 @@ body {
 }
 
 .controls {
-  margin-top: 0.14rem;
   display: flex;
   justify-content: center;
   width: 100%;
-  gap: 0.65rem;
+  flex-shrink: 0;
 }
 
-/* BOTTONE PRINCIPALE S.V.A.S.A. BI-METALLIC (Smeraldo + Titanio + Oro Champagne) */
 .btn {
-  padding: clamp(0.64rem, 1.3vh, 0.82rem) 2.1rem;
+  padding: clamp(0.5rem, 1.15dvh, 0.76rem) 1.85rem;
   border-radius: 999px;
   font-family: var(--font-sans);
-  font-size: 0.85rem;
+  font-size: clamp(0.78rem, 1.6dvh, 0.85rem);
   font-weight: 600;
   letter-spacing: -0.01em;
   cursor: pointer;
   transform: translateZ(0);
-  backdrop-filter: blur(24px) saturate(140%);
-  -webkit-backdrop-filter: blur(24px) saturate(140%);
-  transition:
-    transform 0.22s var(--ios-spring),
-    box-shadow 0.22s ease,
-    border-color 0.22s ease,
-    background 0.22s ease;
+  transition: transform 0.2s var(--ios-spring), box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .btn:active {
   transform: scale(0.95) !important;
-  transition-duration: 0.06s !important;
 }
 
-.btn-primary {
-  background: linear-gradient(
-    90deg,
-    rgba(16, 185, 129, 0.42) 0%,
-    rgba(30, 41, 59, 0.82) 48%,
-    rgba(212, 175, 55, 0.44) 100%
-  );
+.app--theme-dark .btn-primary {
+  background: var(--bimetallic-active-dark);
   color: #ffffff;
   border: 1px solid rgba(243, 217, 139, 0.78);
-  box-shadow:
-    inset 0 1px 2px rgba(243, 217, 139, 0.82),
-    0 12px 30px -6px rgba(0, 0, 0, 0.5),
-    0 0 24px rgba(16, 185, 129, 0.16);
+  box-shadow: inset 0 1px 2px rgba(243, 217, 139, 0.75), 0 10px 24px -6px rgba(0, 0, 0, 0.45);
 }
 
 .app--theme-light .btn-primary,
 .executive-modal .btn-primary,
 .qr-modal .btn-primary,
 .completion-card .btn-primary {
-  background: linear-gradient(
-    90deg,
-    #0f293a 0%,
-    #0f172a 50%,
-    #2b2212 100%
-  );
-  color: #f3d98b;
-  border: 1px solid #b48a2e;
-  box-shadow:
-    inset 0 1px 1.5px rgba(243, 217, 139, 0.45),
-    0 10px 24px -6px rgba(15, 23, 42, 0.35);
-}
-
-.btn-primary:hover {
-  transform: translate3d(0, -1.5px, 0) scale(1.015);
-  border-color: #ffffff;
+  background: var(--bimetallic-active-light);
+  color: #ffffff;
+  border: 1px solid #d4af37;
+  box-shadow: inset 0 1px 1.5px rgba(255, 255, 255, 0.45), 0 10px 22px -6px rgba(13, 148, 136, 0.28);
 }
 
 .btn-secondary {
   background: rgba(15, 23, 42, 0.72);
   color: #f8fafc;
-  border: 1px solid rgba(212, 175, 55, 0.38);
-  box-shadow: inset 0 1px 1px rgba(243, 217, 139, 0.25);
+  border: 1px solid rgba(212, 175, 55, 0.42);
 }
 
 .executive-modal .btn-secondary,
@@ -877,31 +760,31 @@ body {
 }
 
 .btn-ghost {
-  background: rgba(241, 245, 249, 0.9);
+  background: rgba(241, 245, 249, 0.92);
   color: #0f172a;
   border: 1px solid #cbd5e1;
 }
 
-/* FIRMA CO-BRANDING PAUSA81 BY S.V.A.S.A. OS */
+/* BLOCCO BRAND E CONTATORE LOCALE BEN DISTANZIATI DAL FOOTER */
 .brand {
-  margin-top: 0.08rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.16rem;
+  gap: 0.12rem;
   text-align: center;
+  flex-shrink: 0;
 }
 
 .brand-block {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.04rem;
+  gap: 0.02rem;
 }
 
 .svasa-wordmark {
   font-family: var(--font-sans);
-  font-size: 0.94rem;
+  font-size: 0.88rem;
   font-weight: 700;
   letter-spacing: -0.02em;
 }
@@ -909,36 +792,33 @@ body {
 .svasa-badge-b2b {
   font-family: var(--font-serif-italic);
   font-style: italic;
-  font-size: 0.94rem;
+  font-size: 0.88rem;
   font-weight: 400;
-  padding: 0.06rem 0.54rem;
+  padding: 0.03rem 0.48rem;
   border-radius: 999px;
   background: linear-gradient(90deg, rgba(16, 185, 129, 0.16) 0%, rgba(212, 175, 55, 0.18) 100%);
   border: 1px solid rgba(212, 175, 55, 0.45);
   color: var(--svasa-gold-light);
-  margin-left: 0.22rem;
+  margin-left: 0.18rem;
 }
 
 .app--theme-light .svasa-badge-b2b {
-  background: rgba(15, 23, 42, 0.07);
+  background: rgba(13, 148, 136, 0.1);
   border-color: #b48a2e;
   color: #0f172a;
 }
 
 .powered-by-sub {
-  font-size: 0.65rem;
-  color: rgba(203, 213, 225, 0.72);
-}
-
-.app--theme-light .powered-by-sub {
-  color: #64748b;
+  font-size: 0.61rem;
+  opacity: 0.76;
 }
 
 .local-counter-pill {
-  font-size: 0.64rem;
+  font-size: 0.58rem;
   font-weight: 600;
-  padding: 0.16rem 0.64rem;
+  padding: 0.1rem 0.55rem;
   border-radius: 999px;
+  white-space: nowrap;
 }
 
 .shield-status-footer {
@@ -947,7 +827,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.42rem 1rem;
+  padding: 0.28rem 0.75rem 0.38rem;
   z-index: 20;
 }
 
@@ -955,22 +835,24 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.48rem;
-  padding: 0.36rem 0.95rem;
+  gap: 0.4rem;
+  padding: 0.3rem 0.85rem;
   border-radius: 999px;
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   font-weight: 500;
-  background: rgba(15, 23, 42, 0.72);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(212, 175, 55, 0.32);
-  box-shadow: inset 0 1px 1px rgba(243, 217, 139, 0.18);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.app--theme-dark .shield-status-pill {
+  background: rgba(15, 23, 42, 0.78);
+  border: 1px solid rgba(212, 175, 55, 0.35);
   color: rgba(248, 250, 252, 0.92);
 }
 
 .app--theme-light .shield-status-pill {
-  background: rgba(255, 255, 255, 0.88);
-  border: 1px solid rgba(180, 138, 46, 0.35);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(180, 138, 46, 0.4);
   color: #0f172a;
 }
 
@@ -984,7 +866,159 @@ body {
 }
 
 /* ==========================================================================
-   5. MODALI FLUIDE A 60FPS
+   5. OTTIMIZZAZIONE SPECIFICA SMARTPHONE (ZERO TAGLI E ZERO SOVRAPPOSIZIONI)
+   ========================================================================== */
+
+@media (max-width: 860px) {
+  .topbar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0.32rem 0.5rem;
+    gap: 0.28rem;
+  }
+
+  /* Riga 1: I 3 pulsanti direzionali B2B allineati su 1 sola riga */
+  .topbar-left {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    width: 100%;
+    border-radius: 14px;
+    padding: 0.18rem;
+    gap: 0.22rem;
+  }
+
+  .executive-pill,
+  .qr-pill-btn {
+    flex: 1 1 auto;
+    font-size: 0.58rem;
+    padding: 0.32rem 0.35rem;
+    gap: 0.22rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Righe 2 e 3: Griglia 4x2 Bloccata per gli 8 controlli (Zero Shift Ossidiana/Diurno) */
+  .topbar-actions {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    width: 100%;
+    border-radius: 14px;
+    padding: 0.2rem;
+    gap: 0.22rem;
+  }
+
+  .icon-btn {
+    width: 100%;
+    font-size: 0.59rem;
+    padding: 0.32rem 0.2rem;
+    gap: 0.2rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .icon-btn svg {
+    width: 11px;
+    height: 11px;
+  }
+
+  /* Palco Centrale Mobile calibrato al pixel */
+  .app-main {
+    padding: 0.2rem 0.55rem;
+    gap: 0.14rem;
+    justify-content: space-evenly;
+  }
+
+  .protocol-bar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.28rem;
+  }
+
+  .protocol-chip {
+    padding: 0.26rem 0.38rem;
+    border-radius: 12px;
+  }
+
+  .protocol-level-tag {
+    font-size: 0.49rem;
+    margin-bottom: 0.03rem;
+  }
+
+  .protocol-chip-title {
+    font-size: 0.7rem;
+  }
+
+  .protocol-chip-sub {
+    font-size: 0.55rem;
+    margin-top: 0.02rem;
+  }
+
+  .sphere-wrap {
+    width: clamp(134px, 20.5dvh, 178px);
+    height: clamp(134px, 20.5dvh, 178px);
+  }
+
+  .step-badge {
+    font-size: 0.58rem;
+    padding: 0.16rem 0.44rem;
+  }
+
+  .when-to-use-pill {
+    font-size: 0.52rem;
+    padding: 0.14rem 0.55rem;
+  }
+
+  .phase-text {
+    font-size: clamp(0.86rem, 1.75dvh, 0.98rem);
+    line-height: 1.18;
+  }
+
+  .protocol-benefit {
+    font-size: 0.64rem;
+    line-height: 1.25;
+  }
+
+  .btn {
+    padding: 0.46rem 1.4rem;
+    font-size: 0.76rem;
+  }
+
+  .svasa-wordmark {
+    font-size: 0.8rem;
+  }
+
+  .svasa-badge-b2b {
+    font-size: 0.8rem;
+  }
+
+  .powered-by-sub {
+    font-size: 0.56rem;
+  }
+
+  .local-counter-pill {
+    font-size: 0.54rem;
+    padding: 0.08rem 0.45rem;
+  }
+
+  .shield-status-footer {
+    padding: 0.15rem 0.45rem 0.28rem;
+  }
+
+  .shield-status-pill {
+    font-size: 0.56rem;
+    padding: 0.24rem 0.6rem;
+    line-height: 1.22;
+  }
+
+  .roi-metrics,
+  .compliance-grid,
+  .plaque-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ==========================================================================
+   6. MODALI FLUIDE A 60FPS & STAMPA A4
    ========================================================================== */
 
 .modal-backdrop {
@@ -1015,9 +1049,6 @@ body {
   padding: 1.3rem 1.45rem;
   border: 1px solid #e2e8f0;
   box-shadow: 0 28px 60px -12px rgba(0, 0, 0, 0.55);
-  transform: translateZ(0);
-  backface-visibility: hidden;
-  will-change: transform, opacity;
 }
 
 .completion-card {
@@ -1383,33 +1414,6 @@ body {
   justify-content: flex-end;
   flex-wrap: wrap;
   gap: 0.55rem;
-}
-
-@media (max-width: 720px) {
-  .topbar {
-    justify-content: center;
-    padding: 0.38rem 0.55rem;
-    gap: 0.32rem;
-  }
-  .topbar-left,
-  .topbar-actions {
-    justify-content: center;
-    width: 100%;
-    border-radius: 18px;
-  }
-  .protocol-bar {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.36rem;
-  }
-  .roi-metrics,
-  .compliance-grid,
-  .plaque-body {
-    grid-template-columns: 1fr;
-  }
-  .sphere-wrap {
-    width: clamp(168px, 25vh, 212px);
-    height: clamp(168px, 25vh, 212px);
-  }
 }
 
 @media print {
