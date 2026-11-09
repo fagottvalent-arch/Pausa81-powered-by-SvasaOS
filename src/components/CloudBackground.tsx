@@ -14,7 +14,6 @@ export function CloudBackground() {
 
     const handleResize = () => {
       if (!canvas) return;
-      // Risoluzione morbida anti-sgranatura ottimizzata per GPU
       canvas.width = Math.min(window.innerWidth, 1440);
       canvas.height = Math.min(window.innerHeight, 900);
     };
@@ -23,35 +22,36 @@ export function CloudBackground() {
     window.addEventListener('resize', handleResize);
 
     const render = () => {
-      t += 0.0035;
+      t += 0.0032;
       const w = canvas.width;
       const h = canvas.height;
       const isLight = document.querySelector('.app--theme-light') !== null;
 
       ctx.clearRect(0, 0, w, h);
 
-      // 3 onde radiali setose in movimento lento sinusoidale (stessi colori Dark & Light)
+      // 3 onde setose ispirate al medaglione S.V.A.S.A. OS:
+      // Sinistra: Smeraldo Bioluminescente | Destra: Oro Champagne | Centro: Titanio/Teal
       const orbs = [
         {
-          x: w * (0.5 + Math.sin(t * 0.9) * 0.14),
-          y: h * (0.38 + Math.cos(t * 0.7) * 0.1),
-          r: Math.max(w, h) * 0.52,
-          colorInner: isLight ? 'rgba(20, 184, 166, 0.16)' : 'rgba(13, 148, 136, 0.22)',
-          colorMid: isLight ? 'rgba(153, 246, 228, 0.08)' : 'rgba(15, 41, 58, 0.16)',
+          x: w * (0.36 + Math.sin(t * 0.85) * 0.12),
+          y: h * (0.42 + Math.cos(t * 0.65) * 0.1),
+          r: Math.max(w, h) * 0.5,
+          colorInner: isLight ? 'rgba(16, 185, 129, 0.14)' : 'rgba(45, 212, 191, 0.18)',
+          colorMid: isLight ? 'rgba(204, 251, 241, 0.08)' : 'rgba(13, 148, 136, 0.08)',
         },
         {
-          x: w * (0.32 + Math.cos(t * 0.65) * 0.16),
-          y: h * (0.62 + Math.sin(t * 0.8) * 0.12),
-          r: Math.max(w, h) * 0.46,
-          colorInner: isLight ? 'rgba(45, 212, 191, 0.13)' : 'rgba(20, 184, 166, 0.14)',
-          colorMid: isLight ? 'rgba(204, 251, 241, 0.06)' : 'rgba(9, 13, 22, 0.08)',
+          x: w * (0.64 + Math.cos(t * 0.7) * 0.12),
+          y: h * (0.44 + Math.sin(t * 0.75) * 0.1),
+          r: Math.max(w, h) * 0.48,
+          colorInner: isLight ? 'rgba(212, 175, 55, 0.13)' : 'rgba(212, 175, 55, 0.15)',
+          colorMid: isLight ? 'rgba(254, 243, 199, 0.07)' : 'rgba(180, 138, 46, 0.06)',
         },
         {
-          x: w * (0.68 + Math.sin(t * 0.55 + 1.8) * 0.15),
-          y: h * (0.52 + Math.cos(t * 0.6 + 1.2) * 0.12),
-          r: Math.max(w, h) * 0.44,
-          colorInner: isLight ? 'rgba(16, 185, 129, 0.11)' : 'rgba(16, 185, 129, 0.12)',
-          colorMid: isLight ? 'rgba(240, 253, 250, 0.05)' : 'rgba(15, 23, 42, 0.06)',
+          x: w * (0.5 + Math.sin(t * 0.5 + 1.4) * 0.14),
+          y: h * (0.65 + Math.cos(t * 0.55 + 1.1) * 0.1),
+          r: Math.max(w, h) * 0.45,
+          colorInner: isLight ? 'rgba(20, 184, 166, 0.10)' : 'rgba(30, 41, 59, 0.24)',
+          colorMid: isLight ? 'rgba(241, 245, 249, 0.05)' : 'rgba(9, 13, 22, 0.08)',
         },
       ];
 
