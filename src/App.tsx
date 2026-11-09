@@ -24,7 +24,7 @@ export type PhraseKey =
   | 'level3_inspire'
   | 'level3_expire';
 
-const APP_BUILD_VERSION = 'pausa81-v3.7-svasa-bimetallic-gold-emerald';
+const APP_BUILD_VERSION = 'pausa81-v3.8-pnl-b2b-master';
 const VERSION_STORAGE_KEY = 'pausa81_active_build_version';
 
 const IOS_MODAL_SPRING = {
@@ -109,111 +109,111 @@ const STAGES: StageConfig[] = [
   {
     id: 'level1',
     stageNumber: 1,
-    shortTab: 'Solo Liv. 1 (60s)',
-    levelTag: 'LIVELLO 1 · RESET NEURO-VISIVO',
-    name: 'Reset Tra Due Call',
-    subtitle: 'Sguardo & Spalle',
-    whenToUse: 'Seduto · Decompressione oculare e rilascio cervicale',
+    shortTab: 'Fase 1 · 60s',
+    levelTag: 'FASE 1 · DECOMPRESSIONE NEURO-VISIVA',
+    name: 'Reset Neuro-Visivo',
+    subtitle: 'Messa a Fuoco & Cervicale',
+    whenToUse: 'Postazione VDT · Sgancio accomodazione oculare e trapezio',
     benefit:
-      'Distoglie la messa a fuoco dai pixel ravvicinati (Titolo VII D.Lgs. 81/08) e rilascia la tensione del trapezio.',
+      'Sgancia il muscolo ciliare dai pixel ravvicinati (Titolo VII D.Lgs. 81/08) e scarica la tensione cervicale accumulata.',
     phrases: {
       inspire: {
         audioKey: 'level1_inspire',
-        part1: 'Inspira dolcemente dal naso...',
-        part2: 'e rilassa lo sguardo.',
-        fullText: 'Inspira dolcemente dal naso e rilassa lo sguardo',
+        part1: 'Inspira dal naso...',
+        part2: 'e amplia lo sguardo.',
+        fullText: 'Inspira dal naso e lascia riposare lo sguardo',
       },
       hold: {
         audioKey: 'level2_hold',
         part1: 'Trattieni...',
-        part2: 'mantieni la postura.',
-        fullText: 'Trattieni, mantieni la postura',
+        part2: 'mantieni l’asse.',
+        fullText: 'Trattieni, consolida l’asse posturale',
       },
       expire: {
         audioKey: 'level1_expire',
-        part1: 'Espira lentamente...',
+        part1: 'Espira...',
         part2: 'lascia scendere le spalle.',
-        fullText: 'Espira lentamente, lascia scendere le spalle',
+        fullText: 'Espira, lascia scendere le spalle e il collo',
       },
       pause: {
         audioKey: '',
         part1: '',
         part2: '',
-        fullText: 'Pausa · Rilassa completamente il viso',
+        fullText: 'Assesta · Distendi la fronte e allenta la mandibola',
       },
     },
   },
   {
     id: 'level2',
     stageNumber: 2,
-    shortTab: 'Solo Liv. 2 (60s)',
-    levelTag: 'LIVELLO 2 · POMPA EMATICA & GAMBE',
-    name: 'Riattivazione Gambe',
-    subtitle: 'Talloni & Circolazione',
-    whenToUse: 'Dopo 60 min di schermo · Attivazione muscolo soleo (Zero-Sudore)',
+    shortTab: 'Fase 2 · 60s',
+    levelTag: 'FASE 2 · POMPA EMATICA DEL SOLEO',
+    name: 'Spinta Circolatoria',
+    subtitle: 'Ritorno Venoso & Lucidità',
+    whenToUse: 'Ogni 60 min di postura fissa · Attivazione soleo (Zero-Sudore)',
     benefit:
-      'Riattiva il ritorno venoso dagli arti inferiori verso il cervello dopo un’ora di postura seduta fissa.',
+      'Riattiva la spinta ematica dagli arti inferiori verso la corteccia prefrontale, ripristinando la prontezza decisionale.',
     phrases: {
       inspire: {
         audioKey: 'level2_inspire',
         part1: 'Inspira...',
-        part2: 'solleva i talloni, e attiva le gambe.',
-        fullText: 'Inspira, solleva i talloni e attiva le gambe',
+        part2: 'solleva i talloni e attiva le gambe.',
+        fullText: 'Inspira, solleva i talloni e attiva la spinta venosa',
       },
       hold: {
         audioKey: 'level2_hold',
         part1: 'Trattieni...',
         part2: 'mantieni la postura.',
-        fullText: 'Trattieni, mantieni la postura',
+        fullText: 'Trattieni, stabilizza il baricentro',
       },
       expire: {
         audioKey: 'level2_expire',
         part1: 'Espira...',
         part2: 'riappoggia con controllo.',
-        fullText: 'Espira, riappoggia con controllo',
+        fullText: 'Espira, riappoggia i talloni con pieno controllo',
       },
       pause: {
         audioKey: '',
         part1: '',
         part2: '',
-        fullText: 'Pausa · Lascia fluire la circolazione',
+        fullText: 'Assesta · Percepisi la pianta dei piedi stabile a terra',
       },
     },
   },
   {
     id: 'level3',
     stageNumber: 3,
-    shortTab: 'Solo Liv. 3 (60s)',
-    levelTag: 'LIVELLO 3 · SBLOCCO COLLO, SPALLE & POLSI',
-    name: 'Decompressione Posturale',
-    subtitle: 'Petto, Palmi & Collo',
-    whenToUse: 'Pausa VDT (2h) o Fine Turno · Prevenzione DMS',
+    shortTab: 'Fase 3 · 60s',
+    levelTag: 'FASE 3 · APERTURA TORACICA & TUNNEL CARPALE',
+    name: 'Sblocco Articolare',
+    subtitle: 'Spalle, Collo & Polsi',
+    whenToUse: 'Cambio attività o Fine Turno · Prevenzione Primaria DMS',
     benefit:
-      'Previene i Disturbi Muscolo-Scheletrici (DMS, 74,7% delle malattie professionali INAIL): decomprime tunnel carpale, collo e spalle.',
+      'Contrasta l’insorgenza dei Disturbi Muscolo-Scheletrici (DMS, 74,7% delle tecnopatie INAIL) decomprimendo tunnel carpale e rachide cervicale.',
     phrases: {
       inspire: {
         audioKey: 'level3_inspire',
         part1: 'Inspira, apri il petto...',
         part2: 'e ruota i palmi in fuori.',
-        fullText: 'Inspira, apri il petto e ruota i palmi in fuori',
+        fullText: 'Inspira, espandi il torace e ruota i palmi all’esterno',
       },
       hold: {
         audioKey: 'level2_hold',
         part1: 'Trattieni...',
-        part2: 'mantieni la postura.',
-        fullText: 'Trattieni, mantieni la postura',
+        part2: 'mantieni l’apertura.',
+        fullText: 'Trattieni, mantieni l’apertura articolare',
       },
       expire: {
         audioKey: 'level3_expire',
         part1: 'Espira a lungo...',
         part2: 'sciogli collo e spalle.',
-        fullText: 'Espira a lungo, sciogli collo e spalle',
+        fullText: 'Espira a lungo, scarica ogni tensione da collo e spalle',
       },
       pause: {
         audioKey: '',
         part1: '',
         part2: '',
-        fullText: 'Pausa · Ascolta il rilascio muscolare',
+        fullText: 'Assesta · Nota lo spazio libero tra collo e spalle',
       },
     },
   },
@@ -356,7 +356,7 @@ function getTimelineSnapshot(elapsed: number, mode: SessionMode): TimelineSnapsh
   const intoPause = secInCycle - (INSPIRE_SEC + HOLD_SEC + EXPIRE_SEC);
   const pauseText =
     mode === 'all' && cycleIndex < 2
-      ? `Pausa · Passaggio automatico alla Fase ${cycleIndex + 2} di 3`
+      ? `Assesta · Innesco automatico Fase ${cycleIndex + 2} di 3`
       : stage.phrases.pause.fullText;
 
   return {
@@ -378,14 +378,23 @@ function useBreathScale(phase: Phase, breath: number, phaseDuration: number) {
   return { scale, duration };
 }
 
+/**
+ * Sigillo Vettoriale Co-Branded Pausa81 by S.V.A.S.A. OS (Medaglione Bacchetta + Rete Neurale Smeraldo/Oro)
+ */
 function Pausa81Logo({ partnerName }: { partnerName: string }) {
   return (
     <div className="brand-block" aria-hidden="true">
-      <span className="svasa-wordmark">
+      <span className="svasa-wordmark" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.38rem' }}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" stroke="#d4af37" strokeWidth="1.6" fill="rgba(9,13,22,0.85)" />
+          <path d="M6.5 14.5L9.5 8.5L12 12L6.5 14.5Z" stroke="#2dd4bf" strokeWidth="1.2" />
+          <path d="M17.5 9.5L14.5 15.5L12 12L17.5 9.5Z" stroke="#f3d98b" strokeWidth="1.2" />
+          <line x1="7.5" y1="16.5" x2="16.5" y2="7.5" stroke="#f8fafc" strokeWidth="1.6" strokeLinecap="round" />
+        </svg>
         Pausa81 <small className="svasa-badge-b2b">{partnerName || 'by S.V.A.S.A. OS'}</small>
       </span>
       <span className="powered-by-sub">
-        Presidio Neuro-Ergonomico <strong>D.Lgs. 81/2008</strong>
+        Presidio Neuro-Ergonomico Primario · <strong>D.Lgs. 81/2008</strong>
       </span>
     </div>
   );
@@ -394,7 +403,7 @@ function Pausa81Logo({ partnerName }: { partnerName: string }) {
 function SacredLotus({ phase }: { phase: Phase }) {
   const openFactor =
     phase === 'inspire' || phase === 'hold'
-      ? 1.14
+      ? 1.15
       : phase === 'expire' || phase === 'pause'
       ? 0.86
       : 1;
@@ -402,6 +411,10 @@ function SacredLotus({ phase }: { phase: Phase }) {
   const backAngles = [-60 * openFactor, 60 * openFactor];
   const midAngles = [-42 * openFactor, 42 * openFactor];
   const sideAngles = [-25 * openFactor, 25 * openFactor];
+
+  // Submodalità Visiva PNL: Il punto focale foveale vira all'Oro Champagne in trattenuta (Hold)
+  const coreColor =
+    phase === 'hold' ? '#f3d98b' : phase === 'inspire' ? '#5eead4' : '#2dd4bf';
 
   const rays = Array.from({ length: 9 }, (_, i) => {
     const a = ((-160 + i * 17.5) * Math.PI) / 180;
@@ -437,13 +450,13 @@ function SacredLotus({ phase }: { phase: Phase }) {
           <stop offset="100%" stopColor="#0d9488" />
         </radialGradient>
         <radialGradient id="lotus-glow" gradientUnits="userSpaceOnUse" cx="100" cy="140" r="62">
-          <stop offset="0%" stopColor="#f3d98b" stopOpacity="0.65" />
+          <stop offset="0%" stopColor="#f3d98b" stopOpacity="0.7" />
           <stop offset="55%" stopColor="#2dd4bf" stopOpacity="0.45" />
           <stop offset="100%" stopColor="#0d9488" stopOpacity="0" />
         </radialGradient>
         <linearGradient id="water-fill" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor="#2dd4bf" stopOpacity="0.42" />
-          <stop offset="100%" stopColor="#d4af37" stopOpacity="0.22" />
+          <stop offset="100%" stopColor="#d4af37" stopOpacity="0.24" />
         </linearGradient>
       </defs>
 
@@ -524,9 +537,10 @@ function SacredLotus({ phase }: { phase: Phase }) {
         </g>
       ))}
 
-      <circle cx="100" cy="142" r="8" fill="#fef3c7" opacity="0.96" />
-      <circle cx="100" cy="142" r="8" fill="none" stroke="#d4af37" strokeOpacity="0.85" strokeWidth="1.2" />
-      <circle cx="100" cy="142" r="3" fill="#d4af37" />
+      {/* Ancora Foveale PNL per il rilascio del muscolo ciliare VDT */}
+      <circle cx="100" cy="142" r="8.5" fill="#fef3c7" opacity="0.96" />
+      <circle cx="100" cy="142" r="8.5" fill="none" stroke="#d4af37" strokeOpacity="0.9" strokeWidth="1.4" />
+      <circle cx="100" cy="142" r="3.6" fill={coreColor} />
     </svg>
   );
 }
@@ -541,7 +555,7 @@ function RealScannableQrCode({ url, sizePx = 110 }: { url: string; sizePx?: numb
     return (
       <img
         src={qrApiUrl}
-        alt="QR Code Ufficiale Pausa81 v3.7 Scansionabile"
+        alt="QR Code Ufficiale Pausa81 v3.8 Scansionabile"
         className="qr-svg"
         style={{
           width: `${sizePx}px`,
@@ -566,7 +580,7 @@ function RealScannableQrCode({ url, sizePx = 110 }: { url: string; sizePx?: numb
     >
       <rect width={size + 4} height={size + 4} fill="#ffffff" rx="1.5" />
       <text x="50%" y="50%" textAnchor="middle" fontSize="2.2" fill="#0f172a">
-        PAUSA81 v3.7
+        PAUSA81 v3.8
       </text>
     </svg>
   );
@@ -701,7 +715,7 @@ function InteractiveSignaturePad({
             style={{ maxHeight: '56px', maxWidth: '100%', objectFit: 'contain' }}
           />
           <small style={{ display: 'block', fontSize: '0.6rem', color: '#0f172a', fontWeight: 600 }}>
-            ✓ Firma autografa certificata nel Fascicolo
+            ✓ Sottoscrizione biometrica acquisita nel Verbale
           </small>
         </div>
       ) : (
@@ -872,7 +886,7 @@ export default function App() {
     initialClient || 'Azienda Cliente S.r.l.'
   );
   const [departmentName, setDepartmentName] = useState<string>(
-    'Area Videoterminali / Sale Riunioni / Reparto'
+    'Area Videoterminali / Direzione / Reparto'
   );
   const [doctorName, setDoctorName] = useState<string>('Dott. [Nome Medico Competente]');
   const [doctorAlbo, setDoctorAlbo] = useState<string>('Ordine Medici n. [XXXX]');
@@ -914,7 +928,7 @@ export default function App() {
       setOrUpdateMeta(
         'name',
         'description',
-        'Pausa81 by S.V.A.S.A. OS è il presidio neuro-ergonomico aziendale da 60 secondi conforme al D.Lgs. 81/2008 (Art. 28 Stress Lavoro-Correlato e Titolo VII Videoterminali) a 0 Byte Tracciati, esente Art. 4 L. 300/1970 e idoneo per lo sconto INAIL OT23.'
+        'Pausa81 by S.V.A.S.A. OS è il presidio neuro-ergonomico aziendale da 60 secondi conforme al D.Lgs. 81/2008 (Art. 28 Stress Lavoro-Correlato e Titolo VII Videoterminali) a 0 Byte Tracciati, esente Art. 4 L. 300/1970 e idoneo per la riduzione premio INAIL OT23.'
       );
       setOrUpdateMeta('name', 'robots', 'index, follow');
       setOrUpdateMeta(
@@ -925,7 +939,7 @@ export default function App() {
       setOrUpdateMeta(
         'property',
         'og:description',
-        'Protocollo ergonomico da 60 secondi per Videoterminali (Art. 175) e Stress Lavoro-Correlato (Art. 28 D.Lgs. 81/08) con Fascicolo Notarile DVR a 3 firme.'
+        'Protocollo ergonomico primario da 60 secondi per Videoterminali (Art. 175) e Stress Lavoro-Correlato (Art. 28 D.Lgs. 81/08) con Fascicolo Probatorio DVR Art. 35 a 3 firme.'
       );
       setOrUpdateMeta('property', 'og:url', 'https://pausa81.it');
     }
@@ -1425,7 +1439,7 @@ export default function App() {
         targetBreath: 0.5,
         displayText:
           sessionMode === 'all'
-            ? 'Percorso Completo 60s: Visivo (20s) → Gambe (20s) → Postura (20s)'
+            ? 'In 60 secondi rigeneri messa a fuoco visiva, spinta venosa e postura cervicale'
             : `${STAGES[previewStageIdx].name} (60s): «${STAGES[previewStageIdx].phrases.inspire.fullText}»`,
         spokenPhrase: null,
       };
@@ -1615,16 +1629,18 @@ export default function App() {
   const estimatedAnnualSavings = Math.round(employeesCount * 448.4).toLocaleString('it-IT');
   const inailOt23DiscountPct =
     employeesCount <= 10 ? '28%' : employeesCount <= 50 ? '18%' : employeesCount <= 200 ? '10%' : '5%';
+
+  // Ancoraggio Finanziario Frazionato PNL (Costo mensile e giornaliero contro perdita mensile)
   const recommendedPlanPrice =
     employeesCount <= 15
-      ? '€ 1.200 / anno (+ € 390 Impianto Kit Phygital)'
+      ? '€ 100/mese (€ 3,30/gg · Piano € 1.200/a + Kit QR € 390)'
       : employeesCount <= 35
-      ? '€ 2.400 / anno (+ € 590 Impianto Kit Phygital)'
+      ? '€ 200/mese (€ 6,60/gg · Piano € 2.400/a + Kit QR € 590)'
       : employeesCount <= 80
-      ? '€ 3.900 / anno (+ € 890 Impianto Kit Phygital)'
+      ? '€ 325/mese (€ 10,80/gg · Piano € 3.900/a + Kit QR € 890)'
       : employeesCount <= 200
-      ? '€ 6.900 / anno (+ € 1.490 Impianto Kit Phygital)'
-      : `€ ${(employeesCount * 45).toLocaleString('it-IT')} / anno (+ € 2.490 Impianto Kit Phygital)`;
+      ? '€ 575/mese (€ 19,10/gg · Piano € 6.900/a + Kit QR € 1.490)'
+      : `€ ${Math.round((employeesCount * 45) / 12).toLocaleString('it-IT')}/mese (€ ${(employeesCount * 45).toLocaleString('it-IT')}/a + Setup € 2.490)`;
 
   const officialBaseOrigin =
     typeof window !== 'undefined' &&
@@ -1635,7 +1651,7 @@ export default function App() {
 
   const customWhiteLabelUrl = `${officialBaseOrigin}/?partner=${encodeURIComponent(
     partnerStudioName.replace(/\s+/g, '_')
-  )}&cliente=${encodeURIComponent(clientCompanyName.replace(/\s+/g, '_'))}&v=3.7`;
+  )}&cliente=${encodeURIComponent(clientCompanyName.replace(/\s+/g, '_'))}&v=3.8`;
 
   const todayFormatted = new Date().toLocaleDateString('it-IT');
   const allThreeSigned = Boolean(
@@ -1644,8 +1660,8 @@ export default function App() {
 
   const startButtonLabel =
     sessionMode === 'all'
-      ? 'Avvia Percorso Completo 3 Fasi (60s)'
-      : `Avvia Solo ${STAGES[previewStageIdx].name} (60s)`;
+      ? 'Attiva Presidio Completo 3 Fasi (60s)'
+      : `Attiva Protocollo ${STAGES[previewStageIdx].name} (60s)`;
 
   return (
     <div
@@ -1668,7 +1684,7 @@ export default function App() {
             <span className="pill-dot" />
             {initialPartner || initialClient
               ? `${initialClient || initialPartner} · D.Lgs. 81/08`
-              : 'ROI & Dati INAIL · Direzione'}
+              : 'Impatto Bilancio & OT23 · Direzione'}
           </button>
 
           <button
@@ -1685,7 +1701,7 @@ export default function App() {
               <rect x="3" y="14" width="7" height="7" rx="1" />
               <path d="M14 14h3v3h-3zM18 18h3v3h-3zM14 19h2M19 14v2" />
             </svg>
-            Targa QR
+            Targa QR Reparto
           </button>
 
           <button
@@ -1702,7 +1718,7 @@ export default function App() {
               <line x1="8" y1="13" x2="16" y2="13" />
               <line x1="8" y1="17" x2="13" y2="17" />
             </svg>
-            {allThreeSigned ? 'Fascicolo DVR (3/3) ✓' : 'Fascicolo DVR (3 Firme)'}
+            {allThreeSigned ? 'Verbale DVR (3/3) ✓' : 'Verbale DVR (3 Firme)'}
           </button>
         </div>
 
@@ -1711,26 +1727,26 @@ export default function App() {
             type="button"
             className={`icon-btn ${voiceGender === 'female' ? 'active' : ''}`}
             onClick={() => handleSelectVoiceGender('female')}
-            title="Voce Ufficiale Serena"
+            title="Guida Vocale Neurale Serena"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <circle cx="12" cy="8" r="4" />
               <path d="M5 20c1.5-3.5 4-5 7-5s5.5 1.5 7 5" />
             </svg>
-            Donna
+            Guida Serena
           </button>
 
           <button
             type="button"
             className={`icon-btn ${voiceGender === 'male' ? 'active' : ''}`}
             onClick={() => handleSelectVoiceGender('male')}
-            title="Voce Ufficiale Alessandro"
+            title="Guida Vocale Neurale Alessandro"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <circle cx="12" cy="7.5" r="4" />
               <path d="M4.5 20.5c1.2-4 4-6 7.5-6s6.3 2 7.5 6" />
             </svg>
-            Uomo
+            Guida Alex
           </button>
 
           <button
@@ -1743,7 +1759,7 @@ export default function App() {
               <line x1="23" y1="9" x2="17" y2="15" />
               <line x1="17" y1="9" x2="23" y2="15" />
             </svg>
-            OFF
+            Solo Visivo
           </button>
 
           <button
@@ -1754,7 +1770,7 @@ export default function App() {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M2 12c2.5-4 5-4 7.5 0s5 4 7.5 0 3.5-2 5 0" />
             </svg>
-            {binauralEnabled ? '432Hz ON' : '432Hz OFF'}
+            {binauralEnabled ? '432Hz Attivo' : '432Hz Spento'}
           </button>
 
           <button
@@ -1766,7 +1782,7 @@ export default function App() {
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
               <path d="M13.73 21a2 2 0 0 1-3.46 0" />
             </svg>
-            {chimeEnabled ? 'Campana' : 'Muto'}
+            {chimeEnabled ? 'Diapason' : 'Silenzio'}
           </button>
 
           <button
@@ -1785,7 +1801,7 @@ export default function App() {
                 <line x1="12" y1="21" x2="12" y2="23" />
               </svg>
             )}
-            {themeMode === 'dark' ? 'Calm Dark' : 'Light'}
+            {themeMode === 'dark' ? 'Ossidiana' : 'Diurno'}
           </button>
 
           <button
@@ -1797,7 +1813,7 @@ export default function App() {
               <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" />
               <circle cx="12" cy="12" r="3" />
             </svg>
-            {eyeRestMode ? 'Filtro ON' : 'Vista'}
+            {eyeRestMode ? 'Filtro Ambra' : 'Luce Neutrale'}
           </button>
 
           <button
@@ -1810,7 +1826,7 @@ export default function App() {
               <polyline points="12 7 12 12 15 14" />
             </svg>
             {vdtReminderMinutes === null
-              ? 'VDT'
+              ? 'Timer VDT'
               : `${Math.ceil(vdtSecondsLeft / 60)}m`}
           </button>
         </div>
@@ -1843,14 +1859,14 @@ export default function App() {
               fontSize: '0.76rem',
             }}
           >
-            <span>Pausa Ergonomica VDT consigliata (60s):</span>
+            <span>Finestra di Decompressione VDT (60s):</span>
             <button
               type="button"
               className="btn-mini"
               style={{ background: '#f3d98b', color: '#0f172a', border: 'none' }}
               onClick={startSession}
             >
-              Inizia Ora (60s)
+              Attiva Ora (60s)
             </button>
             <button
               type="button"
@@ -1858,14 +1874,14 @@ export default function App() {
               style={{ background: 'rgba(255,255,255,0.12)', color: '#e2e8f0' }}
               onClick={snoozeVdtAlert5Min}
             >
-              +5 min
+              Posticipa (+5 min)
             </button>
           </motion.div>
         )}
       </AnimatePresence>
 
       <main className="app-main no-print">
-        <div className="protocol-bar" role="tablist" aria-label="Modalità Pausa81 da 60 secondi">
+        <div className="protocol-bar" role="tablist" aria-label="Protocolli Ergonomici da 60 secondi">
           <button
             type="button"
             className={`protocol-chip ${sessionMode === 'all' ? 'active' : ''}`}
@@ -1874,8 +1890,8 @@ export default function App() {
               setSessionMode('all');
             }}
           >
-            <span className="protocol-level-tag">COMPLETO · 3 FASI</span>
-            <span className="protocol-chip-title">Percorso 1+2+3</span>
+            <span className="protocol-level-tag">CICLO INTEGRATO · 60S</span>
+            <span className="protocol-chip-title">Protocollo 1+2+3</span>
             <span className="protocol-chip-sub">20s + 20s + 20s</span>
           </button>
 
@@ -1910,7 +1926,7 @@ export default function App() {
           sessionRemaining={sessionRemaining}
         />
 
-        <div className="breath-phases-stepper" aria-label="Fasi del respiro">
+        <div className="breath-phases-stepper" aria-label="Ritmo Respiratorio">
           <span className={`step-badge ${snapshot.phase === 'inspire' ? 'active' : ''}`}>
             1. Inspira ({INSPIRE_SEC}s)
           </span>
@@ -1921,14 +1937,14 @@ export default function App() {
             3. Espira ({EXPIRE_SEC}s)
           </span>
           <span className={`step-badge ${snapshot.phase === 'pause' ? 'active' : ''}`}>
-            4. Pausa ({PAUSE_SEC}s)
+            4. Assesta ({PAUSE_SEC}s)
           </span>
         </div>
 
         <div className="status">
           <span className="when-to-use-pill">
             {sessionMode === 'all'
-              ? `PERCORSO 3 FASI · ORA: ${snapshot.stage.levelTag}`
+              ? `SEQUENZA INTEGRATA · ${snapshot.stage.levelTag}`
               : `${snapshot.stage.levelTag} (SESSIONE DEDICATA 60S)`}
           </span>
 
@@ -1937,7 +1953,7 @@ export default function App() {
           {!isRunning ? (
             <p className="protocol-benefit">
               {sessionMode === 'all'
-                ? 'Unisce in 60 secondi riposo visivo, attivazione circolatoria delle gambe e decompressione di collo, spalle e polsi.'
+                ? 'Sincronizza in 60 secondi rilascio accomodativo oculare, ritorno venoso del soleo e decompressione di collo, spalle e tunnel carpale.'
                 : snapshot.stage.benefit}
             </p>
           ) : (
@@ -1945,7 +1961,7 @@ export default function App() {
               <div className="countdown-row">
                 <span className="countdown-number">{snapshot.phaseTimeLeft}s</span>
                 <span className="countdown-label">
-                  · Ciclo {snapshot.cycleNumber}/3 · Fine tra {sessionRemaining}s
+                  · Fase {snapshot.cycleNumber}/3 · Completamento tra {sessionRemaining}s
                 </span>
               </div>
               <div className="tick-bar">
@@ -1968,7 +1984,7 @@ export default function App() {
             </button>
           ) : (
             <button type="button" className="btn btn-secondary" onClick={stopSession}>
-              Interrompi Pausa
+              Concludi Sessione
             </button>
           )}
         </div>
@@ -1984,7 +2000,7 @@ export default function App() {
                 color: themeMode === 'dark' ? '#f3d98b' : '#0f172a',
               }}
             >
-              ✓ {localSessionsCount} sessioni completate · Certificato Locale {lastAuditCode}
+              ✓ {localSessionsCount} cicli registrati in locale · Codice Verifica {lastAuditCode}
             </span>
           )}
         </div>
@@ -2009,7 +2025,7 @@ export default function App() {
           </svg>
           <span>
             <strong>✓ 0 Byte Tracciati</strong> · Esente Art. 4 L. 300/70 · Conforme Garante Privacy
-            · <strong>Salva-Pause 15m Art. 175 D.Lgs. 81/08</strong>
+            · <strong>Integra e Tutela i 15m Art. 175 D.Lgs. 81/08</strong>
           </span>
         </div>
       </footer>
@@ -2031,14 +2047,14 @@ export default function App() {
               transition={IOS_MODAL_SPRING}
             >
               <span className="completion-badge">
-                ✓ Presidio Completato · Sigillo Verifica {lastAuditCode}
+                ✓ Ciclo Ergonomico Completato · Sigillo {lastAuditCode}
               </span>
-              <h2>Decompressione Pausa81 Completata (60s)</h2>
+              <h2>Equilibrio Neuro-Visivo e Posturale Ripristinato</h2>
               <p>
-                Sessione eseguita:{' '}
+                Protocollo eseguito:{' '}
                 <strong>
                   {sessionMode === 'all'
-                    ? 'Percorso Completo 3 Fasi (Visivo + Gambe + Postura)'
+                    ? 'Sequenza Integrata 3 Fasi (Visivo + Soleo + Articolare)'
                     : snapshot.stage.name}
                 </strong>
                 .
@@ -2047,18 +2063,18 @@ export default function App() {
               <div className="benchmark-grid">
                 <div className="benchmark-item">
                   <strong style={{ color: '#0f172a' }}>0 Byte</strong>
-                  <span>Dati Personali Inviati (Esente Art. 4)</span>
+                  <span>Nessun Dato Inviato (Esente Art. 4)</span>
                 </div>
                 <div className="benchmark-item">
                   <strong style={{ color: '#0f172a' }}>{localSessionsCount} min</strong>
-                  <span>Prevenzione Accumulata (Locale)</span>
+                  <span>Prevenzione Primaria Locale</span>
                 </div>
               </div>
 
               <p className="legal-note">
-                Il presidio da 60s è salvato solo nella memoria locale del dispositivo (Zero-Tracking)
-                e integra — senza mai ridurre — le pause di 15 minuti ogni 120 minuti previste dall’Art.
-                175 comma 3 D.Lgs. 81/2008.
+                La sessione da 60s è memorizzata esclusivamente sul dispositivo (Zero-Tracking) e
+                opera a supporto — senza mai sostituire né ridurre — delle pause di 15 minuti ogni 120
+                minuti previste dall’Art. 175 comma 3 D.Lgs. 81/2008.
               </p>
 
               <div className="completion-actions">
@@ -2067,7 +2083,7 @@ export default function App() {
                   className="btn btn-primary"
                   onClick={() => setSessionCompleted(false)}
                 >
-                  Torna al Lavoro Rigenerato
+                  Riprendi l’Attività Lucido
                 </button>
               </div>
             </motion.div>
@@ -2093,7 +2109,7 @@ export default function App() {
             >
               <div className="executive-header no-print">
                 <div>
-                  <span className="completion-badge">Kit Phygital Pausa81 · S.V.A.S.A. OS v3.7</span>
+                  <span className="completion-badge">Kit Phygital Pausa81 · S.V.A.S.A. OS v3.8</span>
                   <h2>Generatore Targa Murale QR Code ISO/IEC 18004 (D.Lgs. 81/2008)</h2>
                 </div>
                 <button
@@ -2134,7 +2150,7 @@ export default function App() {
 
               <div className="printable-plaque">
                 <div className="plaque-header">
-                  <span>PRESIDIO AZIENDALE PAUSA81 · SALUTE, SICUREZZA E BENESSERE ORGANIZZATIVO</span>
+                  <span>PRESIDIO AZIENDALE PAUSA81 · PREVENZIONE PRIMARIA E BENESSERE ORGANIZZATIVO</span>
                   <strong>D.LGS. 81/2008 · ART. 28 (STRESS LAVORO-CORRELATO) &amp; TITOLO VII (VDT)</strong>
                 </div>
 
@@ -2153,31 +2169,31 @@ export default function App() {
                   <div className="plaque-qr-box">
                     <RealScannableQrCode url={customWhiteLabelUrl} sizePx={136} />
                     <span>INQUADRA CON LA FOTOCAMERA</span>
-                    <small>Edizione S.V.A.S.A. Bi-Metallic v3.7</small>
+                    <small>Accesso Immediato Zero-Login v3.8</small>
                   </div>
 
                   <div className="plaque-levels">
-                    <h4>PERCORSO COMPLETO 3 FASI O SINGOLO PROTOCOLLO DA 60 SECONDI</h4>
+                    <h4>SEQUENZA INTEGRATA 3 FASI O SINGOLO PROTOCOLLO DA 60 SECONDI</h4>
                     <div className="plaque-level-item">
-                      <strong>LIVELLO 1 · Reset Neuro-Visivo (60s o Fase 1):</strong>
-                      <p>«Inspira dolcemente dal naso e rilassa lo sguardo · Trattieni · Espira lentamente, lascia scendere le spalle»</p>
+                      <strong>FASE 1 · Reset Neuro-Visivo (Messa a Fuoco &amp; Cervicale):</strong>
+                      <p>«Inspira dal naso e lascia riposare lo sguardo · Trattieni · Espira, lascia scendere le spalle»</p>
                     </div>
                     <div className="plaque-level-item">
-                      <strong>LIVELLO 2 · Pompa Ematica &amp; Gambe (60s o Fase 2):</strong>
-                      <p>«Inspira, solleva i talloni e attiva le gambe · Trattieni · Espira, riappoggia con controllo»</p>
+                      <strong>FASE 2 · Spinta Circolatoria del Soleo (Ritorno Venoso):</strong>
+                      <p>«Inspira, solleva i talloni e attiva la spinta venosa · Trattieni · Espira, riappoggia con pieno controllo»</p>
                     </div>
                     <div className="plaque-level-item">
-                      <strong>LIVELLO 3 · Decompressione Posturale DMS (60s o Fase 3):</strong>
-                      <p>«Inspira, apri il petto e ruota i palmi in fuori · Trattieni · Espira a lungo, sciogli collo e spalle»</p>
+                      <strong>FASE 3 · Sblocco Articolare DMS (Torace, Collo &amp; Tunnel Carpale):</strong>
+                      <p>«Inspira, espandi il torace e ruota i palmi all’esterno · Trattieni · Espira a lungo, scarica collo e spalle»</p>
                     </div>
                   </div>
                 </div>
 
                 <div className="plaque-footer">
                   <p>
-                    <strong>GARANZIA SINDACALE E PRIVACY (0 BYTE TRACCIATI):</strong> Strumento
+                    <strong>GARANZIA SINDACALE E PRIVACY (0 BYTE TRACCIATI):</strong> Presidio
                     100% anonimo esente da accordi ex Art. 4 L. 300/1970. Misura integrativa che
-                    non sostituisce né riduce le pause VDT di 15 minuti ex Art. 175 c. 3 D.Lgs. 81/08.
+                    affianca senza mai ridurre le pause VDT di 15 minuti ex Art. 175 c. 3 D.Lgs. 81/08.
                   </p>
                   <div className="plaque-partner-signature">
                     <span>
@@ -2206,7 +2222,7 @@ export default function App() {
                     navigator.clipboard?.writeText(customWhiteLabelUrl);
                   }}
                 >
-                  Copia Link White-Label v3.7
+                  Copia Link White-Label v3.8
                 </button>
                 <button
                   type="button"
@@ -2240,9 +2256,9 @@ export default function App() {
               <div className="executive-header no-print">
                 <div>
                   <span className="completion-badge">
-                    Fascicolo Digitale Notarile · DVR Art. 35 &amp; Pratica INAIL OT23
+                    Fascicolo Probatorio Ispettivo · DVR Art. 35 &amp; Pratica INAIL OT23
                   </span>
-                  <h2>Verbale Ufficiale Pre-Verificato (Medico · RSPP · RLS)</h2>
+                  <h2>Verbale Ufficiale di Adozióne e Conformità (Medico · RSPP · RLS)</h2>
                 </div>
                 <button
                   type="button"
@@ -2325,13 +2341,13 @@ export default function App() {
                 <div className="notarial-header-bar">
                   <div>
                     <span className="notarial-seal-badge">
-                      ATTO INTERNO DI CONFORMITÀ D.LGS. 81/2008 · PROTOCOLLO VERIFICATO {lastAuditCode}
+                      FASCICOLO PROBATORIO D.LGS. 81/2008 · PROTOCOLLO VERIFICATO {lastAuditCode}
                     </span>
                     <h3 style={{ margin: '0 0 0.2rem', fontSize: '0.95rem', letterSpacing: '0.02em' }}>
                       VERBALE DI VALIDAZIONE ERGONOMICA E ADOZIONE PRESIDIO (ARTT. 25, 28, 35, 50 E 175)
                     </h3>
                     <small style={{ color: '#cbd5e1', fontSize: '0.68rem' }}>
-                      Esenzione Ispettorato Nazionale del Lavoro ex Art. 4 L. 300/1970 · Idoneità Sconto INAIL OT23 ({inailOt23DiscountPct})
+                      Esenzione Ispettorato Nazionale del Lavoro ex Art. 4 L. 300/1970 · Idoneità Riduzione Premio INAIL OT23 ({inailOt23DiscountPct})
                     </small>
                   </div>
 
@@ -2346,7 +2362,7 @@ export default function App() {
                         fontWeight: 700,
                       }}
                     >
-                      VERIFICA QR v3.7
+                      VERIFICA QR v3.8
                     </small>
                   </div>
                 </div>
@@ -2377,15 +2393,15 @@ export default function App() {
 
                 <div style={{ padding: '0.9rem 1.15rem', fontSize: '0.74rem', lineHeight: 1.44 }}>
                   <p style={{ margin: '0 0 0.55rem' }}>
-                    <strong>ART. 1 — VALIDAZIONE CLINICO-ERGONOMICA (ART. 25 E TITOLO VII D.LGS. 81/2008):</strong>{' '}
-                    Il Medico Competente <strong>{doctorName}</strong> ({doctorAlbo}), in ottemperanza
-                    agli obblighi di collaborazione attiva alla prevenzione primaria ex Art. 25 c. 1
-                    lett. a) D.Lgs. 81/08 e nel pieno rispetto dell’Art. 30 del Codice di Deontologia
-                    Medica FNOMCeO, attesta che il protocollo tecnico-organizzativo{' '}
+                    <strong>ART. 1 — VALIDAZIONE ERGONOMICA PRIMARIA (ART. 25 E TITOLO VII D.LGS. 81/2008):</strong>{' '}
+                    Il Medico Competente <strong>{doctorName}</strong> ({doctorAlbo}), in attuazione
+                    della collaborazione attiva alla prevenzione primaria ex Art. 25 c. 1 lett. a)
+                    D.Lgs. 81/08 e nel pieno rispetto dell’Art. 30 del Codice di Deontologia Medica
+                    FNOMCeO, attesta che il presidio tecnico-organizzativo{' '}
                     <strong>Pausa81 by S.V.A.S.A. OS</strong> (3 fasi da 20s / 60s eseguibili in abiti da
-                    lavoro: <em>Reset Neuro-Visivo</em>, <em>Pompa Ematica del Soleo</em>,{' '}
-                    <em>Decompressione Posturale DMS</em>) è biomeccanicamente sicuro e idoneo a
-                    mitigare l’astenopia da VDT (Art. 175), i Disturbi Muscolo-Scheletrici (74,7% delle
+                    lavoro: <em>Reset Neuro-Visivo</em>, <em>Spinta Circolatoria del Soleo</em>,{' '}
+                    <em>Sblocco Articolare DMS</em>) è biomeccanicamente sicuro e idoneo a contrastare
+                    l’astenopia da VDT (Art. 175), l’affaticamento muscolo-scheletrico (74,7% delle
                     tecnopatie INAIL) e lo Stress Lavoro-Correlato (Art. 28 D.Lgs. 81/08 e Art. 2087 c.c.).
                   </p>
 
@@ -2393,9 +2409,9 @@ export default function App() {
                     <strong>ART. 2 — CLAUSOLA DI SALVAGUARDIA SINDACALE RLS (ART. 50 E ART. 175 C. 3 D.LGS. 81/2008):</strong>{' '}
                     Con la sottoscrizione per consultazione del Rappresentante dei Lavoratori per la
                     Sicurezza (<strong>{rlsName}</strong>) ex Art. 29 c. 2 e Art. 50 D.Lgs. 81/08, le
-                    parti certificano che le micro-pause da 60 secondi (dotate di funzione{' '}
-                    <em>Snooze +5 min</em> per non interrompere l’operatività) rivestono carattere{' '}
-                    <strong>esclusivamente integrativo e volontario</strong> e{' '}
+                    parti certificano che le micro-sessioni da 60 secondi (dotate di funzione{' '}
+                    <em>Posticipa +5 min</em> per rispettare la continuità operativa) rivestono carattere{' '}
+                    <strong>esclusivamente integrativo a fruizione non coercitiva</strong> e{' '}
                     <strong>non sostituiscono né riducono di un solo secondo</strong> il diritto ai 15
                     minuti di pausa ogni 120 minuti di applicazione continuativa al videoterminale (Art.
                     175 c. 3 D.Lgs. 81/08).
@@ -2407,8 +2423,8 @@ export default function App() {
                     <strong>100% Client-Side Stateless (0 Byte inviati su rete esterna)</strong>, senza
                     login nominativi, profilazione o raccolta di dati personali/biometrici (Art. 9
                     GDPR), risultando conforme ai provvedimenti del Garante Privacy ed esente da
-                    autorizzazione INL ex Art. 4 L. 300/1970. Il presente fascicolo ha valore
-                    probatorio per la Riunione Periodica (Art. 35) e per l’istanza di riduzione del
+                    autorizzazione INL ex Art. 4 L. 300/1970. Il presente verbale costituisce prova
+                    documentale per la Riunione Periodica (Art. 35) e per l’istanza di riduzione del
                     premio <strong>INAIL Modello OT23 (fascia sconto {inailOt23DiscountPct})</strong>.
                   </p>
 
@@ -2446,7 +2462,7 @@ export default function App() {
                         />
                       ) : (
                         <span style={{ fontSize: '0.62rem', color: '#94a3b8', margin: '0.8rem 0' }}>
-                          [Spazio Firma Autografa / PAdES]
+                          [Spazio Sottoscrizione Autografa]
                         </span>
                       )}
                       <small style={{ fontSize: '0.56rem', color: '#0f172a', fontWeight: 700 }}>
@@ -2478,7 +2494,7 @@ export default function App() {
                         />
                       ) : (
                         <span style={{ fontSize: '0.62rem', color: '#94a3b8', margin: '0.8rem 0' }}>
-                          [Spazio Firma Autografa / PAdES]
+                          [Spazio Sottoscrizione Autografa]
                         </span>
                       )}
                       <small style={{ fontSize: '0.56rem', color: '#0f172a', fontWeight: 700 }}>
@@ -2510,7 +2526,7 @@ export default function App() {
                         />
                       ) : (
                         <span style={{ fontSize: '0.62rem', color: '#94a3b8', margin: '0.8rem 0' }}>
-                          [Spazio Firma Consultazione RLS]
+                          [Spazio Consultazione RLS]
                         </span>
                       )}
                       <small style={{ fontSize: '0.56rem', color: '#0f172a', fontWeight: 700 }}>
@@ -2527,7 +2543,7 @@ export default function App() {
                   className="btn btn-primary"
                   onClick={() => window.print()}
                 >
-                  Esporta / Stampa Fascicolo Notarile in PDF (A4)
+                  Esporta / Stampa Fascicolo Probatorio in PDF (A4)
                 </button>
                 <button
                   type="button"
@@ -2561,9 +2577,9 @@ export default function App() {
               <div className="executive-header">
                 <div>
                   <span className="completion-badge">
-                    Analisi Economica &amp; Conformità D.Lgs. 81/2008 (Dati Ufficiali INAIL / UE)
+                    Analisi Finanziaria &amp; Conformità D.Lgs. 81/2008 (Parametri INAIL / UE)
                   </span>
-                  <h2>Pausa81 — Calcolatore Costo Non-Prevenzione &amp; Sconto INAIL OT23</h2>
+                  <h2>Pausa81 — Simulatore Impatto Economico VDT &amp; Sconto INAIL OT23</h2>
                 </div>
                 <button
                   type="button"
@@ -2577,10 +2593,10 @@ export default function App() {
               <div className="roi-box">
                 <div className="roi-slider-head">
                   <label htmlFor="emp-slider">
-                    Numero Dipendenti Azienda: <strong>{employeesCount}</strong>
+                    Organico Aziendale: <strong>{employeesCount} addetti</strong>
                   </label>
                   <span>
-                    Investimento Pausa81: <strong>{recommendedPlanPrice}</strong>
+                    Canone Presidio: <strong>{recommendedPlanPrice}</strong>
                   </span>
                 </div>
                 <input
@@ -2595,58 +2611,60 @@ export default function App() {
                 />
                 <div className="roi-metrics">
                   <div>
-                    <small>Danno Non-Prevenzione (Annuo / Mensile)*</small>
+                    <small>Perdita Produttiva Sommersa (Annuo / Mensile)*</small>
                     <strong style={{ color: '#dc2626' }}>
-                      - € {totalCompanyDamageYearly}/a (€ {totalCompanyDamageMonthly}/m)
+                      - € {totalCompanyDamageYearly}/a (- € {totalCompanyDamageMonthly}/m)
                     </strong>
                   </div>
                   <div>
-                    <small>Recupero Produttività &amp; Assenze (10%)</small>
+                    <small>Utile Operativo Recuperato (Stima Prudenziale 10%)</small>
                     <strong style={{ color: '#0f172a' }}>+ € {estimatedAnnualSavings} / anno</strong>
                   </div>
                   <div>
-                    <small>Fascia Sconto Premio INAIL (Modello OT23)</small>
+                    <small>Riduzione Premio Assicurativo (Modello INAIL OT23)</small>
                     <strong style={{ color: '#0f172a' }}>-{inailOt23DiscountPct} sul premio</strong>
                   </div>
                 </div>
               </div>
 
               <h3 className="compliance-section-title">
-                I 4 Indicatori di Rischio Economico e Penale Azzerati da Pausa81
+                I 4 Fattori di Rischio Finanziario e Ispettivo Mitigati da Pausa81
               </h3>
               <div className="compliance-grid">
                 <div className="compliance-card">
-                  <h4>1. Malattie Professionali DMS (74,7% Totale INAIL)</h4>
+                  <h4>1. Tecnopatie Muscolo-Scheletriche DMS (74,7% Totale INAIL)</h4>
                   <p>
-                    Secondo i dati ufficiali INAIL, i Disturbi Muscolo-Scheletrici (collo, spalle,
-                    tunnel carpale) rappresentano il <strong>74,7% delle malattie professionali</strong>{' '}
-                    (+21,6%), generando in media 4,8 giorni di assenza breve/anno (€ 905/dipendente).
+                    Secondo le rilevazioni ufficiali INAIL, i Disturbi Muscolo-Scheletrici (rachide
+                    cervicale, spalle, tunnel carpale) costituiscono il{' '}
+                    <strong>74,7% delle malattie professionali denunciate</strong> (+21,6%),
+                    generando in media 4,8 giorni di assenza breve/anno (€ 905/addetto).
                   </p>
                 </div>
 
                 <div className="compliance-card">
-                  <h4>2. Burnout &amp; Presenteismo (88,5 Miliardi €/anno in Italia)</h4>
+                  <h4>2. Erosione Silenziosa da Presenteismo (€ 373,66/mese per addetto)</h4>
                   <p>
-                    Il calo di lucidità al videoterminale e il burnout colpiscono il 69% dei
-                    lavoratori italiani, causando una perdita invisibile di resa pari a{' '}
-                    <strong>€ 2.282/anno per addetto</strong> (€ 4.484/anno totali, pari a € 373,66/mese).
+                    L’affaticamento visivo e cognitivo al videoterminale riduce la lucidità
+                    operativa del 69% degli addetti, provocando una perdita sommersa di resa pari a{' '}
+                    <strong>€ 4.484/anno per lavoratore</strong> (€ 373,66 bruciati ogni mese).
                   </p>
                 </div>
 
                 <div className="compliance-card">
-                  <h4>3. Scudo Sanzioni Penali Art. 55/178 D.Lgs. 81/08 &amp; Art. 2087 c.c.</h4>
+                  <h4>3. Tutela Ispettiva Artt. 55 e 178 D.Lgs. 81/08 &amp; Art. 2087 c.c.</h4>
                   <p>
-                    Protegge il Datore di Lavoro dalle ammende penali ex Art. 55 e Art. 178 D.Lgs.
-                    81/08 (da <strong>€ 2.847 a € 9.112</strong> rivalutate del +15,9%) e dalle cause
-                    civili per ambiente stressogeno ex Art. 2087 c.c.
+                    Fornisce prova oggettiva e continuativa davanti a ASL e Ispettorato (INL),
+                    tutelando il Datore dalle ammende ex Artt. 55 e 178 D.Lgs. 81/08 (da{' '}
+                    <strong>€ 2.847 a € 9.112</strong>) e dal contenzioso ex Art. 2087 c.c.
                   </p>
                 </div>
 
                 <div className="compliance-card">
-                  <h4>4. Zero-Tracking (0 Byte) &amp; Garanzia Sindacale RLS</h4>
+                  <h4>4. Zero-Tracking (0 Byte) &amp; Accordo Immediato con RLS</h4>
                   <p>
-                    Esente da accordi ex Art. 4 L. 300/1970 (nessun dato raccolto) e conforme
-                    all’Art. 175 c. 3 D.Lgs. 81/08 (integra senza mai ridurre i 15 minuti di pausa VDT).
+                    Integralmente esente da autorizzazioni ex Art. 4 L. 300/1970 (nessun dato
+                    raccolto) e conforme all’Art. 175 c. 3 D.Lgs. 81/08 (integra senza mai ridurre i
+                    15 minuti di pausa VDT).
                   </p>
                 </div>
               </div>
@@ -2660,7 +2678,7 @@ export default function App() {
                     setShowMedicalModal(true);
                   }}
                 >
-                  Apri Fascicolo Notarile DVR (3 Firme)
+                  Apri Fascicolo Probatorio DVR (3 Firme)
                 </button>
                 <button
                   type="button"
