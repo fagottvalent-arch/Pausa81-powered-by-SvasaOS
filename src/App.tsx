@@ -24,7 +24,7 @@ export type PhraseKey =
   | 'level3_inspire'
   | 'level3_expire';
 
-const APP_BUILD_VERSION = 'pausa81-v3.6-lumora-monochrome-glass';
+const APP_BUILD_VERSION = 'pausa81-v3.7-svasa-bimetallic-gold-emerald';
 const VERSION_STORAGE_KEY = 'pausa81_active_build_version';
 
 const IOS_MODAL_SPRING = {
@@ -382,7 +382,7 @@ function Pausa81Logo({ partnerName }: { partnerName: string }) {
   return (
     <div className="brand-block" aria-hidden="true">
       <span className="svasa-wordmark">
-        Pausa81 <small className="svasa-badge-b2b">{partnerName || 'by SvasaOS'}</small>
+        Pausa81 <small className="svasa-badge-b2b">{partnerName || 'by S.V.A.S.A. OS'}</small>
       </span>
       <span className="powered-by-sub">
         Presidio Neuro-Ergonomico <strong>D.Lgs. 81/2008</strong>
@@ -427,22 +427,23 @@ function SacredLotus({ phase }: { phase: Phase }) {
     <svg className="sacred-lotus" viewBox="0 0 200 200" aria-hidden="true">
       <defs>
         <radialGradient id="lotus-petal" gradientUnits="userSpaceOnUse" cx="100" cy="130" r="88">
-          <stop offset="0%" stopColor="#f8fafc" />
-          <stop offset="50%" stopColor="#ccfbf1" />
-          <stop offset="100%" stopColor="#5eead4" />
+          <stop offset="0%" stopColor="#fef3c7" />
+          <stop offset="52%" stopColor="#99f6e4" />
+          <stop offset="100%" stopColor="#2dd4bf" />
         </radialGradient>
         <radialGradient id="lotus-back" gradientUnits="userSpaceOnUse" cx="100" cy="130" r="96">
-          <stop offset="0%" stopColor="#e0f2fe" />
+          <stop offset="0%" stopColor="#f3d98b" />
           <stop offset="65%" stopColor="#2dd4bf" />
           <stop offset="100%" stopColor="#0d9488" />
         </radialGradient>
         <radialGradient id="lotus-glow" gradientUnits="userSpaceOnUse" cx="100" cy="140" r="62">
-          <stop offset="0%" stopColor="#5eead4" stopOpacity="0.85" />
+          <stop offset="0%" stopColor="#f3d98b" stopOpacity="0.65" />
+          <stop offset="55%" stopColor="#2dd4bf" stopOpacity="0.45" />
           <stop offset="100%" stopColor="#0d9488" stopOpacity="0" />
         </radialGradient>
-        <linearGradient id="water-fill" x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id="water-fill" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor="#2dd4bf" stopOpacity="0.42" />
-          <stop offset="100%" stopColor="#0d9488" stopOpacity="0.08" />
+          <stop offset="100%" stopColor="#d4af37" stopOpacity="0.22" />
         </linearGradient>
       </defs>
 
@@ -453,7 +454,7 @@ function SacredLotus({ phase }: { phase: Phase }) {
         <ellipse cx="100" cy="172" rx="66" ry="10" opacity="0.7" />
         <ellipse cx="100" cy="182" rx="46" ry="7" opacity="0.5" />
       </g>
-      <g fill="none" stroke="#5eead4" strokeOpacity="0.45" strokeWidth="1">
+      <g fill="none" stroke="#f3d98b" strokeOpacity="0.48" strokeWidth="1">
         <ellipse cx="100" cy="158" rx="76" ry="12" />
         <ellipse cx="100" cy="170" rx="58" ry="9" />
       </g>
@@ -475,7 +476,7 @@ function SacredLotus({ phase }: { phase: Phase }) {
           key={`mid-${idx}`}
           d="M 0 0 C -22 -3 -28 -46 -2.5 -74 C -1 -77 1 -77 2.5 -74 C 28 -46 22 -3 0 0 Z"
           fill="url(#lotus-petal)"
-          opacity="0.9"
+          opacity="0.92"
           style={{
             transform: `translate(100px, 150px) rotate(${a}deg)`,
             transition: 'transform 2.2s ease-in-out',
@@ -483,7 +484,7 @@ function SacredLotus({ phase }: { phase: Phase }) {
         />
       ))}
 
-      <g stroke="#99f6e4" strokeOpacity="0.65" strokeWidth="1" strokeLinecap="round">
+      <g stroke="#f3d98b" strokeOpacity="0.72" strokeWidth="1" strokeLinecap="round">
         {rays.map((r, i) => (
           <line key={`ray-${i}`} x1={r.x1} y1={r.y1} x2={r.x2} y2={r.y2} />
         ))}
@@ -494,9 +495,9 @@ function SacredLotus({ phase }: { phase: Phase }) {
           key={`side-${idx}`}
           d="M 0 0 C -20 -3 -26 -44 -2 -72 C -1 -75 1 -75 2 -72 C 26 -44 20 -3 0 0 Z"
           fill="url(#lotus-petal)"
-          stroke="#ffffff"
-          strokeOpacity="0.6"
-          strokeWidth="0.7"
+          stroke="#f3d98b"
+          strokeOpacity="0.68"
+          strokeWidth="0.75"
           style={{
             transform: `translate(100px, 150px) rotate(${a}deg)`,
             transition: 'transform 2.2s ease-in-out',
@@ -507,9 +508,9 @@ function SacredLotus({ phase }: { phase: Phase }) {
       <path
         d="M 0 0 C -18 -2 -24 -42 -2 -70 C -1 -73 1 -73 2 -70 C 24 -42 18 -2 0 0 Z"
         fill="url(#lotus-petal)"
-        stroke="#ffffff"
-        strokeOpacity="0.65"
-        strokeWidth="0.7"
+        stroke="#f3d98b"
+        strokeOpacity="0.75"
+        strokeWidth="0.8"
         transform="translate(100 150)"
       />
 
@@ -517,15 +518,15 @@ function SacredLotus({ phase }: { phase: Phase }) {
         <g key={`spark-${i}`} transform={`translate(${p.x} ${p.y}) scale(${p.s})`}>
           <path
             d="M 0 -6 L 1.5 -1.5 L 6 0 L 1.5 1.5 L 0 6 L -1.5 1.5 L -6 0 L -1.5 -1.5 Z"
-            fill="#ffffff"
-            opacity="0.92"
+            fill={i % 2 === 0 ? '#f3d98b' : '#5eead4'}
+            opacity="0.95"
           />
         </g>
       ))}
 
-      <circle cx="100" cy="142" r="8" fill="#ffffff" opacity="0.95" />
-      <circle cx="100" cy="142" r="8" fill="none" stroke="#2dd4bf" strokeOpacity="0.7" strokeWidth="1" />
-      <circle cx="100" cy="142" r="2.8" fill="#fde047" />
+      <circle cx="100" cy="142" r="8" fill="#fef3c7" opacity="0.96" />
+      <circle cx="100" cy="142" r="8" fill="none" stroke="#d4af37" strokeOpacity="0.85" strokeWidth="1.2" />
+      <circle cx="100" cy="142" r="3" fill="#d4af37" />
     </svg>
   );
 }
@@ -540,13 +541,13 @@ function RealScannableQrCode({ url, sizePx = 110 }: { url: string; sizePx?: numb
     return (
       <img
         src={qrApiUrl}
-        alt="QR Code Ufficiale Pausa81 v3.6 Scansionabile"
+        alt="QR Code Ufficiale Pausa81 v3.7 Scansionabile"
         className="qr-svg"
         style={{
           width: `${sizePx}px`,
           height: `${sizePx}px`,
           borderRadius: '8px',
-          border: '1px solid #cbd5e1',
+          border: '1px solid #d4af37',
           background: '#ffffff',
           padding: '3px',
         }}
@@ -565,7 +566,7 @@ function RealScannableQrCode({ url, sizePx = 110 }: { url: string; sizePx?: numb
     >
       <rect width={size + 4} height={size + 4} fill="#ffffff" rx="1.5" />
       <text x="50%" y="50%" textAnchor="middle" fontSize="2.2" fill="#0f172a">
-        PAUSA81 v3.6
+        PAUSA81 v3.7
       </text>
     </svg>
   );
@@ -756,34 +757,38 @@ function Sphere({
       ? 'liquid-sphere-core--expire'
       : 'liquid-sphere-core--idle';
 
-  const ringStrokeColor =
-    phase === 'hold' ? '#f8fafc' : phase === 'inspire' ? '#e2e8f0' : 'rgba(255, 255, 255, 0.65)';
-
   return (
     <div className="sphere-wrap">
       <svg className="orbital-ring" viewBox="0 0 340 340" aria-hidden="true">
+        <defs>
+          <linearGradient id="svasa-ring-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#2dd4bf" />
+            <stop offset="50%" stopColor="#10b981" />
+            <stop offset="100%" stopColor="#f3d98b" />
+          </linearGradient>
+        </defs>
         <circle
           cx="170"
           cy="170"
           r={radius}
           fill="none"
-          stroke="rgba(255, 255, 255, 0.12)"
-          strokeWidth="2"
+          stroke="rgba(212, 175, 55, 0.22)"
+          strokeWidth="2.2"
         />
         <circle
           cx="170"
           cy="170"
           r={radius}
           fill="none"
-          stroke={ringStrokeColor}
-          strokeWidth="3.5"
+          stroke="url(#svasa-ring-grad)"
+          strokeWidth="4"
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
           style={{
             transform: 'rotate(-90deg)',
             transformOrigin: '50% 50%',
-            transition: 'stroke-dashoffset 0.35s linear, stroke 0.6s ease',
+            transition: 'stroke-dashoffset 0.35s linear',
           }}
         />
       </svg>
@@ -891,10 +896,9 @@ export default function App() {
   const lastPlayedStepRef = useRef<string>('');
   const wakeLockRef = useRef<{ release: () => Promise<void> } | null>(null);
 
-  // Iniezione automatica Metadati SEO per Google (Risolve l'avviso su Pausa81.it) + Cache Busting v3.6
   useEffect(() => {
     if (typeof document !== 'undefined') {
-      document.title = 'Pausa81 by SvasaOS — Presidio Neuro-Ergonomico D.Lgs. 81/2008';
+      document.title = 'Pausa81 by S.V.A.S.A. OS — Presidio Neuro-Ergonomico D.Lgs. 81/2008';
 
       const setOrUpdateMeta = (attr: 'name' | 'property', key: string, content: string) => {
         let el = document.querySelector(`meta[${attr}="${key}"]`);
@@ -910,13 +914,13 @@ export default function App() {
       setOrUpdateMeta(
         'name',
         'description',
-        'Pausa81 by SvasaOS è il presidio neuro-ergonomico aziendale da 60 secondi conforme al D.Lgs. 81/2008 (Art. 28 Stress Lavoro-Correlato e Titolo VII Videoterminali) a 0 Byte Tracciati, esente Art. 4 L. 300/1970 e idoneo per lo sconto INAIL OT23.'
+        'Pausa81 by S.V.A.S.A. OS è il presidio neuro-ergonomico aziendale da 60 secondi conforme al D.Lgs. 81/2008 (Art. 28 Stress Lavoro-Correlato e Titolo VII Videoterminali) a 0 Byte Tracciati, esente Art. 4 L. 300/1970 e idoneo per lo sconto INAIL OT23.'
       );
       setOrUpdateMeta('name', 'robots', 'index, follow');
       setOrUpdateMeta(
         'property',
         'og:title',
-        'Pausa81 by SvasaOS — Presidio Neuro-Ergonomico D.Lgs. 81/2008'
+        'Pausa81 by S.V.A.S.A. OS — Presidio Neuro-Ergonomico D.Lgs. 81/2008'
       );
       setOrUpdateMeta(
         'property',
@@ -1631,7 +1635,7 @@ export default function App() {
 
   const customWhiteLabelUrl = `${officialBaseOrigin}/?partner=${encodeURIComponent(
     partnerStudioName.replace(/\s+/g, '_')
-  )}&cliente=${encodeURIComponent(clientCompanyName.replace(/\s+/g, '_'))}&v=3.6`;
+  )}&cliente=${encodeURIComponent(clientCompanyName.replace(/\s+/g, '_'))}&v=3.7`;
 
   const todayFormatted = new Date().toLocaleDateString('it-IT');
   const allThreeSigned = Boolean(
@@ -1826,9 +1830,9 @@ export default function App() {
               left: '50%',
               transform: 'translateX(-50%)',
               zIndex: 45,
-              background: 'rgba(15, 23, 42, 0.92)',
+              background: 'rgba(15, 23, 42, 0.94)',
               backdropFilter: 'blur(20px)',
-              border: '1px solid rgba(255, 255, 255, 0.35)',
+              border: '1px solid rgba(212, 175, 55, 0.55)',
               color: '#f8fafc',
               padding: '0.55rem 1rem',
               borderRadius: '999px',
@@ -1843,7 +1847,7 @@ export default function App() {
             <button
               type="button"
               className="btn-mini"
-              style={{ background: '#ffffff', color: '#0f172a', border: 'none' }}
+              style={{ background: '#f3d98b', color: '#0f172a', border: 'none' }}
               onClick={startSession}
             >
               Inizia Ora (60s)
@@ -1949,7 +1953,7 @@ export default function App() {
                   className="tick-bar-fill"
                   style={{
                     width: `${((SESSION_DURATION - sessionRemaining) / SESSION_DURATION) * 100}%`,
-                    background: 'linear-gradient(90deg, rgba(255,255,255,0.6) 0%, #ffffff 100%)',
+                    background: 'linear-gradient(90deg, #10b981 0%, #2dd4bf 50%, #f3d98b 100%)',
                   }}
                 />
               </div>
@@ -1975,9 +1979,9 @@ export default function App() {
             <span
               className="local-counter-pill"
               style={{
-                background: 'rgba(255, 255, 255, 0.08)',
-                border: '1px solid rgba(255, 255, 255, 0.22)',
-                color: themeMode === 'dark' ? '#f8fafc' : '#0f172a',
+                background: 'rgba(212, 175, 55, 0.12)',
+                border: '1px solid rgba(212, 175, 55, 0.38)',
+                color: themeMode === 'dark' ? '#f3d98b' : '#0f172a',
               }}
             >
               ✓ {localSessionsCount} sessioni completate · Certificato Locale {lastAuditCode}
@@ -1994,7 +1998,7 @@ export default function App() {
             height="14"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="currentColor"
+            stroke="#f3d98b"
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -2089,7 +2093,7 @@ export default function App() {
             >
               <div className="executive-header no-print">
                 <div>
-                  <span className="completion-badge">Kit Phygital Pausa81 · White-Label v3.6</span>
+                  <span className="completion-badge">Kit Phygital Pausa81 · S.V.A.S.A. OS v3.7</span>
                   <h2>Generatore Targa Murale QR Code ISO/IEC 18004 (D.Lgs. 81/2008)</h2>
                 </div>
                 <button
@@ -2149,7 +2153,7 @@ export default function App() {
                   <div className="plaque-qr-box">
                     <RealScannableQrCode url={customWhiteLabelUrl} sizePx={136} />
                     <span>INQUADRA CON LA FOTOCAMERA</span>
-                    <small>Edizione Lumora Glass v3.6</small>
+                    <small>Edizione S.V.A.S.A. Bi-Metallic v3.7</small>
                   </div>
 
                   <div className="plaque-levels">
@@ -2181,7 +2185,7 @@ export default function App() {
                       <strong>{doctorName}</strong>
                     </span>
                     <span>
-                      Sistema: <strong>Pausa81</strong> <em>by SvasaOS</em>
+                      Sistema: <strong>Pausa81</strong> <em>by S.V.A.S.A. OS</em>
                     </span>
                   </div>
                 </div>
@@ -2202,7 +2206,7 @@ export default function App() {
                     navigator.clipboard?.writeText(customWhiteLabelUrl);
                   }}
                 >
-                  Copia Link White-Label v3.6
+                  Copia Link White-Label v3.7
                 </button>
                 <button
                   type="button"
@@ -2337,12 +2341,12 @@ export default function App() {
                       style={{
                         display: 'block',
                         fontSize: '0.55rem',
-                        color: '#f8fafc',
+                        color: '#f3d98b',
                         marginTop: '2px',
                         fontWeight: 700,
                       }}
                     >
-                      VERIFICA QR v3.6
+                      VERIFICA QR v3.7
                     </small>
                   </div>
                 </div>
@@ -2378,7 +2382,7 @@ export default function App() {
                     agli obblighi di collaborazione attiva alla prevenzione primaria ex Art. 25 c. 1
                     lett. a) D.Lgs. 81/08 e nel pieno rispetto dell’Art. 30 del Codice di Deontologia
                     Medica FNOMCeO, attesta che il protocollo tecnico-organizzativo{' '}
-                    <strong>Pausa81 by SvasaOS</strong> (3 fasi da 20s / 60s eseguibili in abiti da
+                    <strong>Pausa81 by S.V.A.S.A. OS</strong> (3 fasi da 20s / 60s eseguibili in abiti da
                     lavoro: <em>Reset Neuro-Visivo</em>, <em>Pompa Ematica del Soleo</em>,{' '}
                     <em>Decompressione Posturale DMS</em>) è biomeccanicamente sicuro e idoneo a
                     mitigare l’astenopia da VDT (Art. 175), i Disturbi Muscolo-Scheletrici (74,7% delle
